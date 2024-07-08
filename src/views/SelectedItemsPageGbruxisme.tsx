@@ -76,24 +76,37 @@ const SelectedItemsPageGbruxisme = () => {
   };
 
   useEffect(() => {
-    const fetchPatientData = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-        );
-        // Assuming the first patient is the one you want
-        const patient = response.data.data[0].attributes;
-        setPatientData({
-          fullname: patient.fullname,
-          caseNumber: patient.caseNumber,
-        });
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-      }
-    };
+    // const fetchPatientData = async () => {
+    //   try {
+    //     const response = await axios.get(
+    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
+    //     );
+    //     // Assuming the first patient is the one you want
+    //     const patient = response.data.data[0].attributes;
+    //     setPatientData({
+    //       fullname: patient.fullname,
+    //       caseNumber: patient.caseNumber,
+    //     });
+    //   } catch (error) {
+    //     console.error("Error fetching patient data:", error);
+    //   }
+    // };
 
-    fetchPatientData();
-  }, []);
+    // fetchPatientData();
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      // Redirect to /sign/nouvelle-demande if data is missing
+      navigate("/sign/nouvelle-demande");
+    } else {
+      // If data exists in local storage, set it to patientData
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     axios.get("http://localhost:1337/api/services").then(() => {});

@@ -26,17 +26,16 @@ const SelectedItemsPageRapportRad = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
-  const selectedItemsData = location.state.selectedItemsData;
-  const previousState = location.state.previousState;
-  const comment = location.state.selectedItemsData.comment1 || "";
-  const secondComment = location.state.selectedItemsData.comment2 || "";
-  const date = location.state.selectedItemsData.date;
-  const isBoxCheckedImplantation = location.state.isBoxCheckedImplantation;
-  const isBoxCheckeEvaluerImplant = location.state.isBoxCheckeEvaluerImplant;
-  const isBoxCheckedEvaluationATM = location.state.isBoxCheckedEvaluationATM;
-  const isBoxCheckedEliminerPathologie =
-    location.state.isBoxCheckedEliminerPathologie;
-  const isBoxCheckedAutre = location.state.isBoxCheckedAutre;
+  const selectedItemsData = location.state?.selectedItemsData;
+  const previousState = location.state?.previousState;
+  const comment = location.state?.selectedItemsData.comment1 || "";
+  const secondComment = location.state?.selectedItemsData.comment2 || "";
+  const date = location.state?.selectedItemsData.date;
+  const isBoxCheckedImplantation = location.state?.isBoxCheckedImplantation;
+  const isBoxCheckeEvaluerImplant = location.state?.isBoxCheckeEvaluerImplant;
+  const isBoxCheckedEvaluationATM = location.state?.isBoxCheckedEvaluationATM;
+  const isBoxCheckedEliminerPathologie = location.state?.isBoxCheckedEliminerPathologie;
+  const isBoxCheckedAutre = location.state?.isBoxCheckedAutre;
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
@@ -75,24 +74,38 @@ const SelectedItemsPageRapportRad = () => {
   };
 
   useEffect(() => {
-    const fetchPatientData = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-        );
-        // Assuming the first patient is the one you want
-        const patient = response.data.data[0].attributes;
-        setPatientData({
-          fullname: patient.fullname,
-          caseNumber: patient.caseNumber,
-        });
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-      }
-    };
+    // const fetchPatientData = async () => {
+    //   try {
+    //     const response = await axios.get(
+    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
+    //     );
+    //     // Assuming the first patient is the one you want
+    //     const patient = response.data.data[0].attributes;
+    //     setPatientData({
+    //       fullname: patient.fullname,
+    //       caseNumber: patient.caseNumber,
+    //     });
+    //   } catch (error) {
+    //     console.error("Error fetching patient data:", error);
+    //   }
+    // };
 
-    fetchPatientData();
-  }, []);
+    // fetchPatientData();
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      // Redirect to /sign/nouvelle-demande if data is missing
+      navigate("/sign/nouvelle-demande");
+    } else {
+      // If data exists in local storage, set it to patientData
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+    }
+  }, [navigate]);
+
   useEffect(() => {
     axios.get("http://localhost:1337/api/services").then(() => {});
   }, []);

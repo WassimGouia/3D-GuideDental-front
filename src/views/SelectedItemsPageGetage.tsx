@@ -32,6 +32,7 @@ import {
 // import { getToken, setToken } from "@/components/Helpers";
 
 const SelectedItemsPageGETAGE = ({ serviceId }) => {
+  console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaa")
   // const { caseCount, submitCase } = useCaseCounter();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,31 +44,77 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
   // const [selectedTeeth, setSelectedTeeth] = useState<number[]>(
   //   previousStates.selectedTeeth || []
   // );
-  const lateralPinBrand = location.state.previousStates.lateralPinBrand;
-  const selectSurgicalKitBrand =
-    location.state.previousStates.selectSurgicalKitBrand;
-  const implantBrandInputs = previousStates.implantBrandInputs || {};
-  const implantBrandValues = previousStates.implantBrandValues || {};
-  const cost = location.state.selectedItemsData.cost;
-  const immediateLoad = location.state.selectedItemsData.immediateLoad;
-  const secondSwitch = location.state.selectedItemsData.secondSwitch;
-  const comment = location.state.selectedItemsData.comment;
-  const smileDesign = location.state.selectedItemsData.smileDesign;
-  const foragePilote = location.state.selectedItemsData.foragePilote;
-  const thirdSwitch = location.state.selectedItemsData.thirdSwitch;
-  const fourthSwitch = location.state.selectedItemsData.fourthSwitch;
-  const fullGuide = location.state.selectedItemsData.fullGuide;
-  const fifthSwitch = location.state.selectedItemsData.fifthSwitch;
-  const costt = location.state.selectedItemsData.cost;
-  const lateralPinBrandd = location.state.selectedItemsData.lateralPinBrand;
-  const selectSurgicalKitBrandd =
-    location.state.selectedItemsData.selectSurgicalKitBrand;
+  const lateralPinBrand = location.state?.previousStates?.lateralPinBrand;
+  const selectSurgicalKitBrand = location.state?.previousStates?.selectSurgicalKitBrand;
+  const implantBrandInputs = previousStates?.implantBrandInputs || [];
+  const implantBrandValues = previousStates?.implantBrandValues || {};
+  const cost = location.state?.selectedItemsData?.cost;
+  const immediateLoad = location.state?.selectedItemsData?.immediateLoad;
+  const secondSwitch = location.state?.selectedItemsData?.secondSwitch;
+  const comment = location.state?.selectedItemsData?.comment;
+  const smileDesign = location.state?.selectedItemsData?.smileDesign;
+  const foragePilote = location.state?.selectedItemsData?.foragePilote;
+  const thirdSwitch = location.state?.selectedItemsData?.thirdSwitch;
+  const fourthSwitch = location.state?.selectedItemsData?.fourthSwitch;
+  const fullGuide = location.state?.selectedItemsData?.fullGuide;
+  const fifthSwitch = location.state?.selectedItemsData?.fifthSwitch;
+  const costt = location.state?.selectedItemsData?.cost;
+  const lateralPinBrandd = location.state?.selectedItemsData?.lateralPinBrand;
+  const selectSurgicalKitBrandd = location.state?.selectedItemsData?.selectSurgicalKitBrand;
+  const implantBrandValue = location.state?.selectedItemsData?.implantBrandValues;
+
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
+
+  useEffect(() => {
+    const requiredFields = [
+      lateralPinBrand,
+      selectSurgicalKitBrand,
+      implantBrandInputs,
+      implantBrandValues,
+      cost,
+      immediateLoad,
+      secondSwitch,
+      comment,
+      smileDesign,
+      foragePilote,
+      thirdSwitch,
+      fourthSwitch,
+      fullGuide,
+      fifthSwitch,
+      costt,
+      lateralPinBrandd,
+      selectSurgicalKitBrandd,
+      implantBrandValue
+    ];
+
+    if (requiredFields.some(field => field == null || field === "")) {
+      navigate("/sign/nouveau-demande");
+    }
+  }, [
+    lateralPinBrand,
+    selectSurgicalKitBrand,
+    implantBrandInputs,
+    implantBrandValues,
+    cost,
+    immediateLoad,
+    secondSwitch,
+    comment,
+    smileDesign,
+    foragePilote,
+    thirdSwitch,
+    fourthSwitch,
+    fullGuide,
+    fifthSwitch,
+    costt,
+    lateralPinBrandd,
+    selectSurgicalKitBrandd,
+    implantBrandValue,
+    navigate
+  ]);
   const [submit, setsubmit] = useState(false);
-  const implantBrandValue = location.state.selectedItemsData.implantBrandValues;
 
   // const handleSubmitCase = () => {
   //    (serviceId);
@@ -77,65 +124,46 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
 
-  const handlePayment = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-
-    const stripe = await stripePromise;
-    if (!stripe) {
-      console.error("Stripe.js has not loaded yet.");
-      return;
-    }
-
+  const handlePayment = async () => {
     const requestData = {
-      cost: cost, // Ensure 'cost' is defined in your scope
+      cost: cost,
+      service:1,
+      patient: localStorage.getItem("fullName")
     };
 
     try {
+      const stripe = await stripePromise;
       const response = await axios.post(
         "http://localhost:1337/api/commandes",
         requestData
       );
-      const session = response.data.stripeSession;
-      console.log("session id", session)
-      // const result = await stripe.redirectToCheckout({
-      //   sessionId: session.id,
-      // });
-
-      console.log("executed1")
-      const res = await axios.post(
-        "http://localhost:1337/api/webhook",
-        requestData
-      );
-      console.log("executed2")
-
-
-      if (result.error) {
-        console.error(result.error.message);
+      const {error} = await stripe.redirectToCheckout({
+        sessionId: response.data.stripeSession.id,
+      });
+      if (error) {
+        console.error("Stripe checkout error:", error);
       }
-    } catch (error) {
-      console.error("Error during payment process:", error);
+    } catch (err) {
+      console.log(err);
     }
   };
 
   useEffect(() => {
-    const fetchPatientData = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-        );
-        // Assuming the first patient is the one you want
-        const patient = response.data.data[0].attributes;
-        setPatientData({
-          fullname: patient.fullname,
-          caseNumber: patient.caseNumber,
-        });
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-      }
-    };
 
-    fetchPatientData();
-  }, []);
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      // Redirect to /sign/nouvelle-demande if data is missing
+      navigate("/sign/nouvelle-demande");
+    } else {
+      // If data exists in local storage, set it to patientData
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+    }
+  }, [navigate]);
   useEffect(() => {
     axios.get("http://localhost:1337/api/services").then(() => {});
   }, []);

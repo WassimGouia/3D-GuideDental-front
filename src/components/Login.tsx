@@ -52,7 +52,8 @@ function Login() {
       // Assuming setToken and setUser are defined somewhere in your context or utilities
       setToken(response.data.jwt);
       setUser(response.data.user);
-      navigate("/cabinet");
+      // navigate("/cabinet");
+      window.location.href="/cabinet"
     } catch (error) {
       console.error("Login failed:", error);
       setError("Failed to login. Please check your credentials and try again.");

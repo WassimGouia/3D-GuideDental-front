@@ -83,29 +83,43 @@ const GuideEtage = () => {
   //   }
   // };
   useEffect(() => {
-    const fetchPatientData = async () => {
-      // Assuming the API is set up to return patients sorted by creation time descending
-      try {
-        // Modify the URL to include sorting and potentially filtering by service if required
-        const response = await axios.get(
-          "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-        );
-        if (response.data.data.length > 0) {
-          const patient = response.data.data[0].attributes;
-          setPatientData({
-            fullname: patient.fullname,
-            caseNumber: patient.caseNumber,
-          });
-        } else {
-          console.error("No patient data found.");
-        }
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-      }
-    };
+    // const fetchPatientData = async () => {
+    //   // Assuming the API is set up to return patients sorted by creation time descending
+    //   try {
+    //     // Modify the URL to include sorting and potentially filtering by service if required
+    //     const response = await axios.get(
+    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
+    //     );
+    //     if (response.data.data.length > 0) {
+    //       const patient = response.data.data[0].attributes;
+    //       setPatientData({
+    //         fullname: patient.fullname,
+    //         caseNumber: patient.caseNumber,
+    //       });
+    //     } else {
+    //       console.error("No patient data found.");
+    //     }
+    //   } catch (error) {
+    //     console.error("Error fetching patient data:", error);
+    //   }
+    // };
 
-    fetchPatientData();
-  }, []);
+    // fetchPatientData();
+
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      // Redirect to /sign/nouvelle-demande if data is missing
+      navigate("/sign/nouvelle-demande");
+    } else {
+      // If data exists in local storage, set it to patientData
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+    }
+  }, [navigate]);
 
   const handleForagePiloteSwitch = () => {
     setForagePilote(!foragePilote);
@@ -547,7 +561,7 @@ const GuideEtage = () => {
             </div>
             <div className="flex justify-between">
               <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">
-                <Link to="/sign/offre">
+                <Link to="/sign/Nouvelle-modelisation">
                   {language === "french" ? "Précédent" : "Previous"}
                 </Link>
               </Button>

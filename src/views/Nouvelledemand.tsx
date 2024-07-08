@@ -40,6 +40,8 @@ function Nouvelled() {
             },
           },
         });
+        window.localStorage.setItem("fullName",patientName);
+        window.localStorage.setItem("caseNumber",res.data.data.attributes.caseNumber);
       }
     } catch (error) {
       console.error("Error creating patient:", error);

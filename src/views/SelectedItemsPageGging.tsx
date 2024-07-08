@@ -26,24 +26,26 @@ const SelectedItemsPageGging = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
-  const selectedItemsData = location.state.selectedItemsData;
-  const previousStates = location.state.previousStates;
-  const textareaValue = previousStates.textareaValue || {}; // for the Digital extraction of teeth
-  const additionalGuides = previousStates.additionalGuides || {};
-  const selectedTeethData = previousStates.selectedTeeth || [];
-  const comment = location.state.selectedItemsData.comment;
-  const cost = location.state.selectedItemsData.cost;
-  const first = location.state.selectedItemsData.first;
-  const supressionumerique = location.state.selectedItemsData.third;
-  const textareaValu = location.state.selectedItemsData.textareaValue;
-  const costt = location.state.selectedItemsData.cost;
-  const ImpressionFormlabs = location.state.selectedItemsData.fourth;
-  const additionalGuidess = location.state.selectedItemsData.additionalGuides;
-  const smiledesign = location.state.selectedItemsData.second;
+  const selectedItemsData = location.state?.selectedItemsData;
+  const previousStates = location.state?.previousStates;
+  const textareaValue = previousStates?.textareaValue || {}; // for the Digital extraction of teeth
+  const additionalGuides = previousStates?.additionalGuides || {};
+  const selectedTeethData = previousStates?.selectedTeeth || [];
+  const comment = location.state?.selectedItemsData.comment;
+  const cost = location.state?.selectedItemsData.cost;
+  const first = location.state?.selectedItemsData.first;
+  const supressionumerique = location.state?.selectedItemsData.third;
+  const textareaValu = location.state?.selectedItemsData.textareaValue;
+  const costt = location.state?.selectedItemsData.cost;
+  const ImpressionFormlabs = location.state?.selectedItemsData.fourth;
+  const additionalGuidess = location.state?.selectedItemsData.additionalGuides;
+  const smiledesign = location.state?.selectedItemsData.second;
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
+
+  
 
   const stripePromise = loadStripe(
     "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
@@ -78,23 +80,63 @@ const SelectedItemsPageGging = () => {
   };
 
   useEffect(() => {
-    const fetchPatientData = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-        );
-        const patient = response.data.data[0].attributes;
-        setPatientData({
-          fullname: patient.fullname,
-          caseNumber: patient.caseNumber,
-        });
-      } catch (error) {
-        console.error("Error fetching patient data:", error);
-      }
-    };
+    // const fetchPatientData = async () => {
+    //   try {
+    //     const response = await axios.get(
+    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
+    //     );
+    //     const patient = response.data.data[0].attributes;
+    //     setPatientData({
+    //       fullname: patient.fullname,
+    //       caseNumber: patient.caseNumber,
+    //     });
+    //   } catch (error) {
+    //     console.error("Error fetching patient data:", error);
+    //   }
+    // };
 
-    fetchPatientData();
-  }, []);
+    // fetchPatientData();
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      // Redirect to /sign/nouvelle-demande if data is missing
+      navigate("/sign/nouvelle-demande");
+    } else {
+      // If data exists in local storage, set it to patientData
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+    }
+    // Check if any location is null and redirect if true
+    if (
+      !selectedItemsData ||
+      !comment ||
+      !cost ||
+      !first ||
+      !supressionumerique ||
+      !textareaValu ||
+      !costt ||
+      !ImpressionFormlabs ||
+      !additionalGuidess ||
+      !smiledesign
+    ) {
+      navigate("/sign/nouvelle-demande");
+    }
+  }, [
+    navigate,
+    selectedItemsData,
+    comment,
+    cost,
+    first,
+    supressionumerique,
+    textareaValu,
+    costt,
+    ImpressionFormlabs,
+    additionalGuidess,
+    smiledesign,
+  ]);
 
   const handleNextClick = async () => {
     const dataToStore = {
@@ -253,7 +295,7 @@ const SelectedItemsPageGging = () => {
                     </p>
                     <p className="flex">
                       {language === "french" ? "Coût" : "Cost"} :{" "}
-                      {selectedItemsData.cost} €
+                      {selectedItemsData ? selectedItemsData.cost : 0} €
                     </p>
                   </div>
                   <p className="text-lg font-semibold">
@@ -273,7 +315,7 @@ const SelectedItemsPageGging = () => {
                       </p>
 
                       <p>
-                        <Switch checked={previousStates.first} />
+                        <Switch checked={previousStates?.first} />
                       </p>
                     </div>
                   </div>
@@ -284,7 +326,7 @@ const SelectedItemsPageGging = () => {
                     </p>
 
                     <p>
-                      <Switch checked={previousStates.second} />
+                      <Switch checked={previousStates?.second} />
                     </p>
                   </div>
 
@@ -297,10 +339,10 @@ const SelectedItemsPageGging = () => {
                       </p>
 
                       <p>
-                        <Switch checked={previousStates.third} />
+                        <Switch checked={previousStates?.third} />
                       </p>
                     </div>
-                    {previousStates.third && (
+                    {previousStates?.third && (
                       <Input value={textareaValue} readOnly className="w-2/5" />
                     )}
                   </div>
@@ -314,10 +356,10 @@ const SelectedItemsPageGging = () => {
                       </p>
 
                       <p>
-                        <Switch checked={previousStates.fourth} />
+                        <Switch checked={previousStates?.fourth} />
                       </p>
                     </div>
-                    {previousStates.fourth && (
+                    {previousStates?.fourth && (
                       <Input
                         value={additionalGuides}
                         readOnly
@@ -328,7 +370,7 @@ const SelectedItemsPageGging = () => {
 
                   <li>Comment:</li>
                   <Input
-                    value={selectedItemsData.comment}
+                    value={selectedItemsData ? selectedItemsData.comment : ""}
                     readOnly
                     className="w-2/5"
                   />
