@@ -25,7 +25,7 @@ import axios from "axios";
 const GuideEtage = () => {
   const { completeStep } = useStepTracking();
   const navigate = useNavigate();
-  const [cost, setCost] = useState(450);
+  const [cost, setCost] = useState(450 + (localStorage.getItem("country") === "france" ? 7 : 15));
   const [immediateLoad, setImmediateLoad] = useState(false);
   const [secondSwitch, setSecondSwitch] = useState(false);
   const [thirdSwitch, setThirdSwitch] = useState(false);

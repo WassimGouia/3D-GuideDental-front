@@ -52,7 +52,8 @@ function Login() {
       // Assuming setToken and setUser are defined somewhere in your context or utilities
       setToken(response.data.jwt);
       setUser(response.data.user);
-      // navigate("/cabinet");
+      const res = await axios.get(`http://localhost:1337/api/users/${response.data.user.id}/country`);
+      localStorage.setItem("country",res.data.country)
       window.location.href="/cabinet"
     } catch (error) {
       console.error("Login failed:", error);

@@ -10,6 +10,7 @@ const PaymentSuccess = () => {
     const sessionId = queryParams.get('session_id');
     const service = queryParams.get('service'); // Extract service from URL
     const patient = queryParams.get('patient'); // Extract service from URL
+    const caseNumber = localStorage.getItem("caseNumber");
 
     if (sessionId && !requestMade) {
       setRequestMade(true); // Prevent further requests
@@ -19,13 +20,16 @@ const PaymentSuccess = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId, service,patient }), // Include service in the body
+        body: JSON.stringify({ sessionId, service,patient, caseNumber}), // Include service in the body
       })
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            // Handle successful payment and commande creation
-            console.log('Payment confirmed and commande created', data.commande);
+            localStorage.removeItem("caseNumber")
+            localStorage.removeItem("fullName")
+            setTimeout(function() {
+              window.location.href = "/sign/Nouvelle-demande"; // Redirect to the login page
+          }, 3000); // 3000 milliseco
           } else {
             // Handle error
             console.error('Payment confirmation failed', data.error);

@@ -125,6 +125,77 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
   );
 
   const handlePayment = async () => {
+
+    const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
+      data: {
+        service: 1,
+        comment,
+        patient: patientData.fullname,
+        numero_cas: patientData.caseNumber,
+        marque_implant_pour_la_dent: { " index": implantBrandValue },
+        Marque_de_la_clavette: [
+          {
+            title: "Marque de la clavette",
+            description: lateralPinBrandd,
+          },
+        ],
+        Marque_de_la_trousse: [
+          {
+            title: "Marque de la trousse",
+            description: selectSurgicalKitBrandd,
+          },
+        ],
+        Full_guidee: [
+          {
+            title: "full guidée",
+            active: fullGuide,
+          },
+        ],
+        Forage_pilote: [
+          {
+            title: "forage pilote",
+            active: foragePilote,
+          },
+        ],
+        Options_supplementaires: [
+          {
+            title: "Mise en charge immédiate",
+            active: immediateLoad,
+          },
+          {
+            title: "Impression des 2 étages en résine",
+            active: secondSwitch,
+          },
+          {
+            title:
+              "Impression du premier étage en métal + deuxième étage en résine",
+            active: thirdSwitch,
+          },
+          {
+            title: "Impression des 2 étages en métal",
+            active: fourthSwitch,
+          },
+          {
+            title: "Ajout d'aimants pour solidariser les étages",
+            active: fifthSwitch,
+          },
+        ],
+        cout: [
+          {
+            cout: costt,
+          },
+        ],
+        options_generiques: [
+          {
+            title: "Smile Design",
+            active: smileDesign,
+          },
+        ],
+        submit: false,
+        archive: true,
+        En_attente_approbation: false,
+      },
+    });
     const requestData = {
       cost: cost,
       service:1,
@@ -188,8 +259,8 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
       data: {
         service: 1,
         comment,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
+        patient: localStorage.getItem("fullName"),
+        numero_cas: localStorage.getItem("caseNumber"),
         marque_implant_pour_la_dent: { index: implantBrandValue },
 
         Marque_de_la_clavette: [

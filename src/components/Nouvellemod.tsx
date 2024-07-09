@@ -112,14 +112,19 @@ function Nouvellemodd() {
                   }
                   icon={<AppstoreOutlined />}
                 >
-                  <Menu.Item
-                    key="1"
-                    onClick={() => handleItemClick(<Description1 />)}
-                  >
-                    {language === "french"
-                      ? "Guide à étages"
-                      : "Stackable guide"}
-                  </Menu.Item>
+                  {localStorage.getItem("country") === "france" ?
+                                    <Menu.Item
+                                    key="1"
+                                    onClick={() => handleItemClick(<Description1 />)}
+                                  >
+                                    {language === "french"
+                                      ? "Guide à étages"
+                                      : "Stackable guide"}
+                                  </Menu.Item>
+                                  :
+                                  <></>
+                  }
+
                   <Menu.Item
                     key="2"
                     onClick={() => handleItemClick(<Description2 />)}
