@@ -26,8 +26,8 @@ import { getToken } from "@/components/Helpers";
 const GuideEtage = () => {
   const { completeStep } = useStepTracking();
   const navigate = useNavigate();
-  const [originalCost, setOriginalCost] = useState(450);
-  const [cost, setCost] = useState(450 + (localStorage.getItem("country") === "france" ? 7 : 15));
+  const [originalCost, setOriginalCost] = useState(450 );
+  const [cost, setCost] = useState(450);
   const [immediateLoad, setImmediateLoad] = useState(false);
   const [secondSwitch, setSecondSwitch] = useState(false);
   const [thirdSwitch, setThirdSwitch] = useState(false);
@@ -125,9 +125,17 @@ const GuideEtage = () => {
     return discounts[plan] || 0;
   };
 
-  const applyDiscount = (price, discountPercentage) => {
-    return price * (1 - discountPercentage / 100);
-  };
+  // const applyDiscount = (price, discountPercentage) => {
+  //   return price * (1 - discountPercentage / 100);
+  // };
+
+  const deliveryCost = localStorage.getItem("country") === "france" ? 7 : 15;
+
+const applyDiscount = (price, discountPercentage) => {
+  const discountedPrice = price * (1 - discountPercentage / 100);
+  return discountedPrice + deliveryCost;
+};
+
 
   const updateCost = (change) => {
     setOriginalCost((prevCost) => {
@@ -320,18 +328,25 @@ const GuideEtage = () => {
                   </span>
                   {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
                 </p>
-                <p>
+
+                {/* <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "livraison: " : "delivery: "}
+                  </span>
+                  {deliveryCost} €
+                </p> */}
+
+
+
+              </div>
+              <p className="text-center mt-3">
                   <span className="font-semibold">
                     {language === "french" ? "Coût: " : "Cost: "}
                   </span>
-                  <span className="line-through">
-                    {originalCost.toFixed(2)} €
+                  <span className="text-gray-500 font-bold">
+                    ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{cost.toFixed(2)} €</span>
                   </span>{" "}
-                  <span className="font-bold text-green-600">
-                    {cost.toFixed(2)} €
-                  </span>
                 </p>
-              </div>
             </div>
             <br />
             <div className="flex flex-col items-center justify-center ">

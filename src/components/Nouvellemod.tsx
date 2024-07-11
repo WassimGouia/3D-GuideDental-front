@@ -98,7 +98,9 @@ function Nouvellemodd() {
   const handleItemClick = (description: React.ReactNode) => {
     setSelectedDescription(description);
   };
-
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = (localStorage.getItem("country") || "").toLowerCase();
+  
   if (!formData) {
     return null; // or return a loading spinner
   }
@@ -154,19 +156,13 @@ function Nouvellemodd() {
                   }
                   icon={<AppstoreOutlined />}
                 >
-                  {localStorage.getItem("country") === "france" ?
-                                    <Menu.Item
-                                    key="1"
-                                    onClick={() => handleItemClick(<Description1 />)}
-                                  >
-                                    {language === "french"
-                                      ? "Guide à étages"
-                                      : "Stackable guide"}
-                                  </Menu.Item>
-                                  :
-                                  <></>
-                  }
-
+                  {supportedCountries.includes(country) ? (
+                    <Menu.Item key="1" onClick={() => handleItemClick(<Description1 />)}>
+                      {language === "french" ? "Guide à étages" : "Stackable guide"}
+                    </Menu.Item>
+                  ) : (
+                    <></>
+                  )}
                   <Menu.Item
                     key="2"
                     onClick={() => handleItemClick(<Description2 />)}

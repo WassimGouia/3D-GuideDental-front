@@ -8,19 +8,20 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const sessionId = queryParams.get('session_id');
-    const service = queryParams.get('service'); // Extract service from URL
-    const patient = queryParams.get('patient'); // Extract service from URL
+    const service = queryParams.get('service');
+    const patient = queryParams.get('patient');
     const caseNumber = localStorage.getItem("caseNumber");
+    const country = localStorage.getItem("country")?.toLocaleLowerCase();
 
     if (sessionId && !requestMade) {
-      setRequestMade(true); // Prevent further requests
+      setRequestMade(true);
 
       fetch(`http://localhost:1337/api/confirm-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId, service,patient, caseNumber}), // Include service in the body
+        body: JSON.stringify({ sessionId, service,patient, caseNumber,country}),
       })
         .then(response => response.json())
         .then(data => {
@@ -28,10 +29,9 @@ const PaymentSuccess = () => {
             localStorage.removeItem("caseNumber")
             localStorage.removeItem("fullName")
             setTimeout(function() {
-              window.location.href = "/sign/Nouvelle-demande"; // Redirect to the login page
-          }, 3000); // 3000 milliseco
+              window.location.href = "/sign/Nouvelle-demande";
+          }, 3000);
           } else {
-            // Handle error
             console.error('Payment confirmation failed', data.error);
           }
         })

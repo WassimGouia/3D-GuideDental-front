@@ -216,7 +216,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
       },
     });
     const requestData = {
-      cost: discountedPrice || cost, // Use discounted price if available
+      cost: cost, // Use discounted price if available
       service: 1,
       patient: localStorage.getItem("fullName"),
     };
@@ -240,7 +240,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
 
   const handleNextClick = async () => {
     const dataToStore = {
-      cost: discountedPrice || cost,
+      cost: cost,
       immediateLoad,
       secondSwitch,
       thirdSwitch,
@@ -310,7 +310,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
         ],
         cout: [
           {
-            cout: discountedPrice || costt,
+            cout:  costt,
           },
         ],
         options_generiques: [
@@ -495,12 +495,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
                       <span className="font-semibold">
                         {language === "french" ? "Coût: " : "Cost: "}
                       </span>
-                      <span className="line-through">{cost} €</span>{" "}
-                      <span className="font-bold text-green-600">
-                        {discountedPrice
-                          ? `${discountedPrice.toFixed(2)} €`
-                          : "Calculating..."}
-                      </span>
+                      <span className="font-bold text-green-600">{cost} €</span>
                     </p>
                   </div>
                 </div>
