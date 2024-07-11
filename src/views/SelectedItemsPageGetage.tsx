@@ -29,23 +29,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-// import { getToken, setToken } from "@/components/Helpers";
+import { getToken } from "@/components/Helpers";
+import { useAuthContext } from "@/components/AuthContext";
 
 const SelectedItemsPageGETAGE = ({ serviceId }) => {
-  console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-  // const { caseCount, submitCase } = useCaseCounter();
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
+  const { user } = useAuthContext();
   const { selectedItemsData, previousStates } = location.state || {
     selectedItemsData: {},
     previousStates: {},
   };
-  // const [selectedTeeth, setSelectedTeeth] = useState<number[]>(
-  //   previousStates.selectedTeeth || []
-  // );
+
   const lateralPinBrand = location.state?.previousStates?.lateralPinBrand;
-  const selectSurgicalKitBrand = location.state?.previousStates?.selectSurgicalKitBrand;
+  const selectSurgicalKitBrand =
+    location.state?.previousStates?.selectSurgicalKitBrand;
   const implantBrandInputs = previousStates?.implantBrandInputs || [];
   const implantBrandValues = previousStates?.implantBrandValues || {};
   const cost = location.state?.selectedItemsData?.cost;
@@ -60,69 +59,89 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
   const fifthSwitch = location.state?.selectedItemsData?.fifthSwitch;
   const costt = location.state?.selectedItemsData?.cost;
   const lateralPinBrandd = location.state?.selectedItemsData?.lateralPinBrand;
-  const selectSurgicalKitBrandd = location.state?.selectedItemsData?.selectSurgicalKitBrand;
-  const implantBrandValue = location.state?.selectedItemsData?.implantBrandValues;
+  const selectSurgicalKitBrandd =
+    location.state?.selectedItemsData?.selectSurgicalKitBrand;
+  const implantBrandValue =
+    location.state?.selectedItemsData?.implantBrandValues;
 
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
-
-  useEffect(() => {
-    const requiredFields = [
-      lateralPinBrand,
-      selectSurgicalKitBrand,
-      implantBrandInputs,
-      implantBrandValues,
-      cost,
-      immediateLoad,
-      secondSwitch,
-      comment,
-      smileDesign,
-      foragePilote,
-      thirdSwitch,
-      fourthSwitch,
-      fullGuide,
-      fifthSwitch,
-      costt,
-      lateralPinBrandd,
-      selectSurgicalKitBrandd,
-      implantBrandValue
-    ];
-
-    if (requiredFields.some(field => field == null || field === "")) {
-      navigate("/sign/nouveau-demande");
-    }
-  }, [
-    lateralPinBrand,
-    selectSurgicalKitBrand,
-    implantBrandInputs,
-    implantBrandValues,
-    cost,
-    immediateLoad,
-    secondSwitch,
-    comment,
-    smileDesign,
-    foragePilote,
-    thirdSwitch,
-    fourthSwitch,
-    fullGuide,
-    fifthSwitch,
-    costt,
-    lateralPinBrandd,
-    selectSurgicalKitBrandd,
-    implantBrandValue,
-    navigate
-  ]);
-  const [submit, setsubmit] = useState(false);
-
-  // const handleSubmitCase = () => {
-  //    (serviceId);
-  // };
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const [discountedPrice, setDiscountedPrice] = useState(null);
+  const [submit, setSubmit] = useState(false);
 
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
+
+  useEffect(() => {
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      navigate("/sign/nouvelle-demande");
+    } else {
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            console.log("User Response:", userResponse.data);
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Calculate discounted price
+              const discountAmount = (cost * offer.discount) / 100;
+              const newPrice = cost - discountAmount;
+              setDiscountedPrice(newPrice);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error(
+              "Error fetching offer data:",
+              error.response ? error.response.data : error.message
+            );
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
+    }
+  }, [navigate, user, cost]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
 
   const handlePayment = async () => {
 
@@ -197,9 +216,9 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
       },
     });
     const requestData = {
-      cost: cost,
-      service:1,
-      patient: localStorage.getItem("fullName")
+      cost: discountedPrice || cost, // Use discounted price if available
+      service: 1,
+      patient: localStorage.getItem("fullName"),
     };
 
     try {
@@ -208,7 +227,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
         "http://localhost:1337/api/commandes",
         requestData
       );
-      const {error} = await stripe.redirectToCheckout({
+      const { error } = await stripe.redirectToCheckout({
         sessionId: response.data.stripeSession.id,
       });
       if (error) {
@@ -219,29 +238,9 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
     }
   };
 
-  useEffect(() => {
-
-    const storedFullname = localStorage.getItem("fullName");
-    const storedCaseNumber = localStorage.getItem("caseNumber");
-
-    if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
-      navigate("/sign/nouvelle-demande");
-    } else {
-      // If data exists in local storage, set it to patientData
-      setPatientData({
-        fullname: storedFullname,
-        caseNumber: storedCaseNumber,
-      });
-    }
-  }, [navigate]);
-  useEffect(() => {
-    axios.get("http://localhost:1337/api/services").then(() => {});
-  }, []);
-
   const handleNextClick = async () => {
     const dataToStore = {
-      cost,
+      cost: discountedPrice || cost,
       immediateLoad,
       secondSwitch,
       thirdSwitch,
@@ -252,7 +251,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
       fullGuide,
       lateralPinBrandd,
       selectSurgicalKitBrandd,
-      setsubmit,
+      setSubmit,
     };
 
     const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
@@ -262,7 +261,6 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
         patient: localStorage.getItem("fullName"),
         numero_cas: localStorage.getItem("caseNumber"),
         marque_implant_pour_la_dent: { index: implantBrandValue },
-
         Marque_de_la_clavette: [
           {
             title: "Marque de la clavette",
@@ -312,7 +310,7 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
         ],
         cout: [
           {
-            cout: costt,
+            cout: discountedPrice || costt,
           },
         ],
         options_generiques: [
@@ -458,24 +456,53 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
                       : "Stackable Guide"}
                   </h1>
                 </div>
-                <div className="flex-col">
-                  <p className="text-lg font-semibold">
-                    Patient: {patientData.fullname}
-                  </p>
-                  <p>
-                    {language === "french" ? "Numéro du cas:" : "Case number:"}
-                    {patientData.caseNumber}
-                  </p>
-                  <p>
-                    {language === "french"
-                      ? "Offre actuelle:"
-                      : "Current offer: "}
-                    {/* {caseCount} */}
-                  </p>
-                  <p className="flex">
-                    {language === "french" ? "Coût: " : "Cost: "}
-                    <li>{selectedItemsData.cost} €</li>
-                  </p>
+                <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                  <h2 className="text-xl font-bold mb-3">
+                    {language === "french" ? "Détails du cas" : "Case Details"}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french" ? "Patient: " : "Patient: "}
+                      </span>
+                      {patientData.fullname}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Numéro du cas: "
+                          : "Case number: "}
+                      </span>
+                      {patientData.caseNumber}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Offre actuelle: "
+                          : "Current offer: "}
+                      </span>
+                      {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french" ? "Réduction: " : "Discount: "}
+                      </span>
+                      {currentOffer
+                        ? `${currentOffer.discount}%`
+                        : "Loading..."}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french" ? "Coût: " : "Cost: "}
+                      </span>
+                      <span className="line-through">{cost} €</span>{" "}
+                      <span className="font-bold text-green-600">
+                        {discountedPrice
+                          ? `${discountedPrice.toFixed(2)} €`
+                          : "Calculating..."}
+                      </span>
+                    </p>
+                  </div>
                 </div>
                 <br />
                 <div>
@@ -722,3 +749,6 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
 };
 
 export default SelectedItemsPageGETAGE;
+function setCurrentOffer(arg0: { currentPlan: any; discount: any }) {
+  throw new Error("Function not implemented.");
+}

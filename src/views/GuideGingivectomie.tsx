@@ -1,4 +1,4 @@
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Container from "@/components/Container";
 import Dents from "@/components/Dents";
 import { Switch } from "@/components/ui/switch";
@@ -18,10 +18,13 @@ import SideBarContainer from "@/components/SideBarContainer";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/languageContext";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 import axios from "axios";
 
 const GuideGingivectomie = () => {
   const navigate = useNavigate();
+  const [originalCost, setOriginalCost] = useState(100);
   const [cost, setCost] = useState(100);
   const [first, setFirst] = useState(false);
   const [second, setSecond] = useState(false);
@@ -33,67 +36,118 @@ const GuideGingivectomie = () => {
   const [additionalGuides, setAdditionalGuides] = useState(0);
   const [textareaValue, setTextareaValue] = useState("");
   const [selectedTeeth, setSelectedTeeth] = useState([]);
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const { user } = useAuthContext();
+  const { language } = useLanguage();
 
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     if (response.data.data.length > 0) {
-    //       const patient = response.data.data[0].attributes;
-    //       setPatientData({
-    //         fullname: patient.fullname,
-    //         caseNumber: patient.caseNumber
-    //       });
-    //     } else {
-    //       console.error('No patient data found.');
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
-  
-    // fetchPatientData();
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Apply initial discount
+              const discountedCost = applyDiscount(
+                originalCost,
+                offer.discount
+              );
+              setCost(discountedCost);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
     }
-  }, [navigate]);
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
+  const updateCost = (change) => {
+    setOriginalCost((prevOriginalCost) => {
+      const newOriginalCost = prevOriginalCost + change;
+      const newDiscountedCost = currentOffer
+        ? applyDiscount(newOriginalCost, currentOffer.discount)
+        : newOriginalCost;
+      setCost(newDiscountedCost);
+      return newOriginalCost;
+    });
+  };
 
   const handleDicomSwitch = () => {
     setFirst(!first);
-    setCost(!first ? cost + 100 : cost - 100);
+    updateCost(!first ? 100 : -100);
   };
 
   const handleSmileDesignSwitch = () => {
     setSecond(!second);
-    setCost(!second ? cost + 40 : cost - 40);
+    updateCost(!second ? 40 : -40);
   };
 
   const handleSuppressionSwitch = () => {
     setThird(!third);
-    setCost(!third ? cost + 10 : cost - 10);
+    updateCost(!third ? 10 : -10);
     setShowTextarea(!showTextarea);
   };
 
   const handleImpressionSwitch = () => {
     setFourth(!fourth);
     if (fourth) {
-      setCost(cost - impressionCost);
+      updateCost(-impressionCost);
       setImpressionCost(0);
-      setAdditionalGuides(0); // reset additionalGuides back to 0
+      setAdditionalGuides(0);
     } else {
       const newImpressionCost = 40 + additionalGuides * 40;
-      setCost(cost - impressionCost + newImpressionCost);
+      updateCost(newImpressionCost - impressionCost);
       setImpressionCost(newImpressionCost);
     }
   };
@@ -122,8 +176,12 @@ const GuideGingivectomie = () => {
 
   const handleNextClick = () => {
     const yourData = {
-      title: language === "french" ? "Guide pour gingivectomie" : "Gingivectomy guide",
+      title:
+        language === "french"
+          ? "Guide pour gingivectomie"
+          : "Gingivectomy guide",
       cost: cost,
+      originalCost: originalCost,
       first: first,
       second: second,
       third: third,
@@ -131,7 +189,7 @@ const GuideGingivectomie = () => {
       comment: comment,
       additionalGuides: additionalGuides,
       textareaValue: textareaValue,
-      selectedTeeth: selectedTeeth, // only the indexes
+      selectedTeeth: selectedTeeth,
     };
 
     navigate("/selectedItemsPageGging", {
@@ -144,13 +202,11 @@ const GuideGingivectomie = () => {
           fourth: fourth,
           additionalGuides: additionalGuides,
           textareaValue: textareaValue,
-          selectedTeeth: selectedTeeth, // only the indexes
+          selectedTeeth: selectedTeeth,
         },
       },
     });
   };
-
-  const { language } = useLanguage();
 
   return (
     <SideBarContainer>
@@ -161,24 +217,57 @@ const GuideGingivectomie = () => {
           <Card className="p-3">
             <div className="flex items-center justify-center">
               <h1 className="font-lato text-5xl">
-                {language === "french" ? "Guide pour gingivectomie" : "Gingivectomy guide"}
+                {language === "french"
+                  ? "Guide pour gingivectomie"
+                  : "Gingivectomy guide"}
               </h1>
             </div>
             <div>
-              <div className="flex-col">
-                <p className="text-lg  font-semibold">
-                  {language === "french" ? "Patient:" : "Patient:"}{patientData.fullname}
-                </p>
-                <p>
-                  {language === "french" ? "Numéro du cas:" : "Case number:"}{patientData.caseNumber}
-                </p>
-                <p>
-                  {language === "french" ? "Offre actuelle:" : "Current offer:"}
-                </p>
-                <p>
-                  {language === "french" ? "Coût:" : "Cost:"}
-                  {cost} €
-                </p>
+              <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                <h2 className="text-xl font-bold mb-3">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-lg">
+                    <span className="font-semibold">
+                      {language === "french" ? "Patient: " : "Patient: "}
+                    </span>
+                    {patientData.fullname}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Numéro du cas: "
+                        : "Case number: "}
+                    </span>
+                    {patientData.caseNumber}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Offre actuelle: "
+                        : "Current offer: "}
+                    </span>
+                    {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Réduction: " : "Discount: "}
+                    </span>
+                    {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Coût: " : "Cost: "}
+                    </span>
+                    <span className="line-through">
+                      {originalCost.toFixed(2)} €
+                    </span>{" "}
+                    <span className="font-bold text-green-600">
+                      {cost.toFixed(2)} €
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
             <br />
@@ -194,7 +283,7 @@ const GuideGingivectomie = () => {
                   : "Select the tooth (teeth) to treat. If you want to have a guide for both arches, please add a task for each arch.                  "}
               </p>
               <div>
-                <Dents 
+                <Dents
                   selectAll={false}
                   selectedTeethData={selectedTeeth}
                   onToothClick={handleToothClick}
@@ -306,9 +395,11 @@ const GuideGingivectomie = () => {
                           placeholder="0"
                           className="w-auto"
                           onChange={(event) => {
-                            const additionalGuides = parseInt(event.target.value) || 0;
+                            const additionalGuides =
+                              parseInt(event.target.value) || 0;
                             setAdditionalGuides(additionalGuides);
-                            const newImpressionCost = 40 + additionalGuides * 40;
+                            const newImpressionCost =
+                              40 + additionalGuides * 40;
                             setCost(cost - impressionCost + newImpressionCost);
                             setImpressionCost(newImpressionCost);
                           }}

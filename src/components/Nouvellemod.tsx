@@ -26,14 +26,15 @@ const { SubMenu } = Menu;
 function Nouvellemodd() {
   const [selectedDescription, setSelectedDescription] =
     useState<React.ReactNode | null>(null);
-  const [caseDetails, setCaseDetails] = useState(null);
+  const [currentOffer, setCurrentOffer] = useState<any>(null); // Adjust the type based on your offer data structure
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
   const { language } = useLanguage();
-  const { completeStep, isStepCompleted } = useStepTracking();
+  const { isStepCompleted } = useStepTracking();
 
-  const formData = location.state?.formData;
+  const formData: { fullname: string; caseNumber: string } | undefined =
+    location.state?.formData;
 
   useEffect(() => {
     if (
@@ -42,25 +43,40 @@ function Nouvellemodd() {
       !formData.fullname ||
       !formData.caseNumber
     ) {
-      // If the previous step is not completed or formData is missing/incomplete, redirect to Nouvelle-demande
       navigate("/sign/Nouvelle-demande", { replace: true });
     } else {
-      // Fetch case details
       const fetchData = async () => {
         const token = getToken();
         if (token && user && user.id) {
           try {
-            const response = await axios.get(
-              `http://localhost:1337/api/cases/${formData.caseNumber}`,
+            // Fetch user data including the offer
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
                 },
               }
             );
-            setCaseDetails(response.data);
+
+            console.log("User Response:", userResponse.data);
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              setCurrentOffer({
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan), // Assuming getDiscount is a function you have defined
+              });
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
           } catch (error) {
-            console.error("Error fetching case details:", error);
+            console.error(
+              "Error fetching data:",
+              error.response ? error.response.data : error.message
+            );
+            setCurrentOffer(null);
           }
         }
       };
@@ -68,15 +84,20 @@ function Nouvellemodd() {
     }
   }, [user, formData, navigate, isStepCompleted]);
 
+  // Assuming you have a function to get the discount based on the plan
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
   const handleItemClick = (description: React.ReactNode) => {
     setSelectedDescription(description);
   };
-
-  // const handleCompletion = () => {
-  //   completeStep("Nouvelle-modelisation");
-  //   // Navigate to the next step or perform other actions
-  //   // For example: navigate("/sign/next-step");
-  // };
 
   if (!formData) {
     return null; // or return a loading spinner
@@ -88,17 +109,38 @@ function Nouvellemodd() {
         <div className="m-4 ">
           <Nouvelle />
 
-          <div className="flex-col mt-3">
-            <p className="text-lg font-semibold">
-              Patient: {formData.fullname}
-            </p>
-            <p>
-              {language === "french" ? "Numéro du cas: " : "Case number: "}
-              {formData.caseNumber}
-            </p>
-            <p>
-              {language === "french" ? " Offre actuelle:" : "Current offer:"}
-            </p>
+          <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+            <h2 className="text-xl font-bold mb-3">
+              {language === "french" ? "Détails du cas" : "Case Details"}
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <p className="text-lg">
+                <span className="font-semibold">
+                  {language === "french" ? "Patient: " : "Patient: "}
+                </span>
+                {formData.fullname}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {language === "french" ? "Numéro du cas: " : "Case number: "}
+                </span>
+                {formData.caseNumber}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {language === "french"
+                    ? "Offre actuelle: "
+                    : "Current offer: "}
+                </span>
+                {currentOffer ? currentOffer.currentPlan : "Loading..."}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {language === "french" ? "Réduction: " : "Discount: "}
+                </span>
+                {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+              </p>
+            </div>
           </div>
           <br />
           <div className="flex flex-col md:flex-row">

@@ -21,10 +21,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Dents from "@/components/Dents";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 import { loadStripe } from "@stripe/stripe-js";
 
-
 const SelectedItemsPageGclassique = () => {
+  const { user } = useAuthContext();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,46 +59,69 @@ const SelectedItemsPageGclassique = () => {
   const showAdditionalGuidesInput =
     location.state.selectedItemsData.additionalGuidesClavettes; //to do mta33 clavette a wassimos type of eror [object object]
   const selectedTeeth = location.state.selectedItemsData.selectedTeeth;
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const originalCost = selectedItemsData.originalCost;
+  // const cost = selectedItemsData.cost;
 
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     // Assuming the first patient is the one you want
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber
-    //     });
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
-
-    // fetchPatientData();
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
-    }
-  }, [navigate]);
-// useEffect(() => {
-//   axios.get("http://localhost:1337/api/services",).then(() => {});
-  
 
-// }, []);
-  useEffect(() => {
-    axios.get("http://localhost:1337/api/services").then(() => {});
-  }, []);
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              setCurrentOffer({
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              });
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
+    }
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
 
   const stripePromise = loadStripe(
     "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
@@ -104,33 +129,22 @@ const SelectedItemsPageGclassique = () => {
 
   const handlePayment = async (event) => {
     event.preventDefault();
-
-    // Get Stripe.js instance
     const stripe = await stripePromise;
-
-    // Call your backend to create the Checkout Session
     const response = await axios.post("http://localhost:1337/api/commandes", {
-      // Include any data you want to send to the server
-      paymentId: "testPaymentId", // replace with actual paymentId
-      cost: 100, // replace with actual cost
-      client: { id: "testClientId" }, // replace with actual client data
+      paymentId: "testPaymentId",
+      cost: cost,
+      client: { id: "testClientId" },
     });
 
     const session = response.data.stripeSession;
-
-    // When the customer clicks on the button, redirect them to Checkout.
     const result = await stripe.redirectToCheckout({
       sessionId: session.id,
     });
 
     if (result.error) {
-      // If `redirectToCheckout` fails due to a browser or network
-      // error, display the localized error message to your customer
       console.error(result.error.message);
     }
   };
-
-
   const handleNextClick = async () => {
     const dataToStore = {
       cost,
@@ -146,8 +160,8 @@ const SelectedItemsPageGclassique = () => {
         data: {
           service: 2,
           comment,
-          patient:patientData.fullname,
-          numero_cas:patientData.caseNumber,
+          patient: patientData.fullname,
+          numero_cas: patientData.caseNumber,
           Full_guidee: [
             {
               titlle: "Full guidée",
@@ -209,9 +223,9 @@ const SelectedItemsPageGclassique = () => {
               cout: cost,
             },
           ],
-          marque_implant_pour_la_dent:{" index" : implantBrandValue,},
+          marque_implant_pour_la_dent: { " index": implantBrandValue },
           submit: true,
-          archive:false,
+          archive: false,
         },
       }
       // {
@@ -251,8 +265,8 @@ const SelectedItemsPageGclassique = () => {
         data: {
           service: 2,
           comment,
-          patient:patientData.fullname,
-          numero_cas:patientData.caseNumber,
+          patient: patientData.fullname,
+          numero_cas: patientData.caseNumber,
           Full_guidee: [
             {
               titlle: "Full guidée",
@@ -314,9 +328,9 @@ const SelectedItemsPageGclassique = () => {
               cout: cost,
             },
           ],
-          marque_implant_pour_la_dent:{" index" : implantBrandValue,},
+          marque_implant_pour_la_dent: { " index": implantBrandValue },
           submit: false,
-          archive:true,
+          archive: true,
         },
       }
       // {
@@ -348,20 +362,51 @@ const SelectedItemsPageGclassique = () => {
                   {language === "french" ? "Guide classique" : "Classic Guide"}
                 </h1>
               </div>
-              <div className="flex-col">
-              <p className="text-lg font-semibold">Patient: {patientData.fullname}</p>
-                <p>
-                {language === "french" ? "Numéro du cas:" : "Case number:" }{patientData.caseNumber}
-                </p>
-                <p>
-                  {language === "french"
-                    ? "Offre actuelle:"
-                    : "Current offer: "}
-                </p>
-                <p className="flex">
-                  {language === "french" ? "Coût" : "Cost"} :{" "}
-                  {selectedItemsData.cost} €
-                </p>
+              <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                <h2 className="text-xl font-bold mb-3">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-lg">
+                    <span className="font-semibold">
+                      {language === "french" ? "Patient: " : "Patient: "}
+                    </span>
+                    {patientData.fullname}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Numéro du cas: "
+                        : "Case number: "}
+                    </span>
+                    {patientData.caseNumber}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Offre actuelle: "
+                        : "Current offer: "}
+                    </span>
+                    {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Réduction: " : "Discount: "}
+                    </span>
+                    {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Coût: " : "Cost: "}
+                    </span>
+                    <span className="line-through">
+                      {originalCost.toFixed(2)} €
+                    </span>{" "}
+                    <span className="font-bold text-green-600">
+                      {cost.toFixed(2)} €
+                    </span>
+                  </p>
+                </div>
               </div>
               <p className="text-lg font-bold">
                 {language === "french"
@@ -396,10 +441,10 @@ const SelectedItemsPageGclassique = () => {
                           <FaTooth />
                           <span className=" flex items-center">{index}</span>
                         </div>
-                        <Input 
-                        value={implantBrandValues[index]}
-                        readOnly
-                        className="w-2/5"
+                        <Input
+                          value={implantBrandValues[index]}
+                          readOnly
+                          className="w-2/5"
                         />
                         {/* <Input
                         type="text"
@@ -516,7 +561,9 @@ const SelectedItemsPageGclassique = () => {
                 <Input className="w-2/5" type="file" />
               </div>
               <div className="mt-5 flex justify-between">
-                <Button className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all`}>
+                <Button
+                  className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all`}
+                >
                   {language === "french" ? "Précédent" : "Previous"}
                 </Button>
 
@@ -553,7 +600,9 @@ const SelectedItemsPageGclassique = () => {
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all`}>
+                      <Button
+                        className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all`}
+                      >
                         {language === "french" ? "Soumettre" : "Submit"}
                       </Button>
                     </AlertDialogTrigger>
@@ -582,7 +631,6 @@ const SelectedItemsPageGclassique = () => {
                   </AlertDialog>
                 </div>
                 <Button onClick={handlePayment}>Pay</Button>
-
               </div>
             </div>
           </Card>

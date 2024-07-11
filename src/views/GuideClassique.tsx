@@ -20,7 +20,11 @@ import { useLanguage } from "@/components/languageContext";
 import { useNavigate } from "react-router-dom";
 import { FaTooth } from "react-icons/fa";
 import axios from "axios";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
+
 const GuideClassique = () => {
+  const [originalCost, setOriginalCost] = useState(50);
   const [cost, setCost] = useState(50);
   const [foragePilote, setForagePilote] = useState(false);
   const [fullGuide, setFullGuide] = useState(false);
@@ -34,58 +38,109 @@ const GuideClassique = () => {
   const [comment, setComment] = useState("");
   const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuidesClavettes, setAdditionalGuidesClavettes] = useState(0);
-  const navigate = useNavigate();
   const [additionalGuidesImpression, setAdditionalGuidesImpression] =
     useState(0);
   const [implantBrandInputs, setImplantBrandInputs] = useState<number[]>([]);
   const [brandSurgeonKit, setBrandSurgeonKit] = useState("");
   const [implantBrandValues, setImplantBrandValues] = useState({});
   const [textareaValue, setTextareaValue] = useState("");
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const [currentOffer, setCurrentOffer] = useState(null);
+
+  const navigate = useNavigate();
   const location = useLocation();
-  const formData = location.state
-    ? location.state.formData
-    : { fullname: "", caseNumber: "" }; 
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
+  const { language } = useLanguage();
+  const { user } = useAuthContext();
 
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     // Assuming the first patient is the one you want
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber
-    //     });
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
-
-    // fetchPatientData();
-
-
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Apply initial discount
+              const discountedCost = applyDiscount(
+                originalCost,
+                offer.discount
+              );
+              setCost(discountedCost);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
     }
-  }, [navigate]);
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
+  const updateCost = (change) => {
+    setOriginalCost((prevOriginalCost) => {
+      const newOriginalCost = prevOriginalCost + change;
+      const newDiscountedCost = currentOffer
+        ? applyDiscount(newOriginalCost, currentOffer.discount)
+        : newOriginalCost;
+      setCost(newDiscountedCost);
+      return newOriginalCost;
+    });
+  };
+
   const handleForagePiloteSwitch = () => {
     setForagePilote(!foragePilote);
     if (!foragePilote) {
       setFullGuide(false);
-      setCost(cost + 0);
+      updateCost(0);
     } else {
-      setCost(cost - 0);
+      updateCost(0);
     }
   };
 
@@ -93,9 +148,9 @@ const GuideClassique = () => {
     setFullGuide(!fullGuide);
     if (!fullGuide) {
       setForagePilote(false);
-      setCost(cost + 0);
+      updateCost(0);
     } else {
-      setCost(cost - 0);
+      updateCost(0);
     }
   };
 
@@ -107,12 +162,12 @@ const GuideClassique = () => {
 
   const handleSmileDesignSwitch = () => {
     setFirst(!first);
-    setCost(!first ? cost + 40 : cost - 40);
+    updateCost(!first ? 40 : -40);
   };
 
   const handleSuppressionSwitch = () => {
     setSecond(!second);
-    setCost(!second ? cost + 10 : cost - 10);
+    updateCost(!second ? 10 : -10);
     setShowTextarea(!showTextarea);
   };
 
@@ -122,8 +177,6 @@ const GuideClassique = () => {
     setTextareaValue(event.target.value);
   };
 
-  const isCommentFilled = comment.trim() !== "";
-
   const handleAdditionalGuidesSwitch = () => {
     setShowAdditionalGuidesInput(!showAdditionalGuidesInput);
     if (showAdditionalGuidesInput) {
@@ -132,40 +185,33 @@ const GuideClassique = () => {
       const suppressionCost = second ? 10 : 0;
       const impressionCost = third ? 40 : 0;
       const totalCost = 50 + smileDesignCost + suppressionCost + impressionCost;
-      setCost(totalCost);
+      updateCost(totalCost - originalCost);
     }
   };
 
   const handleImpressionSwitch = () => {
     if (third) {
-      setCost(cost - impressionCost);
+      updateCost(-impressionCost);
       setImpressionCost(0);
-      setAdditionalGuidesImpression(0); // reset additionalGuidesImpression back to 0
+      setAdditionalGuidesImpression(0);
     } else {
       const newImpressionCost = 40 + additionalGuidesImpression * 40;
-      setCost(cost - impressionCost + newImpressionCost);
+      updateCost(newImpressionCost - impressionCost);
       setImpressionCost(newImpressionCost);
     }
     setThird(!third);
   };
 
   const handleToothClick = (index: number) => {
-    console.log("handleToothClick called with index:", index);
-    console.log("Current cost:", cost);
-
     if (selectedTeeth.includes(index)) {
       setSelectedTeeth(selectedTeeth.filter((i) => i !== index));
-      setCost(cost - 30);
-
+      updateCost(-30);
       setImplantBrandInputs(implantBrandInputs.filter((i) => i !== index));
     } else {
       setSelectedTeeth([...selectedTeeth, index]);
-      setCost(cost + 30);
-
+      updateCost(30);
       setImplantBrandInputs([...implantBrandInputs, index]);
     }
-
-    console.log("Updated cost:", cost);
   };
 
   const handleImplantBrandChange = (index: number, value: string) => {
@@ -187,6 +233,7 @@ const GuideClassique = () => {
     const yourData = {
       title: language === "french" ? "Guide classique" : "Classic guide",
       cost: cost,
+      originalCost: originalCost,
       first: first,
       second: second,
       third: third,
@@ -226,39 +273,8 @@ const GuideClassique = () => {
     });
   };
 
-  // const postData = async () => {
-  //   const res = await axios.post(
-  //     "http://localhost:1337/api/requests",
-  //     {
-  //       data: {
-  //         service: 2,
-  //         comment,
-  //         options: [
-  //           {
-  //             title: "handleForage PiloteSwitch",
-  //             active: foragePilote,
-  //           },
-  //           {
-  //             title: "Digital extraction of teeth",
-  //             active: second,
-  //           },
-  //         ],
-  //       },
-  //     }
-  //     // {
-  //     //   headers: {
-  //     //     "Content-Type": "application/json",
-  //     //     Authorization:
-  //     //       "Bearer " +
-  //     //       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzExMzIwNjU0LCJleHAiOjE3MTM5MTI2NTR9.3lmhTvg2sW893Hyz3y3MscmQDCt23a1QqdyHq1jmYto",
-  //     //   },
-  //     // }
-  //   );
-  // };
+  const isCommentFilled = comment.trim() !== "";
 
-  // postData();
-
-  const { language } = useLanguage();
   return (
     <SideBarContainer>
       <div className="m-4">
@@ -272,20 +288,51 @@ const GuideClassique = () => {
               </h1>
             </div>
             <div>
-              <div className="flex-col">
-              <p className="text-lg font-semibold">Patient: {patientData.fullname}</p>
-                <p>
-                  {" "}
-                  {language === "french" ? "Numéro du cas:" : "Case number:" }{patientData.caseNumber}
-                </p>
-                <p>
-                  {" "}
-                  {language === "french" ? "Offre actuelle:" : "Current offer:"}
-                </p>
-                <p>
-                  {" "}
-                  {language === "french" ? "Coût:" : "Cost:"} {cost} €{" "}
-                </p>
+              <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                <h2 className="text-xl font-bold mb-3">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-lg">
+                    <span className="font-semibold">
+                      {language === "french" ? "Patient: " : "Patient: "}
+                    </span>
+                    {patientData.fullname}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Numéro du cas: "
+                        : "Case number: "}
+                    </span>
+                    {patientData.caseNumber}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Offre actuelle: "
+                        : "Current offer: "}
+                    </span>
+                    {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Réduction: " : "Discount: "}
+                    </span>
+                    {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Coût: " : "Cost: "}
+                    </span>
+                    <span className="line-through">
+                      {originalCost.toFixed(2)} €
+                    </span>{" "}
+                    <span className="font-bold text-green-600">
+                      {cost.toFixed(2)} €
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
             <br />

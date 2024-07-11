@@ -18,46 +18,79 @@ import { useLanguage } from "@/components/languageContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 
 const AutreServices = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [comment, setComment] = useState("");
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
-  useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     // Assuming the first patient is the one you want
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber
-    //     });
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
-
-    // fetchPatientData();
-    const storedFullname = localStorage.getItem("fullName");
-    const storedCaseNumber = localStorage.getItem("caseNumber");
-
-    if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
-      navigate("/sign/nouvelle-demande");
-    } else {
-      // If data exists in local storage, set it to patientData
-      setPatientData({
-        fullname: storedFullname,
-        caseNumber: storedCaseNumber,
-      });
-    }
-  }, [navigate]);
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const { user } = useAuthContext();
   const [checkedValues, setCheckedValues] = useState({
     implantationPrevue: false,
     implantationPrevueInverse: false,
   });
+
+  useEffect(() => {
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      navigate("/sign/nouvelle-demande");
+    } else {
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              setCurrentOffer({
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              });
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
+    }
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
 
   const handleNextClick = () => {
     const yourData = {
@@ -77,23 +110,24 @@ const AutreServices = () => {
           implementationYes: checkedValues.implantationPrevue,
           implementationNo: checkedValues.implantationPrevueInverse,
         },
-        isCheckboxChecked: checkedValues.implantationPrevue,   
-         },
+        isCheckboxChecked: checkedValues.implantationPrevue,
+      },
     });
   };
+
   const handleCheck = (name) => {
     setCheckedValues((prevValues) => ({
       ...prevValues,
-      [name]: !prevValues[name], // Toggle the checked state
-      [name + "Inverse"]: false, // Uncheck the inverse checkbox
+      [name]: !prevValues[name],
+      [name + "Inverse"]: false,
     }));
   };
 
   const handleInverseCheck = (name) => {
     setCheckedValues((prevValues) => ({
       ...prevValues,
-      [name]: false, // Uncheck the normal checkbox
-      [name + "Inverse"]: !prevValues[name + "Inverse"], // Toggle the checked state
+      [name]: false,
+      [name + "Inverse"]: !prevValues[name + "Inverse"],
     }));
   };
 
@@ -112,18 +146,38 @@ const AutreServices = () => {
                     : "Other design services"}
                 </h1>
               </div>
-              <div>
-                <div className="flex-col">
-                  <p className="text-lg  font-semibold">
-                    {language === "french" ? "Patient:" : "Patient:"}{patientData.fullname}
+              <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                <h2 className="text-xl font-bold mb-3">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-lg">
+                    <span className="font-semibold">
+                      {language === "french" ? "Patient: " : "Patient: "}
+                    </span>
+                    {patientData.fullname}
                   </p>
                   <p>
-                    {language === "french" ? "Numéro du cas:" : "Case number:"}{patientData.caseNumber}
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Numéro du cas: "
+                        : "Case number: "}
+                    </span>
+                    {patientData.caseNumber}
                   </p>
                   <p>
-                    {language === "french"
-                      ? " Offre actuelle:"
-                      : "Current offer:"}
+                    <span className="font-semibold">
+                      {language === "french"
+                        ? "Offre actuelle: "
+                        : "Current offer: "}
+                    </span>
+                    {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Réduction: " : "Discount: "}
+                    </span>
+                    {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
                   </p>
                 </div>
               </div>

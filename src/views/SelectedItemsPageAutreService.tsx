@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { loadStripe } from "@stripe/stripe-js";
-
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 
 const SelectedItemsPageAutreService = () => {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ const SelectedItemsPageAutreService = () => {
   const selectedItemsData = location.state.selectedItemsData;
   const previousState = location.state.previousState;
   const comment = location.state.selectedItemsData.comment;
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const { user } = useAuthContext();
   const checkedValues = location.state.selectedItemsData.checkedValues; // to do
   // const implantationPrevue = location.state.selectedItemsData.implantationPrevue;
   // const implantationPrevueInverse = location.state.selectedItemsData.implantationPrevueInverse;
@@ -138,8 +141,61 @@ const SelectedItemsPageAutreService = () => {
   };
 
   useEffect(() => {
-    axios.get("http://localhost:1337/api/services").then(() => {});
-  }, []);
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      navigate("/sign/nouvelle-demande");
+    } else {
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              setCurrentOffer({
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              });
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
+    }
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
   const handleNextClickArchive = async () => {
     // Check if the comment field is filled
     const isCommentFilled = comment.trim() !== "";
@@ -197,23 +253,42 @@ const SelectedItemsPageAutreService = () => {
                       : "Other design services"}
                   </h1>
                 </div>
-                <div className="flex-col">
-                  <p className="text-lg font-semibold">
-                    Patient: {patientData.fullname}{" "}
-                  </p>
-                  <p>
-                    {language === "french" ? "Numéro du cas:" : "Case number:"}{" "}
-                    {patientData.caseNumber}
-                  </p>
-                  <p>
-                    {language === "french"
-                      ? "Offre actuelle:"
-                      : "Current offer: "}
-                  </p>
-                  <p className="flex">
-                    {language === "french" ? "Coût" : "Cost"} :{" "}
-                    {selectedItemsData.cost} €
-                  </p>
+                <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                  <h2 className="text-xl font-bold mb-3">
+                    {language === "french" ? "Détails du cas" : "Case Details"}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2">
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french" ? "Patient: " : "Patient: "}
+                      </span>
+                      {patientData.fullname}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Numéro du cas: "
+                          : "Case number: "}
+                      </span>
+                      {patientData.caseNumber}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Offre actuelle: "
+                          : "Current offer: "}
+                      </span>
+                      {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                    </p>
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french" ? "Réduction: " : "Discount: "}
+                      </span>
+                      {currentOffer
+                        ? `${currentOffer.discount}%`
+                        : "Loading..."}
+                    </p>
+                  </div>
                 </div>
                 <p className="font-bold">Options: </p>
                 <div className="flex flex-col">

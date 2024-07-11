@@ -17,10 +17,13 @@ import { Link } from "react-router-dom";
 import SideBarContainer from "@/components/SideBarContainer";
 import { useLanguage } from "@/components/languageContext";
 import { useNavigate } from "react-router-dom";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 import axios from "axios";
 
 const GouttiereBruxismes = () => {
   const navigate = useNavigate();
+  const [originalCost, setOriginalCost] = useState(0);
   const [cost, setCost] = useState(0);
   const [first, setFirst] = useState(false);
   const [second, setSecond] = useState(false);
@@ -30,51 +33,105 @@ const GouttiereBruxismes = () => {
   const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuides, setAdditionalGuides] = useState(0);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
-  const upperTeethIndexes = [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28];
-  const lowerTeethIndexes = [31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48];
+  const upperTeethIndexes = [
+    11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
+  ];
+  const lowerTeethIndexes = [
+    31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
+  ];
   const [textareaValue, setTextareaValue] = useState("");
-
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const { user } = useAuthContext();
+  const { language } = useLanguage();
 
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   // Assuming the API is set up to return patients sorted by creation time descending
-    //   try {
-    //     // Modify the URL to include sorting and potentially filtering by service if required
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     if (response.data.data.length > 0) {
-    //       const patient = response.data.data[0].attributes;
-    //       setPatientData({
-    //         fullname: patient.fullname,
-    //         caseNumber: patient.caseNumber
-    //       });
-    //     } else {
-    //       console.error('No patient data found.');
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
-  
-    // fetchPatientData();
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            console.log("User Response:", userResponse.data);
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Set initial costs
+              setOriginalCost(0);
+              setCost(0);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error(
+              "Error fetching offer data:",
+              error.response ? error.response.data : error.message
+            );
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
     }
-  }, [navigate]);
-  
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
+  const updateCost = (change) => {
+    setOriginalCost((prevOriginalCost) => {
+      const newOriginalCost = prevOriginalCost + change;
+      const newDiscountedCost = currentOffer
+        ? applyDiscount(newOriginalCost, currentOffer.discount)
+        : newOriginalCost;
+      setCost(newDiscountedCost);
+      return newOriginalCost;
+    });
+  };
+
   const handleSuppressionSwitch = () => {
     setFirst(!first);
-    setCost(!first ? cost + 10 : cost - 10);
+    updateCost(!first ? 10 : -10);
     setShowTextarea(!showTextarea);
   };
 
@@ -85,19 +142,17 @@ const GouttiereBruxismes = () => {
   const handleImpressionSwitch = () => {
     setSecond(!second);
     if (second) {
-      setCost(cost - impressionCost);
+      updateCost(-impressionCost);
       setImpressionCost(0);
     } else {
       const newImpressionCost = 40 + additionalGuides * 40;
       setImpressionCost(newImpressionCost);
-      setCost(cost + newImpressionCost);
+      updateCost(newImpressionCost);
     }
     setShowAdditionalGuides(!showAdditionalGuides);
   };
 
-  const handleCommentChange = (event: {
-    target: { value: React.SetStateAction<string> };
-  }) => {
+  const handleCommentChange = (event) => {
     setComment(event.target.value);
   };
 
@@ -106,39 +161,32 @@ const GouttiereBruxismes = () => {
       const isUpper = upperTeethIndexes.includes(toothIndex);
       const affectedIndexes = isUpper ? upperTeethIndexes : lowerTeethIndexes;
 
-      // Check if the entire arch is already selected
       const isEntireArchSelected = affectedIndexes.every((index) =>
         prevSelectedTeeth.includes(index)
       );
 
-      // New set to hold the updated selection
       const newSelectedTeeth = new Set(prevSelectedTeeth);
 
       if (isEntireArchSelected) {
-        // Remove the entire arch
         affectedIndexes.forEach((index) => newSelectedTeeth.delete(index));
-        setCost((prevCost) => prevCost - 100); // Deduct a flat fee for the entire arch
+        updateCost(-100);
       } else {
-        // Add the entire arch
         affectedIndexes.forEach((index) => newSelectedTeeth.add(index));
-        setCost((prevCost) => prevCost + 100); // Add a flat fee for the entire arch
+        updateCost(100);
       }
       return Array.from(newSelectedTeeth);
     });
   };
 
-  const isCommentEmpty = comment.trim() === "";
-
-  const { language } = useLanguage();
-
   const handleNextClick = () => {
     const yourData = {
       title: language === "french" ? "Gouttière de bruxisme" : "Bruxism splint",
       cost: cost,
+      originalCost: originalCost,
       comment: comment,
       additionalGuides: additionalGuides,
       textareaValue: textareaValue,
-      selectedTeeth: selectedTeeth, // only the indexes
+      selectedTeeth: selectedTeeth,
     };
 
     navigate("/SelectedItemsPageGbruxisme", {
@@ -149,11 +197,13 @@ const GouttiereBruxismes = () => {
           second: second,
           additionalGuides: additionalGuides,
           textareaValue: textareaValue,
-          selectedTeeth: selectedTeeth, // only the indexes
+          selectedTeeth: selectedTeeth,
         },
       },
     });
   };
+
+  const isCommentEmpty = comment.trim() === "";
 
   return (
     <SideBarContainer>
@@ -169,20 +219,49 @@ const GouttiereBruxismes = () => {
                   : "Bruxism splint"}
               </h1>
             </div>
-            <div>
-              <div className="flex-col">
-                <p className="text-lg  font-semibold">
-                  {language === "french" ? "Patient:" : "Patient:"}{patientData.fullname}
+            <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold mb-3">
+                {language === "french" ? "Détails du cas" : "Case Details"}
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                <p className="text-lg">
+                  <span className="font-semibold">
+                    {language === "french" ? "Patient: " : "Patient: "}
+                  </span>
+                  {patientData.fullname}
                 </p>
                 <p>
-                  {language === "french" ? "Numéro du cas:" : "Case number:"}{patientData.caseNumber}
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Numéro du cas: "
+                      : "Case number: "}
+                  </span>
+                  {patientData.caseNumber}
                 </p>
                 <p>
-                  {language === "french" ? "Offre actuelle:" : "Current offer:"}
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Offre actuelle: "
+                      : "Current offer: "}
+                  </span>
+                  {currentOffer ? currentOffer.currentPlan : "Loading..."}
                 </p>
                 <p>
-                  {language === "french" ? "Coût:" : "Cost:"}
-                  {cost} €
+                  <span className="font-semibold">
+                    {language === "french" ? "Réduction: " : "Discount: "}
+                  </span>
+                  {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="line-through">
+                    {originalCost.toFixed(2)} €
+                  </span>{" "}
+                  <span className="font-bold text-green-600">
+                    {cost.toFixed(2)} €
+                  </span>
                 </p>
               </div>
             </div>

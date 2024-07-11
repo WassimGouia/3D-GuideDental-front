@@ -21,18 +21,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import Dents from "@/components/Dents";
 import { loadStripe } from "@stripe/stripe-js";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 
 const SelectedItemsPageGging = () => {
+  const { user } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
+
+  const originalCost = location.state?.selectedItemsData.originalCost || 0;
+  const cost = location.state?.selectedItemsData.cost || 0;
   const selectedItemsData = location.state?.selectedItemsData;
   const previousStates = location.state?.previousStates;
   const textareaValue = previousStates?.textareaValue || {}; // for the Digital extraction of teeth
   const additionalGuides = previousStates?.additionalGuides || {};
   const selectedTeethData = previousStates?.selectedTeeth || [];
   const comment = location.state?.selectedItemsData.comment;
-  const cost = location.state?.selectedItemsData.cost;
+  // const cost = location.state?.selectedItemsData.cost;
   const first = location.state?.selectedItemsData.first;
   const supressionumerique = location.state?.selectedItemsData.third;
   const textareaValu = location.state?.selectedItemsData.textareaValue;
@@ -44,99 +50,95 @@ const SelectedItemsPageGging = () => {
     fullname: "",
     caseNumber: "",
   });
-
-  
+  const [currentOffer, setCurrentOffer] = useState(null);
 
   const stripePromise = loadStripe(
     "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
   );
 
+  useEffect(() => {
+    const storedFullname = localStorage.getItem("fullName");
+    const storedCaseNumber = localStorage.getItem("caseNumber");
+
+    if (!storedFullname || !storedCaseNumber) {
+      navigate("/sign/nouvelle-demande");
+    } else {
+      setPatientData({
+        fullname: storedFullname,
+        caseNumber: storedCaseNumber,
+      });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              setCurrentOffer({
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              });
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
+    }
+
+    // Check if any required data is missing and redirect if true
+    if (
+      !selectedItemsData ||
+      !selectedItemsData.comment ||
+      !selectedItemsData.cost
+    ) {
+      navigate("/sign/nouvelle-demande");
+    }
+  }, [navigate, user, selectedItemsData]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
   const handlePayment = async (event) => {
     event.preventDefault();
-
-    // Get Stripe.js instance
     const stripe = await stripePromise;
-
-    // Call your backend to create the Checkout Session
     const response = await axios.post("http://localhost:1337/api/commandes", {
-      // Include any data you want to send to the server
-      paymentId: "testPaymentId", // replace with actual paymentId
-      cost: 100, // replace with actual cost
-      client: { id: "testClientId" }, // replace with actual client data
+      paymentId: "testPaymentId",
+      cost: cost,
+      client: { id: "testClientId" },
     });
 
     const session = response.data.stripeSession;
-
-    // When the customer clicks on the button, redirect them to Checkout.
     const result = await stripe.redirectToCheckout({
       sessionId: session.id,
     });
 
     if (result.error) {
-      // If `redirectToCheckout` fails due to a browser or network
-      // error, display the localized error message to your customer
       console.error(result.error.message);
     }
   };
-
-  useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get(
-    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-    //     );
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber,
-    //     });
-    //   } catch (error) {
-    //     console.error("Error fetching patient data:", error);
-    //   }
-    // };
-
-    // fetchPatientData();
-    const storedFullname = localStorage.getItem("fullName");
-    const storedCaseNumber = localStorage.getItem("caseNumber");
-
-    if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
-      navigate("/sign/nouvelle-demande");
-    } else {
-      // If data exists in local storage, set it to patientData
-      setPatientData({
-        fullname: storedFullname,
-        caseNumber: storedCaseNumber,
-      });
-    }
-    // Check if any location is null and redirect if true
-    if (
-      !selectedItemsData ||
-      !comment ||
-      !cost ||
-      !first ||
-      !supressionumerique ||
-      !textareaValu ||
-      !costt ||
-      !ImpressionFormlabs ||
-      !additionalGuidess ||
-      !smiledesign
-    ) {
-      navigate("/sign/nouvelle-demande");
-    }
-  }, [
-    navigate,
-    selectedItemsData,
-    comment,
-    cost,
-    first,
-    supressionumerique,
-    textareaValu,
-    costt,
-    ImpressionFormlabs,
-    additionalGuidess,
-    smiledesign,
-  ]);
 
   const handleNextClick = async () => {
     const dataToStore = {
@@ -278,25 +280,55 @@ const SelectedItemsPageGging = () => {
                         : "Gingivectomy guide"}
                     </h1>
                   </div>
-                  <div className="flex-col">
-                    <p className="text-lg font-semibold">
-                      Patient: {patientData.fullname}
-                    </p>
-                    <p>
+                  <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                    <h2 className="text-xl font-bold mb-3">
                       {language === "french"
-                        ? "Numéro du cas:"
-                        : "Case number:"}
-                      {patientData.caseNumber}
-                    </p>
-                    <p>
-                      {language === "french"
-                        ? "Offre actuelle:"
-                        : "Current offer: "}
-                    </p>
-                    <p className="flex">
-                      {language === "french" ? "Coût" : "Cost"} :{" "}
-                      {selectedItemsData ? selectedItemsData.cost : 0} €
-                    </p>
+                        ? "Détails du cas"
+                        : "Case Details"}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      <p className="text-lg">
+                        <span className="font-semibold">
+                          {language === "french" ? "Patient: " : "Patient: "}
+                        </span>
+                        {patientData.fullname}
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {language === "french"
+                            ? "Numéro du cas: "
+                            : "Case number: "}
+                        </span>
+                        {patientData.caseNumber}
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {language === "french"
+                            ? "Offre actuelle: "
+                            : "Current offer: "}
+                        </span>
+                        {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {language === "french" ? "Réduction: " : "Discount: "}
+                        </span>
+                        {currentOffer
+                          ? `${currentOffer.discount}%`
+                          : "Loading..."}
+                      </p>
+                      <p>
+                        <span className="font-semibold">
+                          {language === "french" ? "Coût: " : "Cost: "}
+                        </span>
+                        <span className="line-through">
+                          {originalCost.toFixed(2)} €
+                        </span>{" "}
+                        <span className="font-bold text-green-600">
+                          {cost.toFixed(2)} €
+                        </span>
+                      </p>
+                    </div>
                   </div>
                   <p className="text-lg font-semibold">
                     {language === "french"

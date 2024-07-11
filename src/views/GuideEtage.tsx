@@ -19,12 +19,14 @@ import SideBarContainer from "@/components/SideBarContainer";
 import { useLanguage } from "@/components/languageContext";
 import { useStepTracking } from "@/components/StepTrackingContext";
 import { FaTooth } from "react-icons/fa";
-// import  { loadStripe }  from '@stripe/stripe-js';
 import axios from "axios";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 
 const GuideEtage = () => {
   const { completeStep } = useStepTracking();
   const navigate = useNavigate();
+  const [originalCost, setOriginalCost] = useState(450);
   const [cost, setCost] = useState(450 + (localStorage.getItem("country") === "france" ? 7 : 15));
   const [immediateLoad, setImmediateLoad] = useState(false);
   const [secondSwitch, setSecondSwitch] = useState(false);
@@ -37,97 +39,114 @@ const GuideEtage = () => {
   const [fullGuide, setFullGuide] = useState(false);
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [implantBrandInputs, setImplantBrandInputs] = useState<number[]>([]);
-  const [selectSurgicalKitBrand, setSelectSurgicalKitBrand] = useState([]);
-  const [lateralPinBrand, setLateralPinBrand] = useState([]);
+  const [selectSurgicalKitBrand, setSelectSurgicalKitBrand] = useState("");
+  const [lateralPinBrand, setLateralPinBrand] = useState("");
   const [implantBrandValues, setImplantBrandValues] = useState({});
-  const location = useLocation();
-  //condition ken 3andhom nafss case number matit3adech request
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
-  // const stripepromise = loadStripe('pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt');
-  // const handelepayment =async()=>{
-  //   try{
-  // const stripe= await stripepromise ;
-  // const res =  await Request.post('/orders',{
-  //   cart
 
-  // })
-  //   }catch(eror){
+  interface Offer {
+    currentPlan: string;
+    discount: number;
+  }
 
-  //   }
-  // }
-  // useEffect(() => {
-  //   axios.get("http://localhost:1337/api/services").then((res) => {
-  //     setCost(res.data.data[0].attributes.initial_price);
-  //   });
-  // }, []);
-  // const handleForagePiloteSwitch = () => {
-  //   setForagePilote(!foragePilote);
-  //   if (!foragePilote) {
-  //     setFullGuide(false);
-  //     setCost(cost + 0);
-  //   } else {
-  //     setCost(cost - 0);
-  //   }
-  // };
+  const [currentOffer, setCurrentOffer] = useState<Offer | null>(null);
+  const { user } = useAuthContext();
+  const { language } = useLanguage();
 
-  // const handleFullGuideSwitch = () => {
-  //   setFullGuide(!fullGuide);
-  //   if (!fullGuide) {
-  //     setForagePilote(false);
-  //     setCost(cost + 0);
-  //   } else {
-  //     setCost(cost - 0);
-  //   }
-  // };
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   // Assuming the API is set up to return patients sorted by creation time descending
-    //   try {
-    //     // Modify the URL to include sorting and potentially filtering by service if required
-    //     const response = await axios.get(
-    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-    //     );
-    //     if (response.data.data.length > 0) {
-    //       const patient = response.data.data[0].attributes;
-    //       setPatientData({
-    //         fullname: patient.fullname,
-    //         caseNumber: patient.caseNumber,
-    //       });
-    //     } else {
-    //       console.error("No patient data found.");
-    //     }
-    //   } catch (error) {
-    //     console.error("Error fetching patient data:", error);
-    //   }
-    // };
-
-    // fetchPatientData();
-
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            console.log("User Response:", userResponse.data);
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Apply discount to initial cost
+              const discountedCost = applyDiscount(
+                originalCost,
+                offer.discount
+              );
+              setCost(discountedCost);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error(
+              "Error fetching offer data:",
+              error.response ? error.response.data : error.message
+            );
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
     }
-  }, [navigate]);
+  }, [navigate, user, originalCost]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
+  const updateCost = (change) => {
+    setOriginalCost((prevCost) => {
+      const newOriginalCost = prevCost + change;
+      const newDiscountedCost = currentOffer
+        ? applyDiscount(newOriginalCost, currentOffer.discount)
+        : newOriginalCost;
+      setCost(newDiscountedCost);
+      return newOriginalCost;
+    });
+  };
 
   const handleForagePiloteSwitch = () => {
     setForagePilote(!foragePilote);
     if (!foragePilote) {
       setFullGuide(false);
-      setCost(cost + 0);
+      updateCost(0);
     } else {
-      setCost(cost - 0);
+      updateCost(0);
     }
   };
 
@@ -135,39 +154,40 @@ const GuideEtage = () => {
     setFullGuide(!fullGuide);
     if (!fullGuide) {
       setForagePilote(false);
-      setCost(cost + 0);
+      updateCost(0);
     } else {
-      setCost(cost - 0);
+      updateCost(0);
     }
   };
 
   const handleImmediateLoadToggle = () => {
     setImmediateLoad((prev) => !prev);
-    immediateLoad ? setCost(cost - 150) : setCost(cost + 150);
+    immediateLoad ? updateCost(-150) : updateCost(150);
   };
+
   const handleSecondSwitchToggle = () => {
     setSecondSwitch((prev) => !prev);
-    secondSwitch ? setCost(cost - 100) : setCost(cost + 100);
+    secondSwitch ? updateCost(-100) : updateCost(100);
   };
 
   const handleThirdSwitchToggle = () => {
     setThirdSwitch((prev) => !prev);
-    thirdSwitch ? setCost(cost - 300) : setCost(cost + 300);
+    thirdSwitch ? updateCost(-300) : updateCost(300);
   };
 
   const handleFourthSwitchToggle = () => {
     setFourthSwitch((prev) => !prev);
-    fourthSwitch ? setCost(cost - 400) : setCost(cost + 400);
+    fourthSwitch ? updateCost(-400) : updateCost(400);
   };
 
   const handleFifthSwitchToggle = () => {
     setFifthSwitch((prev) => !prev);
-    fifthSwitch ? setCost(cost - 0) : setCost(cost + 0);
+    fifthSwitch ? updateCost(0) : updateCost(0);
   };
 
   const smileDesignToggle = () => {
     setSmileDesign((prev) => !prev);
-    smileDesign ? setCost(cost - 40) : setCost(cost + 40);
+    smileDesign ? updateCost(-40) : updateCost(40);
   };
 
   const handleCommentChange = (e: any) => {
@@ -191,6 +211,7 @@ const GuideEtage = () => {
     const yourData = {
       title: language === "french" ? "Guide à étages" : "Stackable Guide",
       cost: cost,
+      originalCost: originalCost,
       immediateLoad: immediateLoad,
       secondSwitch: secondSwitch,
       thirdSwitch: thirdSwitch,
@@ -204,9 +225,6 @@ const GuideEtage = () => {
       selectSurgicalKitBrand: selectSurgicalKitBrand,
       implantBrandValues: implantBrandValues,
       implantBrandInputs: implantBrandInputs,
-      // selectedSwitch: foragePilote
-      //   ? { checked: foragePilote }
-      //   : { checked: fullGuide },
       foragePilote: foragePilote,
       fullGuide: fullGuide,
     };
@@ -232,25 +250,6 @@ const GuideEtage = () => {
     });
   };
 
-  // const handleForagePiloteSwitch = () => {
-  //   setForagePilote(!foragePilote);
-  //   if (!foragePilote) {
-  //     setFullGuide(false);
-  //     setCost(cost + 0);
-  //   } else {
-  //     setCost(cost - 0);
-  //   }
-  // };
-
-  // const handleFullGuideSwitch = () => {
-  //   setFullGuide(!fullGuide);
-  //   if (!fullGuide) {
-  //     setForagePilote(false);
-  //     setCost(cost + 0);
-  //   } else {
-  //     setCost(cost - 0);
-  //   }
-  // };
   const handleImplantBrandChange = (index: number, value: string) => {
     setImplantBrandValues((prevValues) => ({
       ...prevValues,
@@ -259,30 +258,22 @@ const GuideEtage = () => {
   };
 
   const handleToothClick = (index) => {
-    // Toggle the selected tooth index in the state array using functional update form
     setSelectedTeeth((prevSelectedTeeth) => {
       if (prevSelectedTeeth.includes(index)) {
-        // If the index is already selected, remove it from the array
         return prevSelectedTeeth.filter((i) => i !== index);
       } else {
-        // Otherwise, add the index to the array
         return [...prevSelectedTeeth, index];
       }
     });
 
-    // Also update the implantBrandInputs in a similar way
     setImplantBrandInputs((prevImplantInputs) => {
       if (prevImplantInputs.includes(index)) {
-        // If the index is already in implantBrandInputs, remove it
         return prevImplantInputs.filter((i) => i !== index);
       } else {
-        // Otherwise, add the index to the array
         return [...prevImplantInputs, index];
       }
     });
   };
-
-  const { language } = useLanguage();
 
   return (
     <SideBarContainer>
@@ -296,23 +287,49 @@ const GuideEtage = () => {
                 {language === "french" ? "Guide à étages" : "Stackable Guide"}
               </h1>
             </div>
-            <div>
-              <div className="flex-col">
-                <p className="text-lg font-semibold">
-                  Patient: {patientData.fullname}
+            <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold mb-3">
+                {language === "french" ? "Détails du cas" : "Case Details"}
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                <p className="text-lg">
+                  <span className="font-semibold">
+                    {language === "french" ? "Patient: " : "Patient: "}
+                  </span>
+                  {patientData.fullname}
                 </p>
                 <p>
-                  {language === "french" ? "Numéro du cas:" : "Case number:"}
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Numéro du cas: "
+                      : "Case number: "}
+                  </span>
                   {patientData.caseNumber}
                 </p>
                 <p>
-                  {language === "french"
-                    ? "Offre actuelle:"
-                    : "Current offer: "}
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Offre actuelle: "
+                      : "Current offer: "}
+                  </span>
+                  {currentOffer ? currentOffer.currentPlan : "Loading..."}
                 </p>
                 <p>
-                  {language === "french" ? "Coût:" : "Cost:"}
-                  {cost} €
+                  <span className="font-semibold">
+                    {language === "french" ? "Réduction: " : "Discount: "}
+                  </span>
+                  {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="line-through">
+                    {originalCost.toFixed(2)} €
+                  </span>{" "}
+                  <span className="font-bold text-green-600">
+                    {cost.toFixed(2)} €
+                  </span>
                 </p>
               </div>
             </div>

@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-
 import {
   Popover,
   PopoverContent,
@@ -28,7 +27,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-
 import {
   Form,
   FormControl,
@@ -39,10 +37,11 @@ import {
 } from "@/components/ui/form";
 import { useLanguage } from "@/components/languageContext";
 import axios from "axios";
+import { useAuthContext } from "@/components/AuthContext";
+import { getToken } from "@/components/Helpers";
 
 const RapportRadiologique = () => {
   const navigate = useNavigate();
-
   const [date, setDate] = useState<Date>();
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedValues, setCheckedValues] = useState({
@@ -57,37 +56,84 @@ const RapportRadiologique = () => {
     autre: false,
     autreInverse: false,
   });
-  const [patientData, setPatientData] = useState({ fullname: '', caseNumber: '' });
-  useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get("http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1");
-    //     // Assuming the first patient is the one you want
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber
-    //     });
-    //   } catch (error) {
-    //     console.error('Error fetching patient data:', error);
-    //   }
-    // };
+  const [patientData, setPatientData] = useState({
+    fullname: "",
+    caseNumber: "",
+  });
+  const [originalCost, setOriginalCost] = useState(70);
+  const [cost, setCost] = useState(70);
+  const [currentOffer, setCurrentOffer] = useState(null);
+  const { user } = useAuthContext();
+  const { language } = useLanguage();
 
-    // fetchPatientData();
+  useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      const fetchOfferData = async () => {
+        const token = getToken();
+        if (token && user && user.id) {
+          try {
+            const userResponse = await axios.get(
+              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (userResponse.data && userResponse.data.offre) {
+              const offerData = userResponse.data.offre;
+              const offer = {
+                currentPlan: offerData.CurrentPlan,
+                discount: getDiscount(offerData.CurrentPlan),
+              };
+              setCurrentOffer(offer);
+
+              // Apply initial discount
+              const discountedCost = applyDiscount(
+                originalCost,
+                offer.discount
+              );
+              setCost(discountedCost);
+            } else {
+              console.error("Offer data not found in the user response");
+              setCurrentOffer(null);
+            }
+          } catch (error) {
+            console.error("Error fetching offer data:", error);
+            setCurrentOffer(null);
+          }
+        }
+      };
+
+      fetchOfferData();
     }
-  }, [navigate]);
+  }, [navigate, user]);
+
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
   const FormSchema = z.object({
     dob: z.date(),
   });
@@ -98,9 +144,7 @@ const RapportRadiologique = () => {
 
   const [comment, setComment] = useState("");
   const [secondComment, setSecondComment] = useState("");
-
   const [lastChecked, setLastChecked] = useState("");
-
   const handleCheck = (name: string) => {
     setCheckedValues((prevState) => {
       const newState = { ...prevState };
@@ -151,9 +195,10 @@ const RapportRadiologique = () => {
 
   const handleNextClick = () => {
     const yourData = {
-      title: language === "french" ? "Guide à étages" : "Stackable Guide",
-      cost: "70 €",
-      date: format(selectedDate, "dd/MM/yyyy", { locale: fr }), // pass the selected date
+      title: language === "french" ? "Rapport radiologique" : "Radiological report",
+      cost: cost,
+      originalCost: originalCost,
+      date: format(selectedDate, "dd/MM/yyyy", { locale: fr }),
       comment1: comment,
       comment2: secondComment,
     };
@@ -167,8 +212,7 @@ const RapportRadiologique = () => {
           eliminerPathologie: checkedValues.eliminerPathologie,
           autre: checkedValues.autre,
           implantationPrevueInverse: checkedValues.implantationPrevueInverse,
-          evaluerImplantExistantInverse:
-            checkedValues.evaluerImplantExistantInverse,
+          evaluerImplantExistantInverse: checkedValues.evaluerImplantExistantInverse,
           evaluationATMInverse: checkedValues.evaluationATMInverse,
           eliminerPathologieInverse: checkedValues.eliminerPathologieInverse,
           autreInverse: checkedValues.autreInverse,
@@ -182,7 +226,6 @@ const RapportRadiologique = () => {
     });
   };
 
-  const { language } = useLanguage();
 
   return (
     <SideBarContainer>
@@ -198,18 +241,45 @@ const RapportRadiologique = () => {
                   : "Radiological report"}
               </h1>
             </div>
-            <div>
-              <div className="flex-col">
-                <p className="text-lg  font-semibold">
-                  {language === "french" ? "Patient:" : "Patient:"}{patientData.fullname}
+            <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+              <h2 className="text-xl font-bold mb-3">
+                {language === "french" ? "Détails du cas" : "Case Details"}
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                <p className="text-lg">
+                  <span className="font-semibold">
+                    {language === "french" ? "Patient: " : "Patient: "}
+                  </span>
+                  {patientData.fullname}
                 </p>
                 <p>
-                  {language === "french" ? "Numéro du cas:" : "Case number:"}{patientData.caseNumber}
+                  <span className="font-semibold">
+                    {language === "french" ? "Numéro du cas: " : "Case number: "}
+                  </span>
+                  {patientData.caseNumber}
                 </p>
                 <p>
-                  {language === "french" ? "Offre actuelle:" : "Current offer:"}
+                  <span className="font-semibold">
+                    {language === "french" ? "Offre actuelle: " : "Current offer: "}
+                  </span>
+                  {currentOffer ? currentOffer.currentPlan : "Loading..."}
                 </p>
-                <p>{language === "french" ? "Coût:" : "Cost:"} 70 € </p>
+                <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "Réduction: " : "Discount: "}
+                  </span>
+                  {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                </p>
+                <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="line-through">{originalCost.toFixed(2)} €</span>
+                  {" "}
+                  <span className="font-bold text-green-600">
+                    {cost.toFixed(2)} €
+                  </span>
+                </p>
               </div>
             </div>
             <br />
@@ -492,8 +562,6 @@ const RapportRadiologique = () => {
                   {language === "french" ? "Suivant" : "Next"}
                 </Link>
               </Button>
-
-
             </div>
           </Card>
         </Container>
