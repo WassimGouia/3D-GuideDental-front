@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import Container from "@/components/Container";
 import Dents from "@/components/Dents";
 import { Switch } from "@/components/ui/switch";
@@ -30,7 +30,7 @@ const GouttiereBruxismes = () => {
   const [comment, setComment] = useState("");
   const [showTextarea, setShowTextarea] = useState(false);
   const [showAdditionalGuides, setShowAdditionalGuides] = useState(false);
-  const [impressionCost, setImpressionCost] = useState(0);
+  // const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuides, setAdditionalGuides] = useState(0);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const upperTeethIndexes = [
@@ -140,16 +140,19 @@ const GouttiereBruxismes = () => {
   };
 
   const handleImpressionSwitch = () => {
-    setSecond(!second);
-    if (second) {
-      updateCost(-impressionCost);
-      setImpressionCost(0);
-    } else {
-      const newImpressionCost = 40 + additionalGuides * 40;
-      setImpressionCost(newImpressionCost);
-      updateCost(newImpressionCost);
-    }
-    setShowAdditionalGuides(!showAdditionalGuides);
+    setSecond((prevSecond) => {
+      const newSecond = !prevSecond;
+      if (newSecond) {
+        // Adding Formlabs® impression
+        updateCost(40 + additionalGuides * 40);
+      } else {
+        // Removing Formlabs® impression
+        updateCost(-(40 + additionalGuides * 40));
+        setAdditionalGuides(0);
+      }
+      setShowAdditionalGuides(newSecond);
+      return newSecond;
+    });
   };
 
   const handleCommentChange = (event) => {
@@ -353,16 +356,14 @@ const GouttiereBruxismes = () => {
                             min="0"
                             placeholder="0"
                             className="w-auto"
+                            value={additionalGuides}
                             onChange={(event) => {
-                              const additionalGuides =
+                              const newAdditionalGuides =
                                 parseInt(event.target.value) || 0;
-                              setAdditionalGuides(additionalGuides);
-                              const newImpressionCost =
-                                40 + additionalGuides * 40;
-                              setImpressionCost(newImpressionCost);
-                              setCost(
-                                cost - impressionCost + newImpressionCost
-                              );
+                              const costDifference =
+                                (newAdditionalGuides - additionalGuides) * 40;
+                              updateCost(costDifference);
+                              setAdditionalGuides(newAdditionalGuides);
                             }}
                           />
                         </>

@@ -140,16 +140,18 @@ const GuideGingivectomie = () => {
   };
 
   const handleImpressionSwitch = () => {
-    setFourth(!fourth);
-    if (fourth) {
-      updateCost(-impressionCost);
-      setImpressionCost(0);
-      setAdditionalGuides(0);
-    } else {
-      const newImpressionCost = 40 + additionalGuides * 40;
-      updateCost(newImpressionCost - impressionCost);
-      setImpressionCost(newImpressionCost);
-    }
+    setFourth((prevFourth) => {
+      const newFourth = !prevFourth;
+      if (newFourth) {
+        // Adding Formlabs® impression
+        updateCost(40 + additionalGuides * 40);
+      } else {
+        // Removing Formlabs® impression
+        updateCost(-(40 + additionalGuides * 40));
+        setAdditionalGuides(0);
+      }
+      return newFourth;
+    });
   };
 
   const handleCommentChange = (event) => {
@@ -394,14 +396,14 @@ const GuideGingivectomie = () => {
                           min="0"
                           placeholder="0"
                           className="w-auto"
+                          value={additionalGuides}
                           onChange={(event) => {
-                            const additionalGuides =
+                            const newAdditionalGuides =
                               parseInt(event.target.value) || 0;
-                            setAdditionalGuides(additionalGuides);
-                            const newImpressionCost =
-                              40 + additionalGuides * 40;
-                            setCost(cost - impressionCost + newImpressionCost);
-                            setImpressionCost(newImpressionCost);
+                            const costDifference =
+                              (newAdditionalGuides - additionalGuides) * 40;
+                            updateCost(costDifference);
+                            setAdditionalGuides(newAdditionalGuides);
                           }}
                         />
                       </>

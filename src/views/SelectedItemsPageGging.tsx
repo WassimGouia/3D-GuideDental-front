@@ -187,6 +187,7 @@ const SelectedItemsPageGging = () => {
             },
           ],
           submit: true,
+          selected_teeth: selectedTeethData, // Add this line
           archive: false,
           en__cours_de_modification: false,
         },
@@ -250,6 +251,7 @@ const SelectedItemsPageGging = () => {
           ],
           submit: false,
           archive: true,
+          selected_teeth: selectedTeethData, // Add this line
           en__cours_de_modification: false,
           En_attente_approbation: false,
         },
