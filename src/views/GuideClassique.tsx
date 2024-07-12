@@ -178,28 +178,30 @@ const GuideClassique = () => {
   };
 
   const handleAdditionalGuidesSwitch = () => {
-    setShowAdditionalGuidesInput(!showAdditionalGuidesInput);
-    if (showAdditionalGuidesInput) {
-      setAdditionalGuidesClavettes(0);
-      const smileDesignCost = first ? 40 : 0;
-      const suppressionCost = second ? 10 : 0;
-      const impressionCost = third ? 40 : 0;
-      const totalCost = 50 + smileDesignCost + suppressionCost + impressionCost;
-      updateCost(totalCost - originalCost);
-    }
+    setShowAdditionalGuidesInput((prev) => {
+      const newShowAdditionalGuidesInput = !prev;
+      if (!newShowAdditionalGuidesInput) {
+        // Removing Stabilization pins
+        updateCost(-additionalGuidesClavettes * 30);
+        setAdditionalGuidesClavettes(0);
+      }
+      return newShowAdditionalGuidesInput;
+    });
   };
 
   const handleImpressionSwitch = () => {
-    if (third) {
-      updateCost(-impressionCost);
-      setImpressionCost(0);
-      setAdditionalGuidesImpression(0);
-    } else {
-      const newImpressionCost = 40 + additionalGuidesImpression * 40;
-      updateCost(newImpressionCost - impressionCost);
-      setImpressionCost(newImpressionCost);
-    }
-    setThird(!third);
+    setThird((prevThird) => {
+      const newThird = !prevThird;
+      if (newThird) {
+        // Adding Formlabs® impression
+        updateCost(40 + additionalGuidesImpression * 40);
+      } else {
+        // Removing Formlabs® impression
+        updateCost(-(40 + additionalGuidesImpression * 40));
+        setAdditionalGuidesImpression(0);
+      }
+      return newThird;
+    });
   };
 
   const handleToothClick = (index: number) => {
@@ -473,15 +475,13 @@ const GuideClassique = () => {
                         value={additionalGuidesClavettes}
                         className="w-auto"
                         onChange={(event) => {
-                          const additionalGuidesValue =
+                          const newAdditionalGuides =
                             parseInt(event.target.value) || 0;
-                          setAdditionalGuidesClavettes(additionalGuidesValue);
-                          const additionalCost = additionalGuidesValue * 30;
-                          setCost(
-                            cost -
-                              additionalGuidesClavettes * 30 +
-                              additionalCost
-                          );
+                          const costDifference =
+                            (newAdditionalGuides - additionalGuidesClavettes) *
+                            30;
+                          updateCost(costDifference);
+                          setAdditionalGuidesClavettes(newAdditionalGuides);
                         }}
                       />
                     </div>
@@ -569,13 +569,15 @@ const GuideClassique = () => {
                         min="0"
                         placeholder="0"
                         className="w-auto"
+                        value={additionalGuidesImpression}
                         onChange={(event) => {
-                          const additionalGuides =
+                          const newAdditionalGuides =
                             parseInt(event.target.value) || 0;
-                          setAdditionalGuidesImpression(additionalGuides);
-                          const newImpressionCost = 40 + additionalGuides * 40;
-                          setCost(cost - impressionCost + newImpressionCost);
-                          setImpressionCost(newImpressionCost);
+                          const costDifference =
+                            (newAdditionalGuides - additionalGuidesImpression) *
+                            40;
+                          updateCost(costDifference);
+                          setAdditionalGuidesImpression(newAdditionalGuides);
                         }}
                       />
                     </>

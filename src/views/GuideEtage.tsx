@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SideBarContainer from "@/components/SideBarContainer";
 import { useLanguage } from "@/components/languageContext";
 import { useStepTracking } from "@/components/StepTrackingContext";
