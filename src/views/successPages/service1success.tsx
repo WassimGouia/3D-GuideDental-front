@@ -1,17 +1,19 @@
+import { useAuthContext } from '@/components/AuthContext';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const PaymentSuccess = () => {
+const Service1Success = () => {
   const location = useLocation();
   const [requestMade, setRequestMade] = useState(false);
+  const { user } = useAuthContext();
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const sessionId = queryParams.get('session_id');
     const service = queryParams.get('service');
-    const patient = queryParams.get('patient');
+    const guideId = queryParams.get('guideId');
     const caseNumber = localStorage.getItem("caseNumber");
-    const country = localStorage.getItem("country")?.toLocaleLowerCase();
+    // const country = user && user.location[0].country?.toLocaleLowerCase();
 
     if (sessionId && !requestMade) {
       setRequestMade(true);
@@ -21,7 +23,7 @@ const PaymentSuccess = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId, service,patient, caseNumber,country}),
+        body: JSON.stringify({ sessionId, service, caseNumber,guideId}),
       })
         .then(response => response.json())
         .then(data => {
@@ -56,4 +58,4 @@ const PaymentSuccess = () => {
   );
 };
 
-export default PaymentSuccess;
+export default Service1Success;

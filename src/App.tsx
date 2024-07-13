@@ -34,8 +34,9 @@ import ResetPassword from "@/views/ResetPassword";
 import ResetPasswordSendMail from "@/views/ResetPasswordSendMail";
 import EmailConfirmation from "./components/emailConfirmation";
 import EmailConfirmationMessage from "./components/EmailConfirmationMessage";
-import PaymentSuccess from "./views/paymentsuccess";
 import PaymentCancel from "./views/paymentCancel";
+import Service1Success from "./views/successPages/service1success";
+import Service6Success from "./views/successPages/service6success";
 
 const App: React.FC = () => {
   return (
@@ -48,7 +49,8 @@ const App: React.FC = () => {
               <Route path="/" element={<Navigate to="/offre" />} />
               
               <Route path="/offre" element={<Offre />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/service1-success" element={<Service1Success />} />
+              <Route path="/service6-success" element={<Service6Success />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
 
               <Route path="/login" element={<Login />} />

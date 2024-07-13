@@ -149,15 +149,22 @@ const InformationForm = () => {
     setCountries(filteredCountries);
   }, []);
 
+  const [statesAvailable, setStatesAvailable] = useState(true);
+
   useEffect(() => {
     if (selectedCountryIsoCode) {
       const states = State.getStatesOfCountry(selectedCountryIsoCode);
-
-      if (states) {
+      if (states && states.length > 0) {
         setSelectedStates(states);
+        setStatesAvailable(true);
+      } else {
+        setSelectedStates([]);
+        setStatesAvailable(false);
       }
     }
   }, [selectedCountryIsoCode]);
+  
+  const [citiesAvailable, setCitiesAvailable] = useState(true);
 
   useEffect(() => {
     if (selectedCountryIsoCode && selectedStateCode) {
@@ -165,22 +172,18 @@ const InformationForm = () => {
         selectedCountryIsoCode,
         selectedStateCode
       );
-      console.log(
-        "cities",
-        City.getCitiesOfState(selectedCountryIsoCode, selectedStateCode)
-      );
-
-      if (cities) {
+      if (stateCities && stateCities.length > 0) {
         setCities(stateCities);
+        setCitiesAvailable(true);
+      } else {
+        setCities([]);
+        setCitiesAvailable(false);
       }
     }
   }, [selectedCountryIsoCode, selectedStateCode]);
-
   const validateAddress = async (
-    address: string,
-    cities: ICity[],
-    cityName?: string,
-    stateCode?: string
+    address: string
+
   ): Promise<boolean> => {
     try {
       const apiKey = "4162a7aed427453e92950ab11b7c318d"; // process.env.GEOAPIFY_API;
@@ -190,11 +193,11 @@ const InformationForm = () => {
       const addressResponse = await axios.get(addressUrl);
       const isValidAddress = addressResponse.data.features.length > 0;
 
-      const selectedCity = cities.find((city) => city.name === cityName);
+      // const selectedCity = cities.find((city) => city.name === cityName);
 
-      console.log(isValidAddress && selectedCity?.stateCode === stateCode);
+      // console.log(isValidAddress && selectedCity?.stateCode === stateCode);
 
-      return isValidAddress && selectedCity?.stateCode === stateCode;
+      return isValidAddress;
     } catch (error) {
       console.error("Error validating address:", error);
       return false;
@@ -206,10 +209,7 @@ const InformationForm = () => {
     setIsLoading(true);
     setError("");
     const isAddressValid = await validateAddress(
-      data.Adresse,
-      cities,
-      selectedCityName,
-      selectedStateCode
+      data.Adresse
     );
 
     if (!isAddressValid) {
@@ -237,11 +237,11 @@ const InformationForm = () => {
           Address: data.Adresse,
           Office: data.bureau,
           zipCode: data.Code_postal,
-          city: selectedCityName,
+          city: data.Ville,
           department: data.departement,
           country: Country.getCountryByCode(selectedCountryIsoCode as string)
             ?.name,
-          State: selectedState?.name, // Use state name here
+          State: selectedState?.name,
         },
       ],
     };
@@ -252,34 +252,14 @@ const InformationForm = () => {
       return;
     }
 
-    setTimeout(async () => {
-      try {
-        const strapiResponse = await axios.post(
-          "http://localhost:1337/api/auth/send-email-confirmation",
-          {
-            email,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        console.log("Strapi response:", strapiResponse);
-      } catch (error) {
-        console.error("Error sending email confirmation:", error);
-      }
-    }, 2000);
-
     try {
       const response = await axios.post(
         "http://localhost:1337/api/auth/local/register",
         fullData
       );
 
-      setToken(response.data.jwt);
-      setUser(response.data.user);
+      // setToken(response.data.jwt);
+      // setUser(response.data.user);
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
         setError(err.response.data.error.message);
@@ -290,7 +270,7 @@ const InformationForm = () => {
       return;
     }
 
-    navigate("/cabinet"); // Navigate to the dashboard or another route
+    navigate("/confirmation");
     setIsLoading(false);
   };
 
@@ -511,86 +491,109 @@ const InformationForm = () => {
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="State"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {language === "french" ? "Etat :" : "State :"}
-                              </FormLabel>
-                              <FormControl>
-                                <Select onValueChange={handleStateChange}>
-                                  <SelectTrigger className="w-3/5">
-                                    <SelectValue
-                                      placeholder={
-                                        language === "french"
-                                          ? "Sélectionnez un état"
-                                          : "Select a state"
-                                      }
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      {selectedStates.map((state) => (
-                                        <SelectItem
-                                          key={state.isoCode}
-                                          value={state.isoCode}
-                                        >
-                                          {state.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="Ville"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {language === "french" ? "Ville :" : "City :"}
-                              </FormLabel>
-                              <FormControl>
-                                <Select onValueChange={handleCityChange}>
-                                  <SelectTrigger className="w-3/5">
-                                    <SelectValue
-                                      placeholder={
-                                        language === "french"
-                                          ? "Sélectionnez une ville"
-                                          : "Select a city"
-                                      }
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectLabel>
-                                        {language === "french"
-                                          ? "Villes"
-                                          : "Cities"}
-                                      </SelectLabel>
-                                      {cities.map((city) => (
-                                        <SelectItem
-                                          key={city.name}
-                                          value={city.name}
-                                        >
-                                          {city.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
+<FormField
+  control={form.control}
+  name="State"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>
+        {language === "french" ? "Etat :" : "State :"}
+      </FormLabel>
+      <FormControl>
+        {statesAvailable ? (
+          <Select onValueChange={handleStateChange}>
+            <SelectTrigger className="w-3/5">
+              <SelectValue
+                placeholder={
+                  language === "french"
+                    ? "Sélectionnez un état"
+                    : "Select a state"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {selectedStates.map((state) => (
+                  <SelectItem
+                    key={state.isoCode}
+                    value={state.isoCode}
+                  >
+                    {state.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            className="w-3/5"
+            placeholder={
+              language === "french"
+                ? "Entrez un état"
+                : "Enter a state"
+            }
+            {...field}
+          />
+        )}
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+<FormField
+  control={form.control}
+  name="Ville"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>
+        {language === "french" ? "Ville :" : "City :"}
+      </FormLabel>
+      <FormControl>
+        {citiesAvailable ? (
+          <Select onValueChange={handleCityChange}>
+            <SelectTrigger className="w-3/5">
+              <SelectValue
+                placeholder={
+                  language === "french"
+                    ? "Sélectionnez une ville"
+                    : "Select a city"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>
+                  {language === "french"
+                    ? "Villes"
+                    : "Cities"}
+                </SelectLabel>
+                {cities.map((city) => (
+                  <SelectItem
+                    key={city.name}
+                    value={city.name}
+                  >
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            className="w-3/5"
+            placeholder={
+              language === "french"
+                ? "Entrez une ville"
+                : "Enter a city"
+            }
+            {...field}
+          />
+        )}
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
                         <FormField
                           control={form.control}
                           name="Code_postal"

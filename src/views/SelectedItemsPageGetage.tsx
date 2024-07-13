@@ -32,7 +32,7 @@ import {
 import { getToken } from "@/components/Helpers";
 import { useAuthContext } from "@/components/AuthContext";
 
-const SelectedItemsPageGETAGE = ({ serviceId }) => {
+const SelectedItemsPageGETAGE = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
@@ -69,8 +69,6 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
     caseNumber: "",
   });
   const [currentOffer, setCurrentOffer] = useState(null);
-  const [discountedPrice, setDiscountedPrice] = useState(null);
-  const [submit, setSubmit] = useState(false);
 
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
@@ -101,8 +99,6 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
               }
             );
 
-            console.log("User Response:", userResponse.data);
-
             if (userResponse.data && userResponse.data.offre) {
               const offerData = userResponse.data.offre;
               const offer = {
@@ -111,10 +107,8 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
               };
               setCurrentOffer(offer);
 
-              // Calculate discounted price
               const discountAmount = (cost * offer.discount) / 100;
               const newPrice = cost - discountAmount;
-              setDiscountedPrice(newPrice);
             } else {
               console.error("Offer data not found in the user response");
               setCurrentOffer(null);
@@ -216,9 +210,11 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
       },
     });
     const requestData = {
-      cost: cost, // Use discounted price if available
+      cost: cost, 
       service: 1,
       patient: localStorage.getItem("fullName"),
+      email: user && user.email,
+      guideId:res.data.data.id
     };
 
     try {
@@ -238,119 +234,8 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
     }
   };
 
-  const handleNextClick = async () => {
-    const dataToStore = {
-      cost: cost,
-      immediateLoad,
-      secondSwitch,
-      thirdSwitch,
-      fourthSwitch,
-      fifthSwitch,
-      smileDesign,
-      foragePilote,
-      fullGuide,
-      lateralPinBrandd,
-      selectSurgicalKitBrandd,
-      setSubmit,
-    };
-
-    const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
-      data: {
-        service: 1,
-        comment,
-        patient: localStorage.getItem("fullName"),
-        numero_cas: localStorage.getItem("caseNumber"),
-        marque_implant_pour_la_dent: { index: implantBrandValue },
-        Marque_de_la_clavette: [
-          {
-            title: "Marque de la clavette",
-            description: lateralPinBrandd,
-          },
-        ],
-        Marque_de_la_trousse: [
-          {
-            title: "Marque de la trousse",
-            description: selectSurgicalKitBrandd,
-          },
-        ],
-        Full_guidee: [
-          {
-            title: "full guidée",
-            active: fullGuide,
-          },
-        ],
-        Forage_pilote: [
-          {
-            title: "forage pilote",
-            active: foragePilote,
-          },
-        ],
-        Options_supplementaires: [
-          {
-            title: "Mise en charge immédiate",
-            active: immediateLoad,
-          },
-          {
-            title: "Impression des 2 étages en résine",
-            active: secondSwitch,
-          },
-          {
-            title:
-              "Impression du premier étage en métal + deuxième étage en résine",
-            active: thirdSwitch,
-          },
-          {
-            title: "Impression des 2 étages en métal",
-            active: fourthSwitch,
-          },
-          {
-            title: "Ajout d'aimants pour solidariser les étages",
-            active: fifthSwitch,
-          },
-        ],
-        cout: [
-          {
-            cout:  costt,
-          },
-        ],
-        options_generiques: [
-          {
-            title: "Smile Design",
-            active: smileDesign,
-          },
-        ],
-        submit: true,
-        archive: false,
-        En_attente_approbation: false,
-      },
-    });
-
-    if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
-    } else {
-      alert(res.status);
-    }
-  };
-
   const handleNextClickArchive = async () => {
-    const dataToStore = {
-      cost,
-      immediateLoad,
-      secondSwitch,
-      thirdSwitch,
-      fourthSwitch,
-      fifthSwitch,
-      smileDesign,
-      foragePilote,
-      fullGuide,
-      lateralPinBrandd,
-      selectSurgicalKitBrandd,
-      setsubmit,
-    };
-
-    const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
+        const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
       data: {
         service: 1,
         comment,
@@ -420,28 +305,8 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
         En_attente_approbation: false,
       },
     });
-
-    if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
-    } else {
-      alert(res.status);
-    }
   };
-  useEffect(() => {
-    if (location.state?.selectedTeeth) {
-      // Do something with the selectedTeeth
-      console.log(location.state.selectedTeeth);
-    }
-  }, [location.state]);
 
-  // useEffect(() => {
-  //   // This effect might not be necessary if you are already setting the state on initialization
-  //   if (previousStates.selectedTeeth) {
-  //     setSelectedTeeth(previousStates.selectedTeeth);
-  //   }
-  // }, [previousStates]);
   return (
     <SideBarContainer>
       <Container>
@@ -726,14 +591,13 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
                         <AlertDialogCancel>
                           {language === "french" ? "Annuler" : "Cancel"}
                         </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleNextClick}>
+                        <AlertDialogAction onClick={handlePayment}>
                           {language === "french" ? "Continuer" : "Continue"}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-                <Button onClick={handlePayment}>Pay</Button>
               </div>
             </div>
           </Card>
@@ -744,6 +608,3 @@ const SelectedItemsPageGETAGE = ({ serviceId }) => {
 };
 
 export default SelectedItemsPageGETAGE;
-function setCurrentOffer(arg0: { currentPlan: any; discount: any }) {
-  throw new Error("Function not implemented.");
-}

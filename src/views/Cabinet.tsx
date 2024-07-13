@@ -502,7 +502,7 @@ const Cabinet = () => {
                           ? "Pour toute modification des informations, contactez le support technique, soit en scannant le code QR, soit en envoyant un e-mail "
                           : "For any changes to the information, contact technical support, either by scanning the QR code or by sending an email "}
                         <a
-                          href="info@3dguidedental.com"
+                          href="mailto:info@3dguidedental.com"
                           className="text-blue-500 underline"
                         >
                           {language === "french" ? "Ici" : "here"}

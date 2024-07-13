@@ -99,7 +99,7 @@ function Nouvellemodd() {
     setSelectedDescription(description);
   };
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
-  const country = (localStorage.getItem("country") || "").toLowerCase();
+  const country = user && user.location[0].country.toLowerCase();
   
   if (!formData) {
     return null; // or return a loading spinner

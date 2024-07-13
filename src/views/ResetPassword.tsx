@@ -14,13 +14,25 @@ const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
 
+  const validatePassword = (password) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    return regex.test(password);
+  };
+
   const handleSubmit = async (event) => {
-    event.preventDefault(); // Prevent default form submission behavior
+    event.preventDefault();
+
     if (password !== confirmPassword) {
       setMessage("Passwords do not match.");
       return;
     }
 
+    if (!validatePassword(password)) {
+      setMessage(
+        "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, and one number."
+      );
+      return;
+    }
     try {
       const response = await axios.post(
         "http://localhost:1337/api/auth/reset-password",

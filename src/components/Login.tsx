@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import Container from "@/components/Container";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import SideBarContainer from "@/components/SideBarContainer";
 import { useLanguage } from "@/components/languageContext";
@@ -22,7 +21,6 @@ import { useAuthContext } from "@/components/AuthContext";
 function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { setUser } = useAuthContext();
@@ -48,12 +46,8 @@ function Login() {
         "http://localhost:1337/api/auth/local",
         { identifier, password }
       );
-      console.log("Login successful:", response.data);
-      // Assuming setToken and setUser are defined somewhere in your context or utilities
       setToken(response.data.jwt);
       setUser(response.data.user);
-      const res = await axios.get(`http://localhost:1337/api/users/${response.data.user.id}/country`);
-      localStorage.setItem("country",res.data.country)
       window.location.href="/cabinet"
     } catch (error) {
       console.error("Login failed:", error);

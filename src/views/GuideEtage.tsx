@@ -55,6 +55,7 @@ const GuideEtage = () => {
   const [currentOffer, setCurrentOffer] = useState<Offer | null>(null);
   const { user } = useAuthContext();
   const { language } = useLanguage();
+  console.log("userrrrrrrr: ",user)
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -91,7 +92,6 @@ const GuideEtage = () => {
               };
               setCurrentOffer(offer);
 
-              // Apply discount to initial cost
               const discountedCost = applyDiscount(
                 originalCost,
                 offer.discount
@@ -125,12 +125,8 @@ const GuideEtage = () => {
     return discounts[plan] || 0;
   };
 
-  // const applyDiscount = (price, discountPercentage) => {
-  //   return price * (1 - discountPercentage / 100);
-  // };
-
-  const deliveryCost = localStorage.getItem("country") === "france" ? 7 : 15;
-
+  const deliveryCost = user && user.location[0].country?.toLocaleLowerCase() === "france" ? 7 : 15;
+  console.log(deliveryCost)
 const applyDiscount = (price, discountPercentage) => {
   const discountedPrice = price * (1 - discountPercentage / 100);
   return discountedPrice + deliveryCost;
@@ -329,12 +325,12 @@ const applyDiscount = (price, discountPercentage) => {
                   {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
                 </p>
 
-                {/* <p>
+                <p>
                   <span className="font-semibold">
-                    {language === "french" ? "livraison: " : "delivery: "}
+                    {language === "french" ? "livraison: " : "Delivery: "}
                   </span>
                   {deliveryCost} €
-                </p> */}
+                </p>
 
 
 

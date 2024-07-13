@@ -69,7 +69,7 @@ const ResetPasswordSendMail = () => {
             </p>
           )}
           <div className="text-center text-sm text-muted-foreground">
-            <Link to="/" className="underline underline-offset-4">
+            <Link to="/login" className="underline underline-offset-4">
               Return to login
             </Link>
           </div>
