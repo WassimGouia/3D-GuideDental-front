@@ -55,8 +55,7 @@ const GuideEtage = () => {
   const [currentOffer, setCurrentOffer] = useState<Offer | null>(null);
   const { user } = useAuthContext();
   const { language } = useLanguage();
-  console.log("userrrrrrrr: ",user)
-
+ 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -126,8 +125,8 @@ const GuideEtage = () => {
   };
 
   const deliveryCost = user && user.location[0].country?.toLocaleLowerCase() === "france" ? 7 : 15;
-  console.log(deliveryCost)
-const applyDiscount = (price, discountPercentage) => {
+
+  const applyDiscount = (price, discountPercentage) => {
   const discountedPrice = price * (1 - discountPercentage / 100);
   return discountedPrice + deliveryCost;
 };

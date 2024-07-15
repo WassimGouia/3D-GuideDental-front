@@ -31,18 +31,19 @@ const SelectedItemsPageGbruxisme = () => {
   const { user } = useAuthContext();
 
   const { selectedTeeth } = location.state.previousState;
-  const selectedItemsData = location.state.selectedItemsData;
+  const selectedItemsData = location.state?.selectedItemsData;
   const previousStates = location.state.previousState;
   const additionalGuides = previousStates.additionalGuides || {};
   const textareaValue = previousStates.textareaValue || {};
   const comment = selectedItemsData.comment;
   const originalCost = selectedItemsData.originalCost;
   const cost = selectedItemsData.cost;
-  const first = selectedItemsData.first;
-  const second = selectedItemsData.second;
+  const first = previousStates.first;
+  const second = previousStates.second;
   const additionalGuidess = selectedItemsData.additionalGuides;
   const textareaValu = selectedItemsData.textareaValue;
-
+console.log("first",first)
+console.log("second",second)
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
@@ -50,7 +51,7 @@ const SelectedItemsPageGbruxisme = () => {
   const [currentOffer, setCurrentOffer] = useState(null);
 
   const stripePromise = loadStripe(
-    "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
+    "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
 
   useEffect(() => {
@@ -109,27 +110,7 @@ const SelectedItemsPageGbruxisme = () => {
     return discounts[plan] || 0;
   };
 
-  const handlePayment = async (event) => {
-    event.preventDefault();
-    const stripe = await stripePromise;
-    const response = await axios.post("http://localhost:1337/api/commandes", {
-      paymentId: "testPaymentId",
-      cost: cost,
-      client: { id: "testClientId" },
-    });
-
-    const session = response.data.stripeSession;
-    const result = await stripe.redirectToCheckout({
-      sessionId: session.id,
-    });
-
-    if (result.error) {
-      console.error(result.error.message);
-    }
-  };
-
   const handleNextClick = async () => {
-    const dataToStore = { cost };
     const res = await axios.post(
       "http://localhost:1337/api/gouttiere-de-bruxismes",
       {
@@ -158,19 +139,36 @@ const SelectedItemsPageGbruxisme = () => {
               ],
             },
           ],
-          submit: true,
-          archive: false,
+          submit: false,
+          archive: true,
         },
       }
     );
 
-    if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
+    const requestData = {
+      cost: cost,
+      service: 4,
+      patient: localStorage.getItem("fullName"),
+      email: user && user.email,
+      guideId:res.data.data.id
+    };
+
+    try {
+      const stripe = await stripePromise;
+      const response = await axios.post(
+        "http://localhost:1337/api/commandes",
+        requestData
+      );
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: response.data.stripeSession.id,
       });
-    } else {
-      alert(res.status);
+      if (error) {
+        console.error("Stripe checkout error:", error);
+      }
+    } catch (err) {
+      console.log(err);
     }
+
   };
 
   const handleNextClickArchive = async () => {
@@ -220,7 +218,8 @@ const SelectedItemsPageGbruxisme = () => {
       alert(res.status);
     }
   };
-
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
   return (
     <div>
       <SideBarContainer>
@@ -277,9 +276,7 @@ const SelectedItemsPageGbruxisme = () => {
                         <span className="font-semibold">
                           {language === "french" ? "Coût: " : "Cost: "}
                         </span>
-                        <span className="line-through">
-                          {originalCost.toFixed(2)} €
-                        </span>{" "}
+
                         <span className="font-bold text-green-600">
                           {cost.toFixed(2)} €
                         </span>
@@ -310,29 +307,33 @@ const SelectedItemsPageGbruxisme = () => {
                       </p>
                     </div>
                     {previousStates.first && (
-                      <Input value={textareaValue} readOnly />
+                      <Input value={textareaValu} readOnly />
                     )}
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <div>
-                    <div className="flex space-x-2">
-                      <p>
-                        {language === "french"
-                          ? "Impression Formlabs®"
-                          : "Formlabs® impression"}
-                      </p>
+                {supportedCountries.includes(country) ? (
+                        <div className="flex space-x-2">
+                        <div>
+                          <div className="flex space-x-2">
+                            <p>
+                              {language === "french"
+                                ? "Impression Formlabs®"
+                                : "Formlabs® impression"}
+                            </p>
 
-                      <p>
-                        <Switch checked={previousStates.second} />
-                      </p>
-                    </div>
-                    {previousStates.second && (
-                      <Input value={additionalGuides} readOnly />
-                    )}
-                  </div>
-                </div>
+                            <p>
+                              <Switch checked={previousStates.second} />
+                            </p>
+                          </div>
+                          {previousStates.second && (
+                            <Input value={additionalGuidess} readOnly />
+                          )}
+                        </div>
+                      </div>
+                  ) : (
+                    <></>
+                  )}
 
                 <div className="flex-col">
                   <p className="text-lg font-semibold">
@@ -421,9 +422,7 @@ const SelectedItemsPageGbruxisme = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                  <Button onClick={handlePayment}>
-                    {language === "french" ? "Payer" : "Pay"}
-                  </Button>
+
                 </div>
               </div>
             </Card>

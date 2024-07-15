@@ -46,8 +46,8 @@ const GouttiereBruxismes = () => {
     caseNumber: "",
   });
   const { user } = useAuthContext();
+  const [deliveryCost, setDeliveryCost] = useState(0);
   const { language } = useLanguage();
-
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -114,10 +114,22 @@ const GouttiereBruxismes = () => {
     return discounts[plan] || 0;
   };
 
-  const applyDiscount = (price, discountPercentage) => {
-    return price * (1 - discountPercentage / 100);
-  };
+  useEffect(() => {
+    if (user && user.location && user.location[0] && user.location[0].country) {
+      const country = user.location[0].country.toLocaleLowerCase();
+      const europeanCountries = ["belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
 
+      const cost = country === "france" && second  ? 7 :
+        europeanCountries.includes(country) && second ? 15 : 0;
+      
+      setDeliveryCost(cost);
+    }
+  }, [user,second]);
+
+  const applyDiscount = (price, discountPercentage) => {
+  const discountedPrice = price * (1 - discountPercentage / 100);
+  return discountedPrice;
+};
   const updateCost = (change) => {
     setOriginalCost((prevOriginalCost) => {
       const newOriginalCost = prevOriginalCost + change;
@@ -184,13 +196,15 @@ const GouttiereBruxismes = () => {
   const handleNextClick = () => {
     const yourData = {
       title: language === "french" ? "Gouttière de bruxisme" : "Bruxism splint",
-      cost: cost,
+      cost: second ? cost+ deliveryCost : cost+ 0,
       originalCost: originalCost,
       comment: comment,
       additionalGuides: additionalGuides,
       textareaValue: textareaValue,
       selectedTeeth: selectedTeeth,
     };
+
+    console.log("Switch state (second):", second,cost, second ? cost+ deliveryCost : cost+ 0)
 
     navigate("/SelectedItemsPageGbruxisme", {
       state: {
@@ -207,7 +221,11 @@ const GouttiereBruxismes = () => {
   };
 
   const isCommentEmpty = comment.trim() === "";
-
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
+  if (!user) {
+    return <div>Loading...</div>; // or any other loading indicator
+  }
   return (
     <SideBarContainer>
       <div className="m-4">
@@ -257,6 +275,13 @@ const GouttiereBruxismes = () => {
                 </p>
                 <p>
                   <span className="font-semibold">
+                    {language === "french" ? "livraison: " : "Delivery: "}
+                  </span>
+                  {deliveryCost} €
+                </p>
+
+                <p>
+                  <span className="font-semibold">
                     {language === "french" ? "Coût: " : "Cost: "}
                   </span>
                   <span className="line-through">
@@ -266,7 +291,16 @@ const GouttiereBruxismes = () => {
                     {cost.toFixed(2)} €
                   </span>
                 </p>
+                
               </div>
+              <p className="text-center mt-3">
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="text-gray-500 font-bold">
+                    ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{(second ? cost+ deliveryCost : cost+ 0).toFixed(2)} €</span>
+                  </span>{" "}
+                </p>
             </div>
             <br />
             <div className="flex flex-col items-center justify-center ">
@@ -320,29 +354,34 @@ const GouttiereBruxismes = () => {
                         />
                       )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        onClick={handleImpressionSwitch}
-                        checked={second}
-                      />
-                      <p>
-                        {language === "french"
-                          ? "Impression Formlabs®"
-                          : "Formlabs® impression"}
-                      </p>
-                      <HoverCard>
-                        <HoverCardTrigger asChild>
-                          <Info className="h-4 w-auto" />
-                        </HoverCardTrigger>
-                        <HoverCardContent className="bg-gray-200 bg-opacity-95">
-                          <p>
-                            {language === "french"
-                              ? "Sélectionnez cette option si vous souhaitez que le guide soit produit et expédié par 3D Guide Dental."
-                              : "Select this option if you want the guide to be produced and shipped by 3D Guide Dental."}
-                          </p>
-                        </HoverCardContent>
-                      </HoverCard>
-                    </div>
+                    {supportedCountries.includes(country) ? (
+                        <div className="flex items-center space-x-2">
+                        <Switch
+                          onClick={handleImpressionSwitch}
+                          checked={second}
+                        />
+
+                        <p>
+                          {language === "french"
+                            ? "Impression Formlabs®"
+                            : "Formlabs® impression"}
+                        </p>
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Info className="h-4 w-auto" />
+                          </HoverCardTrigger>
+                          <HoverCardContent className="bg-gray-200 bg-opacity-95">
+                            <p>
+                              {language === "french"
+                                ? "Sélectionnez cette option si vous souhaitez que le guide soit produit et expédié par 3D Guide Dental."
+                                : "Select this option if you want the guide to be produced and shipped by 3D Guide Dental."}
+                            </p>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </div>
+                  ) : (
+                    <></>
+                  )}
                     <div className="flex space-x-2">
                       {second && (
                         <>

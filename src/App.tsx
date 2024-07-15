@@ -37,6 +37,7 @@ import EmailConfirmationMessage from "./components/EmailConfirmationMessage";
 import PaymentCancel from "./views/paymentCancel";
 import Service1Success from "./views/successPages/service1success";
 import Service6Success from "./views/successPages/service6success";
+import Service4Success from "./views/successPages/service4success";
 
 const App: React.FC = () => {
   return (
@@ -51,6 +52,7 @@ const App: React.FC = () => {
               <Route path="/offre" element={<Offre />} />
               <Route path="/service1-success" element={<Service1Success />} />
               <Route path="/service6-success" element={<Service6Success />} />
+              <Route path="/service4-success" element={<Service4Success />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
 
               <Route path="/login" element={<Login />} />
