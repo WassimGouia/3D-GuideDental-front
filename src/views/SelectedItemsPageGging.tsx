@@ -52,10 +52,6 @@ const SelectedItemsPageGging = () => {
   });
   const [currentOffer, setCurrentOffer] = useState(null);
 
-  const stripePromise = loadStripe(
-    "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
-  );
-
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -120,31 +116,10 @@ const SelectedItemsPageGging = () => {
     };
     return discounts[plan] || 0;
   };
-
-  const handlePayment = async (event) => {
-    event.preventDefault();
-    const stripe = await stripePromise;
-    const response = await axios.post("http://localhost:1337/api/commandes", {
-      paymentId: "testPaymentId",
-      cost: cost,
-      client: { id: "testClientId" },
-    });
-
-    const session = response.data.stripeSession;
-    const result = await stripe.redirectToCheckout({
-      sessionId: session.id,
-    });
-
-    if (result.error) {
-      console.error(result.error.message);
-    }
-  };
-
+  const stripePromise = loadStripe(
+    "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
+  );
   const handleNextClick = async () => {
-    const dataToStore = {
-      cost,
-      first,
-    };
 
     const res = await axios.post(
       "http://localhost:1337/api/guide-pour-gingivectomies",
@@ -186,21 +161,38 @@ const SelectedItemsPageGging = () => {
               ],
             },
           ],
-          submit: true,
-          selected_teeth: selectedTeethData, // Add this line
-          archive: false,
+          submit: false,
+          selected_teeth: selectedTeethData,
+          archive: true,
           en__cours_de_modification: false,
         },
       }
     );
 
-    if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
+    const requestData = {
+      cost: cost,
+      service: 3,
+      patient: localStorage.getItem("fullName"),
+      email: user && user.email,
+      guideId:res.data.data.id
+    };
+
+    try {
+      const stripe = await stripePromise;
+      const response = await axios.post(
+        "http://localhost:1337/api/commandes",
+        requestData
+      );
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: response.data.stripeSession.id,
       });
-    } else {
-      alert(res.status);
+      if (error) {
+        console.error("Stripe checkout error:", error);
+      }
+    } catch (err) {
+      console.log(err);
     }
+
   };
 
   const handleNextClickArchive = async () => {
@@ -323,9 +315,7 @@ const SelectedItemsPageGging = () => {
                         <span className="font-semibold">
                           {language === "french" ? "Coût: " : "Cost: "}
                         </span>
-                        <span className="line-through">
-                          {originalCost.toFixed(2)} €
-                        </span>{" "}
+
                         <span className="font-bold text-green-600">
                           {cost.toFixed(2)} €
                         </span>
@@ -395,7 +385,7 @@ const SelectedItemsPageGging = () => {
                     </div>
                     {previousStates?.fourth && (
                       <Input
-                        value={additionalGuides}
+                        value={selectedItemsData.additionalGuides}
                         readOnly
                         className="w-2/5"
                       />
@@ -485,7 +475,6 @@ const SelectedItemsPageGging = () => {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
-                  <Button onClick={handlePayment}>Pay</Button>
                 </div>
               </div>
             </Card>

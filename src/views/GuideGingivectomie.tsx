@@ -32,7 +32,6 @@ const GuideGingivectomie = () => {
   const [fourth, setFourth] = useState(false);
   const [comment, setComment] = useState("");
   const [showTextarea, setShowTextarea] = useState(false);
-  const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuides, setAdditionalGuides] = useState(0);
   const [textareaValue, setTextareaValue] = useState("");
   const [selectedTeeth, setSelectedTeeth] = useState([]);
@@ -43,6 +42,7 @@ const GuideGingivectomie = () => {
   const [currentOffer, setCurrentOffer] = useState(null);
   const { user } = useAuthContext();
   const { language } = useLanguage();
+  const [deliveryCost, setDeliveryCost] = useState(0);
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -108,10 +108,22 @@ const GuideGingivectomie = () => {
     return discounts[plan] || 0;
   };
 
-  const applyDiscount = (price, discountPercentage) => {
-    return price * (1 - discountPercentage / 100);
-  };
+  useEffect(() => {
+    if (user && user.location && user.location[0] && user.location[0].country) {
+      const country = user.location[0].country.toLocaleLowerCase();
+      const europeanCountries = ["belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
 
+      const cost = country === "france" && fourth  ? 7 :
+        europeanCountries.includes(country) && fourth ? 15 : 0;
+      
+      setDeliveryCost(cost);
+    }
+  }, [user,fourth]);
+
+  const applyDiscount = (price, discountPercentage) => {
+  const discountedPrice = price * (1 - discountPercentage / 100);
+  return discountedPrice;
+};
   const updateCost = (change) => {
     setOriginalCost((prevOriginalCost) => {
       const newOriginalCost = prevOriginalCost + change;
@@ -182,7 +194,7 @@ const GuideGingivectomie = () => {
         language === "french"
           ? "Guide pour gingivectomie"
           : "Gingivectomy guide",
-      cost: cost,
+      cost: fourth ? cost+ deliveryCost : cost+ 0,
       originalCost: originalCost,
       first: first,
       second: second,
@@ -209,6 +221,12 @@ const GuideGingivectomie = () => {
       },
     });
   };
+
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
+  if (!user) {
+    return <div>Loading...</div>; // or any other loading indicator
+  }
 
   return (
     <SideBarContainer>
@@ -259,6 +277,12 @@ const GuideGingivectomie = () => {
                     {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
                   </p>
                   <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "livraison: " : "Delivery: "}
+                  </span>
+                  {deliveryCost} €
+                </p>
+                  <p>
                     <span className="font-semibold">
                       {language === "french" ? "Coût: " : "Cost: "}
                     </span>
@@ -270,6 +294,14 @@ const GuideGingivectomie = () => {
                     </span>
                   </p>
                 </div>
+                <p className="text-center mt-3">
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="text-gray-500 font-bold">
+                    ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{(third ? cost+ deliveryCost : cost+ 0).toFixed(2)} €</span>
+                  </span>{" "}
+                </p>
               </div>
             </div>
             <br />
@@ -360,7 +392,7 @@ const GuideGingivectomie = () => {
                         />
                       )}
                     </div>
-
+                    {supportedCountries.includes(country) ? (
                     <div className="flex items-center space-x-2">
                       <Switch
                         onClick={handleImpressionSwitch}
@@ -384,6 +416,9 @@ const GuideGingivectomie = () => {
                         </HoverCardContent>
                       </HoverCard>
                     </div>
+                  ) : (
+                    <></>
+                  )}
                     {fourth && (
                       <>
                         <p>

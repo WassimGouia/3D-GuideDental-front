@@ -70,10 +70,6 @@ const SelectedItemsPageAutreService = () => {
     const isCommentFilled = comment.trim() !== "";
 
     if (isCommentFilled) {
-      // Store the data
-      const dataToStore = {
-        comment,
-      };
 
       const res = await axios.post(
         "http://localhost:1337/api/autres-services-de-conceptions",
@@ -84,59 +80,11 @@ const SelectedItemsPageAutreService = () => {
             patient: patientData.fullname,
             numero_cas: patientData.caseNumber,
             service_impression_et_expedition: isCheckboxChecked,
-            submit: true,
-            archive: false,
+            submit: false,
+            archive: true,
           },
         }
-        // {
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //     Authorization:
-        //       "Bearer " +
-        //       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzExMzIwNjU0LCJleHAiOjE3MTM5MTI2NTR9.3lmhTvg2sW893Hyz3y3MscmQDCt23a1QqdyHq1jmYto",
-        //   },
-        // }
       );
-
-      if (res.status === 200) {
-        navigate("/selectedItemsPage", {
-          state: { selectedItemsData: dataToStore },
-        });
-      } else {
-        alert(res.status);
-      }
-    }
-  };
-
-  const stripePromise = loadStripe(
-    "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
-  );
-
-  const handlePayment = async (event) => {
-    event.preventDefault();
-
-    // Get Stripe.js instance
-    const stripe = await stripePromise;
-
-    // Call your backend to create the Checkout Session
-    const response = await axios.post("http://localhost:1337/api/commandes", {
-      // Include any data you want to send to the server
-      paymentId: "testPaymentId", // replace with actual paymentId
-      cost: 100, // replace with actual cost
-      client: { id: "testClientId" }, // replace with actual client data
-    });
-
-    const session = response.data.stripeSession;
-
-    // When the customer clicks on the button, redirect them to Checkout.
-    const result = await stripe.redirectToCheckout({
-      sessionId: session.id,
-    });
-
-    if (result.error) {
-      // If `redirectToCheckout` fails due to a browser or network
-      // error, display the localized error message to your customer
-      console.error(result.error.message);
     }
   };
 
@@ -337,7 +285,6 @@ const SelectedItemsPageAutreService = () => {
                     </Link>
                   </Button>
                 </div>
-                <Button onClick={handlePayment}>Pay</Button>
               </div>
             </div>
           </Card>
