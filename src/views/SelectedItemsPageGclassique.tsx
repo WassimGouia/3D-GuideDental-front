@@ -67,6 +67,9 @@ const SelectedItemsPageGclassique = () => {
   const originalCost = selectedItemsData.originalCost;
   // const cost = selectedItemsData.cost;
 
+  console.log("additionalGuidesClavettes", additionalGuidesClavettes)
+  console.log("additionalGuidesClavettess", additionalGuidesClavettess)
+
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -124,36 +127,9 @@ const SelectedItemsPageGclassique = () => {
   };
 
   const stripePromise = loadStripe(
-    "pk_live_51P7FeV2LDy5HINSgXOwiSvMNT7A8x0OOUaTFbu07yQlFBd2Ek5oMCj3eo0aSORCDwI4javqv9tIpEsS8dc8FQT2700vuuVUdFS"
+    "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
-
-  const handlePayment = async (event) => {
-    event.preventDefault();
-    const stripe = await stripePromise;
-    const response = await axios.post("http://localhost:1337/api/commandes", {
-      paymentId: "testPaymentId",
-      cost: cost,
-      client: { id: "testClientId" },
-    });
-
-    const session = response.data.stripeSession;
-    const result = await stripe.redirectToCheckout({
-      sessionId: session.id,
-    });
-
-    if (result.error) {
-      console.error(result.error.message);
-    }
-  };
   const handleNextClick = async () => {
-    const dataToStore = {
-      cost,
-      Suppressionnumérique,
-      ImpressionFormlabs,
-      smileDesign,
-      // comment,
-    };
-
     const res = await axios.post(
       "http://localhost:1337/api/guide-classiques",
       {
@@ -204,17 +180,11 @@ const SelectedItemsPageGclassique = () => {
                 },
               ],
             },
-            //     Impression_Formlabs: [
-            //       {
-            //             title: "Impression Formlabs",
-            //             active: ImpressionFormlabs,
-            //             number:additionalGuidesImpressionn,
-            //           }],
           ],
           Clavettes_de_stabilisation: [
             {
               title: "Clavettes de stabilisation",
-              // active:showAdditionalGuidesInput, to doo a wassimos type of eror  = [object] never show the input
+              active:selectedItemsData.selectedSwitch.checked,
               nombre_des_clavettes: additionalGuidesClavettess,
             },
           ],
@@ -224,27 +194,36 @@ const SelectedItemsPageGclassique = () => {
             },
           ],
           marque_implant_pour_la_dent: { " index": implantBrandValue },
-          submit: true,
-          archive: false,
+          submit: false,
+          archive: true,
         },
       }
-      // {
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization:
-      //       "Bearer " +
-      //       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzExMzIwNjU0LCJleHAiOjE3MTM5MTI2NTR9.3lmhTvg2sW893Hyz3y3MscmQDCt23a1QqdyHq1jmYto",
-      //   },
-      // }
     );
 
-    if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
+    const requestData = {
+      cost: cost,
+      service: 2,
+      patient: localStorage.getItem("fullName"),
+      email: user && user.email,
+      guideId:res.data.data.id
+    };
+
+    try {
+      const stripe = await stripePromise;
+      const response = await axios.post(
+        "http://localhost:1337/api/commandes",
+        requestData
+      );
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: response.data.stripeSession.id,
       });
-    } else {
-      alert(res.status);
+      if (error) {
+        console.error("Stripe checkout error:", error);
+      }
+    } catch (err) {
+      console.log(err);
     }
+
   };
   useEffect(() => {
     axios.get("http://localhost:1337/api/services").then(() => {});
@@ -309,17 +288,10 @@ const SelectedItemsPageGclassique = () => {
                 },
               ],
             },
-            //     Impression_Formlabs: [
-            //       {
-            //             title: "Impression Formlabs",
-            //             active: ImpressionFormlabs,
-            //             number:additionalGuidesImpressionn,
-            //           }],
           ],
           Clavettes_de_stabilisation: [
             {
               title: "Clavettes de stabilisation",
-              // active:showAdditionalGuidesInput, to doo a wassimos type of eror  = [object] never show the input
               nombre_des_clavettes: additionalGuidesClavettess,
             },
           ],
@@ -333,14 +305,7 @@ const SelectedItemsPageGclassique = () => {
           archive: true,
         },
       }
-      // {
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //     Authorization:
-      //       "Bearer " +
-      //       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzExMzIwNjU0LCJleHAiOjE3MTM5MTI2NTR9.3lmhTvg2sW893Hyz3y3MscmQDCt23a1QqdyHq1jmYto",
-      //   },
-      // }
+
     );
 
     if (res.status === 200) {
@@ -351,6 +316,8 @@ const SelectedItemsPageGclassique = () => {
       alert(res.status);
     }
   };
+
+
   return (
     <SideBarContainer>
       <Container>
@@ -399,9 +366,7 @@ const SelectedItemsPageGclassique = () => {
                     <span className="font-semibold">
                       {language === "french" ? "Coût: " : "Cost: "}
                     </span>
-                    <span className="line-through">
-                      {originalCost.toFixed(2)} €
-                    </span>{" "}
+
                     <span className="font-bold text-green-600">
                       {cost.toFixed(2)} €
                     </span>
@@ -532,7 +497,7 @@ const SelectedItemsPageGclassique = () => {
                 </div>
                 {previousStates.third && (
                   <Input
-                    value={additionalGuidesImpression}
+                    value={previousStates.additionalGuidesImpression}
                     readOnly
                     className="w-2/5"
                   />
@@ -630,7 +595,6 @@ const SelectedItemsPageGclassique = () => {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-                <Button onClick={handlePayment}>Pay</Button>
               </div>
             </div>
           </Card>

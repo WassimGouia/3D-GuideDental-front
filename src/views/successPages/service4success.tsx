@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Service4Success = () => {
@@ -44,7 +44,7 @@ const Service4Success = () => {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-semibold text-gray-800">Payment Success 6</h1>
+          <h1 className="text-3xl font-semibold text-gray-800">Payment Success</h1>
           <p className="mt-2 text-gray-600">Thank you for your payment. Your order is being processed.</p>
           <div className="mt-6">
             <Link to="/" className="text-blue-500 hover:underline">Go to Home</Link>

@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Nouvelle from "@/components/Nouvelledemande";
 import { SetStateAction, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import SideBarContainer from "@/components/SideBarContainer";
 import { useLanguage } from "@/components/languageContext";
 import { useNavigate } from "react-router-dom";
@@ -36,10 +36,10 @@ const GuideClassique = () => {
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [showTextarea, setShowTextarea] = useState(false);
   const [comment, setComment] = useState("");
-  const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuidesClavettes, setAdditionalGuidesClavettes] = useState(0);
   const [additionalGuidesImpression, setAdditionalGuidesImpression] =
     useState(0);
+    const [deliveryCost, setDeliveryCost] = useState(0);
   const [implantBrandInputs, setImplantBrandInputs] = useState<number[]>([]);
   const [brandSurgeonKit, setBrandSurgeonKit] = useState("");
   const [implantBrandValues, setImplantBrandValues] = useState({});
@@ -51,7 +51,6 @@ const GuideClassique = () => {
   const [currentOffer, setCurrentOffer] = useState(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
@@ -119,9 +118,22 @@ const GuideClassique = () => {
     return discounts[plan] || 0;
   };
 
+  useEffect(() => {
+    if (user && user.location && user.location[0] && user.location[0].country) {
+      const country = user.location[0].country.toLocaleLowerCase();
+      const europeanCountries = ["belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+
+      const cost = country === "france" && third  ? 7 :
+        europeanCountries.includes(country) && third ? 15 : 0;
+      
+      setDeliveryCost(cost);
+    }
+  }, [user,third]);
+
   const applyDiscount = (price, discountPercentage) => {
-    return price * (1 - discountPercentage / 100);
-  };
+  const discountedPrice = price * (1 - discountPercentage / 100);
+  return discountedPrice;
+};
 
   const updateCost = (change) => {
     setOriginalCost((prevOriginalCost) => {
@@ -228,13 +240,13 @@ const GuideClassique = () => {
       ? language === "french"
         ? "Forage pilote"
         : "Pilot drilling"
-      : language === "french"
+      : language === "french" 
       ? "Full guidée"
       : "Fully guided";
 
     const yourData = {
       title: language === "french" ? "Guide classique" : "Classic guide",
-      cost: cost,
+      cost: third ? cost+ deliveryCost : cost+ 0,
       originalCost: originalCost,
       first: first,
       second: second,
@@ -274,9 +286,13 @@ const GuideClassique = () => {
       },
     });
   };
-
+console.log("additionalGuidesImpression",additionalGuidesImpression)
   const isCommentFilled = comment.trim() !== "";
-
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
+  if (!user) {
+    return <div>Loading...</div>; // or any other loading indicator
+  }
   return (
     <SideBarContainer>
       <div className="m-4">
@@ -324,6 +340,12 @@ const GuideClassique = () => {
                     {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
                   </p>
                   <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "livraison: " : "Delivery: "}
+                  </span>
+                  {deliveryCost} €
+                </p>
+                  <p>
                     <span className="font-semibold">
                       {language === "french" ? "Coût: " : "Cost: "}
                     </span>
@@ -335,6 +357,14 @@ const GuideClassique = () => {
                     </span>
                   </p>
                 </div>
+                <p className="text-center mt-3">
+                  <span className="font-semibold">
+                    {language === "french" ? "Coût: " : "Cost: "}
+                  </span>
+                  <span className="text-gray-500 font-bold">
+                    ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{(third ? cost+ deliveryCost : cost+ 0).toFixed(2)} €</span>
+                  </span>{" "}
+                </p>
               </div>
             </div>
             <br />
@@ -464,7 +494,7 @@ const GuideClassique = () => {
                       ? "Clavettes de stabilisation"
                       : "Stabilization pins"}
                   </p>
-                  <Switch onClick={handleAdditionalGuidesSwitch} />
+                  <Switch onClick={handleAdditionalGuidesSwitch}  />
                 </div>
                 <div>
                   {showAdditionalGuidesInput && (
@@ -537,6 +567,7 @@ const GuideClassique = () => {
                       />
                     )}
                   </div>
+                  {supportedCountries.includes(country) ? (
                   <div className="flex items-center space-x-2">
                     <Switch onClick={handleImpressionSwitch} checked={third} />
                     <p>
@@ -557,6 +588,9 @@ const GuideClassique = () => {
                       </HoverCardContent>
                     </HoverCard>
                   </div>
+                ) : (
+                  <></>
+                )}
                   {third && (
                     <>
                       <p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Service6Success = () => {
+const Service2Success = () => {
   const location = useLocation();
   const [requestMade, setRequestMade] = useState(false);
 
@@ -15,7 +15,7 @@ const Service6Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://localhost:1337/api/confirm-payment-rapport-radiologique`, {
+      fetch(`http://localhost:1337/api/confirm-payment-guide-classique`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,4 +55,4 @@ const Service6Success = () => {
   );
 };
 
-export default Service6Success;
+export default Service2Success;
