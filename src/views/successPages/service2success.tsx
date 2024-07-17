@@ -27,6 +27,7 @@ const Service2Success = () => {
           if (data.success) {
             localStorage.removeItem("caseNumber")
             localStorage.removeItem("fullName")
+            localStorage.removeItem("guideClassiqueState")
             setTimeout(function() {
               window.location.href = "/sign/Nouvelle-demande";
           }, 3000);

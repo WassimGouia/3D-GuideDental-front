@@ -130,6 +130,10 @@ const SelectedItemsPageGclassique = () => {
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
   const handleNextClick = async () => {
+    if(previousStates.textareaValue === "" && previousStates.second)
+    {
+      return;
+    }
     const res = await axios.post(
       "http://localhost:1337/api/guide-classiques",
       {
@@ -230,13 +234,7 @@ const SelectedItemsPageGclassique = () => {
   }, []);
 
   const handleNextClickArchive = async () => {
-    const dataToStore = {
-      cost,
-      Suppressionnumérique,
-      ImpressionFormlabs,
-      smileDesign,
-      // comment,
-    };
+    
 
     const res = await axios.post(
       "http://localhost:1337/api/guide-classiques",
@@ -309,14 +307,17 @@ const SelectedItemsPageGclassique = () => {
     );
 
     if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
+      localStorage.removeItem("guideClassiqueState")
+      navigate("/");
     } else {
       alert(res.status);
     }
   };
 
+  const handlePreviousClick = ()=>{
+    // navigate("/guide-classique")
+    window.location.href="/guide-classique"
+  }
 
   return (
     <SideBarContainer>
@@ -411,13 +412,7 @@ const SelectedItemsPageGclassique = () => {
                           readOnly
                           className="w-2/5"
                         />
-                        {/* <Input
-                        type="text"
-                        placeholder="Ex: IDI, Nobel, Straumann ..."
-                        className="w-2/5"
-                        value=
-                        readOnly
-                      /> */}
+
                       </div>
                     </div>
                   ))}
@@ -479,7 +474,9 @@ const SelectedItemsPageGclassique = () => {
                   </p>
                 </div>
                 {previousStates.second && (
-                  <Input value={textareaValue} readOnly className="w-2/5" />
+                  <Input style={{
+                    border: previousStates.textareaValue === "pas de texte" ||previousStates.textareaValue === "" ? "2px solid red" : "none",
+                }} value={previousStates.textareaValue || ""} readOnly className="w-2/5" />
                 )}
               </div>
 
@@ -527,6 +524,7 @@ const SelectedItemsPageGclassique = () => {
               </div>
               <div className="mt-5 flex justify-between">
                 <Button
+                onClick={handlePreviousClick}
                   className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all`}
                 >
                   {language === "french" ? "Précédent" : "Previous"}

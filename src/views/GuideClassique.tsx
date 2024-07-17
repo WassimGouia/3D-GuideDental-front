@@ -54,59 +54,193 @@ const GuideClassique = () => {
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
+  // useEffect(() => {
+  //   const storedFullname = localStorage.getItem("fullName");
+  //   const storedCaseNumber = localStorage.getItem("caseNumber");
+
+  //   if (!storedFullname || !storedCaseNumber) {
+  //     navigate("/sign/nouvelle-demande");
+  //   } else {
+  //     setPatientData({
+  //       fullname: storedFullname,
+  //       caseNumber: storedCaseNumber,
+  //     });
+
+  //     const fetchOfferData = async () => {
+  //       const token = getToken();
+  //       if (token && user && user.id) {
+  //         try {
+  //           const userResponse = await axios.get(
+  //             `http://localhost:1337/api/users/${user.id}?populate=offre`,
+  //             {
+  //               headers: {
+  //                 Authorization: `Bearer ${token}`,
+  //               },
+  //             }
+  //           );
+
+  //           if (userResponse.data && userResponse.data.offre) {
+  //             const offerData = userResponse.data.offre;
+  //             const offer = {
+  //               currentPlan: offerData.CurrentPlan,
+  //               discount: getDiscount(offerData.CurrentPlan),
+  //             };
+  //             setCurrentOffer(offer);
+
+  //             // Apply initial discount
+  //             const discountedCost = applyDiscount(
+  //               originalCost,
+  //               offer.discount
+  //             );
+  //             setCost(discountedCost);
+  //           } else {
+  //             console.error("Offer data not found in the user response");
+  //             setCurrentOffer(null);
+  //           }
+  //         } catch (error) {
+  //           console.error("Error fetching offer data:", error);
+  //           setCurrentOffer(null);
+  //         }
+  //       }
+  //     };
+
+  //     fetchOfferData();
+  //   }
+  // }, [navigate, user]);
+
   useEffect(() => {
-    const storedFullname = localStorage.getItem("fullName");
-    const storedCaseNumber = localStorage.getItem("caseNumber");
+    const storedState = localStorage.getItem("guideClassiqueState");
+    if (storedState) {
+      try {
+        const {
+          originalCost,
+          cost,
+          foragePilote,
+          fullGuide,
+          first,
+          second,
+          third,
+          showAdditionalGuidesInput,
+          selectedTeeth,
+          showTextarea,
+          comment,
+          additionalGuidesClavettes,
+          additionalGuidesImpression,
+          deliveryCost,
+          implantBrandInputs,
+          brandSurgeonKit,
+          implantBrandValues,
+          textareaValue,
+          patientData,
+          currentOffer,
+        } = JSON.parse(storedState);
 
-    if (!storedFullname || !storedCaseNumber) {
-      navigate("/sign/nouvelle-demande");
-    } else {
-      setPatientData({
-        fullname: storedFullname,
-        caseNumber: storedCaseNumber,
-      });
+        setOriginalCost(originalCost);
+        setCost(cost);
+        setForagePilote(foragePilote);
+        setFullGuide(fullGuide);
+        setFirst(first);
+        setSecond(second);
+        setThird(third);
+        setShowAdditionalGuidesInput(showAdditionalGuidesInput);
+        setSelectedTeeth(selectedTeeth);
+        setShowTextarea(showTextarea);
+        setComment(comment);
+        setAdditionalGuidesClavettes(additionalGuidesClavettes);
+        setAdditionalGuidesImpression(additionalGuidesImpression);
+        setDeliveryCost(deliveryCost);
+        setImplantBrandInputs(implantBrandInputs);
+        setBrandSurgeonKit(brandSurgeonKit);
+        setImplantBrandValues(implantBrandValues);
+        setTextareaValue(textareaValue);
+        setPatientData(patientData);
+        setCurrentOffer(currentOffer);
+        console.log("log", implantBrandValues)
 
-      const fetchOfferData = async () => {
-        const token = getToken();
-        if (token && user && user.id) {
-          try {
-            const userResponse = await axios.get(
-              `http://localhost:1337/api/users/${user.id}?populate=offre`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
+        const storedFullname = localStorage.getItem("fullName");
+      const storedCaseNumber = localStorage.getItem("caseNumber");
 
-            if (userResponse.data && userResponse.data.offre) {
-              const offerData = userResponse.data.offre;
-              const offer = {
-                currentPlan: offerData.CurrentPlan,
-                discount: getDiscount(offerData.CurrentPlan),
-              };
-              setCurrentOffer(offer);
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
 
-              // Apply initial discount
-              const discountedCost = applyDiscount(
-                originalCost,
-                offer.discount
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
               );
-              setCost(discountedCost);
-            } else {
-              console.error("Offer data not found in the user response");
+
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
+                setCurrentOffer(offer);
+                const discountedCost = applyDiscount(originalCost, offer.discount);
+                setCost(discountedCost);
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
               setCurrentOffer(null);
             }
-          } catch (error) {
-            console.error("Error fetching offer data:", error);
-            setCurrentOffer(null);
           }
-        }
-      };
+        };
 
-      fetchOfferData();
+        fetchOfferData();
+      }
+      } catch (error) {
+        console.error("Error parsing stored state:", error);
+        localStorage.removeItem("guideClassiqueState");
+      }
+    } else {
+      const storedFullname = localStorage.getItem("fullName");
+      const storedCaseNumber = localStorage.getItem("caseNumber");
+
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
+
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
+                setCurrentOffer(offer);
+                const discountedCost = applyDiscount(originalCost, offer.discount);
+                setCost(discountedCost);
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
+              setCurrentOffer(null);
+            }
+          }
+        };
+
+        fetchOfferData();
+      }
     }
   }, [navigate, user]);
+
 
   const getDiscount = (plan) => {
     const discounts = {
@@ -264,9 +398,13 @@ const GuideClassique = () => {
       fullGuide: fullGuide,
       additionalGuidesClavettes: additionalGuidesClavettes,
       additionalGuidesImpression: additionalGuidesImpression,
-      textareaValue: textareaValue,
+      textareaValue: second ? textareaValue : "",
       selectedTeeth: selectedTeeth,
+      implantBrandInputs: implantBrandInputs,
     };
+
+    localStorage.setItem("guideClassiqueState", JSON.stringify(yourData));
+
     navigate("/SelectedItemsPageGclassique", {
       state: {
         selectedItemsData: yourData,
@@ -280,7 +418,7 @@ const GuideClassique = () => {
           brandSurgeonKit: brandSurgeonKit,
           additionalGuidesClavettes: additionalGuidesClavettes,
           additionalGuidesImpression: additionalGuidesImpression,
-          textareaValue: textareaValue,
+          textareaValue: second ? textareaValue : "",
           selectedTeeth: selectedTeeth,
         },
       },
@@ -472,6 +610,7 @@ console.log("additionalGuidesImpression",additionalGuidesImpression)
                           type="text"
                           placeholder="Ex: IDI, Nobel, Straumann ..."
                           className="w-2/5"
+                          value={implantBrandValues[index] || ""}
                           onChange={(event) =>
                             handleImplantBrandChange(index, event.target.value)
                           }
@@ -494,7 +633,7 @@ console.log("additionalGuidesImpression",additionalGuidesImpression)
                       ? "Clavettes de stabilisation"
                       : "Stabilization pins"}
                   </p>
-                  <Switch onClick={handleAdditionalGuidesSwitch}  />
+                  <Switch onClick={handleAdditionalGuidesSwitch} checked={showAdditionalGuidesInput}  />
                 </div>
                 <div>
                   {showAdditionalGuidesInput && (
@@ -555,7 +694,7 @@ console.log("additionalGuidesImpression",additionalGuidesImpression)
                           : "Digital extraction of teeth"}
                       </p>
                     </div>
-                    {showTextarea && (
+                    {second && (
                       <Textarea
                         placeholder={
                           language === "french"
