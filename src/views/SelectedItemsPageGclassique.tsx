@@ -67,9 +67,6 @@ const SelectedItemsPageGclassique = () => {
   const originalCost = selectedItemsData.originalCost;
   // const cost = selectedItemsData.cost;
 
-  console.log("additionalGuidesClavettes", additionalGuidesClavettes)
-  console.log("additionalGuidesClavettess", additionalGuidesClavettess)
-
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -297,7 +294,7 @@ const SelectedItemsPageGclassique = () => {
             {
               cout: cost,
             },
-          ],
+          ], 
           marque_implant_pour_la_dent: { " index": implantBrandValue },
           submit: false,
           archive: true,

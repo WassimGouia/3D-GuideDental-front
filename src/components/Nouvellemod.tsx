@@ -32,17 +32,12 @@ function Nouvellemodd() {
   const { user } = useAuthContext();
   const { language } = useLanguage();
   const { isStepCompleted } = useStepTracking();
-
-  const formData: { fullname: string; caseNumber: string } | undefined =
-    location.state?.formData;
+  const storedFullname = localStorage.getItem("fullName");
+  const storedCaseNumber = localStorage.getItem("caseNumber");
 
   useEffect(() => {
-    if (
-      !isStepCompleted("Nouvelle-demande") ||
-      !formData ||
-      !formData.fullname ||
-      !formData.caseNumber
-    ) {
+
+    if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/Nouvelle-demande", { replace: true });
     } else {
       const fetchData = async () => {
@@ -82,7 +77,7 @@ function Nouvellemodd() {
       };
       fetchData();
     }
-  }, [user, formData, navigate, isStepCompleted]);
+  }, [user, navigate]);
 
   // Assuming you have a function to get the discount based on the plan
   const getDiscount = (plan) => {
@@ -101,9 +96,9 @@ function Nouvellemodd() {
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
   const country = user && user.location[0].country.toLowerCase();
   
-  if (!formData) {
-    return null; // or return a loading spinner
-  }
+  // if (!formData) {
+  //   return <><div>loading ...</div></>; // or return a loading spinner
+  // }
 
   return (
     <SideBarContainer>
@@ -120,13 +115,13 @@ function Nouvellemodd() {
                 <span className="font-semibold">
                   {language === "french" ? "Patient: " : "Patient: "}
                 </span>
-                {formData.fullname}
+                {storedFullname}
               </p>
               <p>
                 <span className="font-semibold">
                   {language === "french" ? "Numéro du cas: " : "Case number: "}
                 </span>
-                {formData.caseNumber}
+                {storedCaseNumber}
               </p>
               <p>
                 <span className="font-semibold">
