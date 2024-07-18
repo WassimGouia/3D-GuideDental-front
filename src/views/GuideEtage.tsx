@@ -59,7 +59,90 @@ const GuideEtage = () => {
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
+    const storedState = localStorage.getItem("guideEtageState");
+    if (storedState) {
+      try {
+        const {
+          comment,
+          cost,
+          fifthSwitch,
+          foragePilote,
+          fourthSwitch,
+          fullGuide,
+          immediateLoad,
+          implantBrandInputs,
+          implantBrandValues,
+          lateralPinBrand,
+          originalCost,
+          secondSwitch,
+          selectedTeeth,
+          selectSurgicalKitBrand,
+          selectedSwitchLabel,
+          smileDesign,
+          thirdSwitch,
+        } = JSON.parse(storedState);
+        setComment(comment);
+        setCost(cost);
+        setFifthSwitch(fifthSwitch)
+        setForagePilote(foragePilote);
+        setFourthSwitch(fourthSwitch)
+        setFullGuide(fullGuide);
+        setImmediateLoad(immediateLoad);
+        setImplantBrandInputs(implantBrandInputs);
+        setImplantBrandValues(implantBrandValues);
+        setLateralPinBrand(lateralPinBrand)
+        setOriginalCost(originalCost);
+        setSecondSwitch(secondSwitch)
+        setSelectSurgicalKitBrand(selectSurgicalKitBrand)
+        setFullGuide(selectedSwitchLabel)
+        setSelectedTeeth(selectedTeeth);
+        setSmileDesign(smileDesign)
+        setThirdSwitch(thirdSwitch)
+        console.log(selectedTeeth)
+ 
+        const storedFullname = localStorage.getItem("fullName");
+      const storedCaseNumber = localStorage.getItem("caseNumber");
 
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
+
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
+                setCurrentOffer(offer);
+                const discountedCost = applyDiscount(originalCost, offer.discount);
+                setCost(discountedCost);
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
+              setCurrentOffer(null);
+            }
+          }
+        };
+
+        fetchOfferData();
+      }
+      } catch (error) {
+        console.error("Error parsing stored state:", error);
+        localStorage.removeItem("guideClassiqueState");
+      }
+    } else {
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
     } else {
@@ -112,6 +195,7 @@ const GuideEtage = () => {
 
       fetchOfferData();
     }
+  }
   }, [navigate, user, originalCost]);
 
   const getDiscount = (plan) => {
@@ -231,6 +315,8 @@ const GuideEtage = () => {
       foragePilote: foragePilote,
       fullGuide: fullGuide,
     };
+    localStorage.setItem("guideEtageState", JSON.stringify(yourData));
+
     navigate("/SelectedItemsPageGETAGE", {
       state: {
         selectedItemsData: yourData,
@@ -339,7 +425,7 @@ const GuideEtage = () => {
                     {language === "french" ? "Coût: " : "Cost: "}
                   </span>
                   <span className="text-gray-500 font-bold">
-                    ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{cost.toFixed(2)} €</span>
+                  ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{cost.toFixed(2)} €</span>
                   </span>{" "}
                 </p>
             </div>
@@ -357,9 +443,10 @@ const GuideEtage = () => {
                   : "If you want a guide for both arches, please add a task for each arch."}
               </p>
               <div>
+
                 <Dents
                   selectAll={false}
-                  selectedTeethData={selectedTeeth}
+                  selectedTeethData={implantBrandInputs}
                   onToothClick={handleToothClick}
                   onTeethSelectionChange={handleTeethSelectionChange}
                 />

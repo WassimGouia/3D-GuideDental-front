@@ -40,6 +40,65 @@ const AutreServices = () => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
+    const storedState = localStorage.getItem("autreServiceState");
+    if (storedState) {
+      try {
+        const {
+          comment,
+          implantationPrevue,
+          implantationPrevueInverse
+        } = JSON.parse(storedState);
+        setComment(comment);
+        setCheckedValues({implantationPrevue,implantationPrevueInverse})
+
+        const storedFullname = localStorage.getItem("fullName");
+      const storedCaseNumber = localStorage.getItem("caseNumber");
+
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({
+          fullname: storedFullname,
+          caseNumber: storedCaseNumber,
+        });
+  
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
+              );
+  
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                setCurrentOffer({
+                  currentPlan: offerData.CurrentPlan,
+                  discount: getDiscount(offerData.CurrentPlan),
+                });
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
+              setCurrentOffer(null);
+            }
+          }
+        };
+  
+        fetchOfferData();
+      }
+      } catch (error) {
+        console.error("Error parsing stored state:", error);
+        localStorage.removeItem("guideClassiqueState");
+      }
+    } else {
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
     } else {
@@ -79,7 +138,7 @@ const AutreServices = () => {
       };
 
       fetchOfferData();
-    }
+    }}
   }, [navigate, user]);
 
   const getDiscount = (plan) => {
@@ -101,7 +160,12 @@ const AutreServices = () => {
       comment: comment,
       implementationYes: checkedValues.implantationPrevue,
       implementationNo: checkedValues.implantationPrevueInverse,
+      implantationPrevue: checkedValues.implantationPrevue,
+      implantationPrevueInverse: checkedValues.implantationPrevueInverse,
     };
+
+    localStorage.setItem("autreServiceState", JSON.stringify(yourData));
+
 
     navigate("/selectedItemsPageAutreService", {
       state: {

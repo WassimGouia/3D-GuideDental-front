@@ -281,7 +281,7 @@ const SelectedItemsPageGclassique = () => {
             {
               title: "Clavettes de stabilisation",
               nombre_des_clavettes: additionalGuidesClavettess,
-            },
+             },
           ],
           cout: [
             {

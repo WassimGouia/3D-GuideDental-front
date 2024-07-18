@@ -120,7 +120,10 @@ const SelectedItemsPageGging = () => {
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
   const handleNextClick = async () => {
-
+    if(textareaValu === "" && previousStates.third)
+      {
+        return;
+      }
     const res = await axios.post(
       "http://localhost:1337/api/guide-pour-gingivectomies",
       {
@@ -182,7 +185,7 @@ const SelectedItemsPageGging = () => {
       const response = await axios.post(
         "http://localhost:1337/api/commandes",
         requestData
-      );
+      ); 
       const { error } = await stripe.redirectToCheckout({
         sessionId: response.data.stripeSession.id,
       });
@@ -196,11 +199,6 @@ const SelectedItemsPageGging = () => {
   };
 
   const handleNextClickArchive = async () => {
-    const dataToStore = {
-      cost,
-      first,
-    };
-
     const res = await axios.post(
       "http://localhost:1337/api/guide-pour-gingivectomies",
       {
@@ -242,23 +240,24 @@ const SelectedItemsPageGging = () => {
             },
           ],
           submit: false,
+          selected_teeth: selectedTeethData,
           archive: true,
-          selected_teeth: selectedTeethData, // Add this line
           en__cours_de_modification: false,
-          En_attente_approbation: false,
         },
       }
     );
 
     if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
+      localStorage.removeItem("guideginState")
+      navigate("/");
     } else {
       alert(res.status);
     }
   };
-
+  const handlePreviousClick = ()=>{
+    // navigate("/guide-classique")
+    window.location.href="/guide-gingivectomie"
+  }
   return (
     <div>
       <SideBarContainer>
@@ -367,7 +366,9 @@ const SelectedItemsPageGging = () => {
                       </p>
                     </div>
                     {previousStates?.third && (
-                      <Input value={textareaValue} readOnly className="w-2/5" />
+                      <Input style={{
+                        border: textareaValu === "pas de texte" ||textareaValu === "" ? "2px solid red" : "none",
+                    }} value={textareaValu} readOnly className="w-2/5" />
                     )}
                   </div>
 
@@ -410,7 +411,7 @@ const SelectedItemsPageGging = () => {
                   <Input className="w-2/5" type="file" />
                 </div>
                 <div className="mt-5 flex justify-between">
-                  <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
+                  <Button onClick={handlePreviousClick} className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
                     {language === "french" ? "Précédent" : "Previous"}
                   </Button>
 

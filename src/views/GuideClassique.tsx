@@ -370,7 +370,7 @@ const GuideClassique = () => {
       },
     });
   };
-console.log("additionalGuidesImpression",additionalGuidesImpression)
+
   const isCommentFilled = comment.trim() !== "";
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
   const country = user && user.location[0].country.toLowerCase();

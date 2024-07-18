@@ -47,7 +47,75 @@ const GuideGingivectomie = () => {
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
+    const storedState = localStorage.getItem("guideginState");
+    if (storedState) {
+      try {
+        const {
+          additionalGuides,
+          comment,
+          cost,
+          first,
+          second,
+          third,
+          fourth,
+          originalCost,
+          selectedTeeth,
+          textareaValue,
+        } = JSON.parse(storedState);
+        setAdditionalGuides(additionalGuides);
+        setFourth(fourth)
+        setOriginalCost(originalCost);
+        setCost(cost);
+        setFirst(first);
+        setSecond(second);
+        setThird(third);
+        setSelectedTeeth(selectedTeeth);
+        setComment(comment);
+        setTextareaValue(textareaValue);
 
+        const storedFullname = localStorage.getItem("fullName");
+      const storedCaseNumber = localStorage.getItem("caseNumber");
+
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
+
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
+                setCurrentOffer(offer);
+                const discountedCost = applyDiscount(originalCost, offer.discount);
+                setCost(discountedCost);
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
+              setCurrentOffer(null);
+            }
+          }
+        };
+
+        fetchOfferData();
+      }
+      } catch (error) {
+        console.error("Error parsing stored state:", error);
+        localStorage.removeItem("guideClassiqueState");
+      }
+    } else {
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
     } else {
@@ -95,7 +163,7 @@ const GuideGingivectomie = () => {
       };
 
       fetchOfferData();
-    }
+    }}
   }, [navigate, user]);
 
   const getDiscount = (plan) => {
@@ -202,9 +270,12 @@ const GuideGingivectomie = () => {
       fourth: fourth,
       comment: comment,
       additionalGuides: additionalGuides,
-      textareaValue: textareaValue,
+      textareaValue: third ? textareaValue : "",
       selectedTeeth: selectedTeeth,
     };
+
+    localStorage.setItem("guideginState", JSON.stringify(yourData));
+
 
     navigate("/selectedItemsPageGging", {
       state: {
@@ -215,7 +286,7 @@ const GuideGingivectomie = () => {
           third: third,
           fourth: fourth,
           additionalGuides: additionalGuides,
-          textareaValue: textareaValue,
+          textareaValue: third ? textareaValue : "",
           selectedTeeth: selectedTeeth,
         },
       },
@@ -380,7 +451,7 @@ const GuideGingivectomie = () => {
                             : "Digital extraction of teeth"}
                         </p>
                       </div>
-                      {showTextarea && (
+                      {third && (
                         <Textarea
                           placeholder={
                             language === "french"
@@ -455,6 +526,7 @@ const GuideGingivectomie = () => {
                             ? "Ajoutez vos instructions cliniques"
                             : "Add your clinical instructions"
                         }
+                        value={comment}
                         onChange={handleCommentChange}
                       />
                     </div>

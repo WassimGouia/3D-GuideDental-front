@@ -145,15 +145,9 @@ const SelectedItemsPageAutreService = () => {
   };
 
   const handleNextClickArchive = async () => {
-    // Check if the comment field is filled
     const isCommentFilled = comment.trim() !== "";
 
     if (isCommentFilled) {
-      // Store the data
-      const dataToStore = {
-        comment,
-      };
-
       const res = await axios.post(
         "http://localhost:1337/api/autres-services-de-conceptions",
         {
@@ -167,25 +161,22 @@ const SelectedItemsPageAutreService = () => {
             archive: true,
           },
         }
-        // {
-        //   headers: {
-        //     "Content-Type": "application/json",
-        //     Authorization:
-        //       "Bearer " +
-        //       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzExMzIwNjU0LCJleHAiOjE3MTM5MTI2NTR9.3lmhTvg2sW893Hyz3y3MscmQDCt23a1QqdyHq1jmYto",
-        //   },
-        // }
       );
 
       if (res.status === 200) {
-        navigate("/selectedItemsPage", {
-          state: { selectedItemsData: dataToStore },
-        });
+        localStorage.removeItem("autreServiceState")
+        navigate("/");
       } else {
         alert(res.status);
       }
     }
   };
+
+  const handlePreviousClick = ()=>{
+    // navigate("/guide-classique")
+    window.location.href="/autre-services"
+  }
+
 
   return (
     <div>
@@ -261,7 +252,7 @@ const SelectedItemsPageAutreService = () => {
               </div>
 
               <div className="mt-5 flex justify-between mb-4">
-                <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
+                <Button onClick={handlePreviousClick} className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
                   {language === "french" ? "Précédent" : "Previous"}
                 </Button>
 
