@@ -5,7 +5,7 @@ import { useLanguage } from "@/components/languageContext";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -33,10 +33,7 @@ const SelectedItemsPageGbruxisme = () => {
   const { selectedTeeth } = location.state.previousState;
   const selectedItemsData = location.state?.selectedItemsData;
   const previousStates = location.state.previousState;
-  const additionalGuides = previousStates.additionalGuides || {};
-  const textareaValue = previousStates.textareaValue || {};
   const comment = selectedItemsData.comment;
-  const originalCost = selectedItemsData.originalCost;
   const cost = selectedItemsData.cost;
   const first = previousStates.first;
   const second = previousStates.second;
@@ -52,7 +49,7 @@ console.log("second",second)
 
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
-  );
+  ); 
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -111,6 +108,10 @@ console.log("second",second)
   };
 
   const handleNextClick = async () => {
+    if(textareaValu === "" && previousStates.first)
+      {
+        return;
+      }
     const res = await axios.post(
       "http://localhost:1337/api/gouttiere-de-bruxismes",
       {
@@ -172,10 +173,6 @@ console.log("second",second)
   };
 
   const handleNextClickArchive = async () => {
-    const dataToStore = {
-      cost,
-    };
-
     const res = await axios.post(
       "http://localhost:1337/api/gouttiere-de-bruxismes",
       {
@@ -184,7 +181,7 @@ console.log("second",second)
           comment,
           patient: patientData.fullname,
           numero_cas: patientData.caseNumber,
-          selected_teeth: selectedTeeth, // only the indexes
+          selected_teeth: selectedTeeth,
           les_options_generiques: [
             {
               title: "les options generiques",
@@ -211,15 +208,20 @@ console.log("second",second)
     );
 
     if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
+      localStorage.removeItem("guideBruxismeState")
+      navigate("/");
     } else {
       alert(res.status);
     }
   };
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
   const country = user && user.location[0].country.toLowerCase();
+  
+  const handlePreviousClick = ()=>{
+    // navigate("/guide-classique")
+    window.location.href="/gouttiere-bruxismes"
+  }
+  
   return (
     <div>
       <SideBarContainer>
@@ -307,7 +309,11 @@ console.log("second",second)
                       </p>
                     </div>
                     {previousStates.first && (
-                      <Input value={textareaValu} readOnly />
+                      <Input
+                      style={{
+                        border: textareaValu === "pas de texte" ||textareaValu === "" ? "2px solid red" : "none",
+                    }}
+                       value={textareaValu} readOnly />
                     )}
                   </div>
                 </div>
@@ -357,7 +363,7 @@ console.log("second",second)
                   <Input className="w-2/5" type="file" />
                 </div>
                 <div className="mt-5 flex justify-between">
-                  <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
+                  <Button onClick={handlePreviousClick} className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
                     {language === "french" ? "Précédent" : "Previous"}
                   </Button>
 

@@ -54,60 +54,6 @@ const GuideClassique = () => {
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
-  // useEffect(() => {
-  //   const storedFullname = localStorage.getItem("fullName");
-  //   const storedCaseNumber = localStorage.getItem("caseNumber");
-
-  //   if (!storedFullname || !storedCaseNumber) {
-  //     navigate("/sign/nouvelle-demande");
-  //   } else {
-  //     setPatientData({
-  //       fullname: storedFullname,
-  //       caseNumber: storedCaseNumber,
-  //     });
-
-  //     const fetchOfferData = async () => {
-  //       const token = getToken();
-  //       if (token && user && user.id) {
-  //         try {
-  //           const userResponse = await axios.get(
-  //             `http://localhost:1337/api/users/${user.id}?populate=offre`,
-  //             {
-  //               headers: {
-  //                 Authorization: `Bearer ${token}`,
-  //               },
-  //             }
-  //           );
-
-  //           if (userResponse.data && userResponse.data.offre) {
-  //             const offerData = userResponse.data.offre;
-  //             const offer = {
-  //               currentPlan: offerData.CurrentPlan,
-  //               discount: getDiscount(offerData.CurrentPlan),
-  //             };
-  //             setCurrentOffer(offer);
-
-  //             // Apply initial discount
-  //             const discountedCost = applyDiscount(
-  //               originalCost,
-  //               offer.discount
-  //             );
-  //             setCost(discountedCost);
-  //           } else {
-  //             console.error("Offer data not found in the user response");
-  //             setCurrentOffer(null);
-  //           }
-  //         } catch (error) {
-  //           console.error("Error fetching offer data:", error);
-  //           setCurrentOffer(null);
-  //         }
-  //       }
-  //     };
-
-  //     fetchOfferData();
-  //   }
-  // }, [navigate, user]);
-
   useEffect(() => {
     const storedState = localStorage.getItem("guideClassiqueState");
     if (storedState) {
@@ -364,7 +310,7 @@ const GuideClassique = () => {
 
   const handleImplantBrandChange = (index: number, value: string) => {
     setImplantBrandValues((prevValues) => ({
-      ...prevValues,
+      ...prevValues, 
       [index]: value,
     }));
   };

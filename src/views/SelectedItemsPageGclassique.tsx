@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
@@ -37,9 +37,7 @@ const SelectedItemsPageGclassique = () => {
   const implantBrandValues = previousStates.implantBrandValues || {};
   const additionalGuidesClavettes =
     previousStates.additionalGuidesClavettes || {};
-  const additionalGuidesImpression =
-    previousStates.additionalGuidesImpression || {};
-  const textareaValue = previousStates.textareaValue || {}; //for the Digital extraction of teeth
+
 
   const Suppressionnumérique = location.state.selectedItemsData.second;
   const smileDesign = location.state.selectedItemsData.first;
@@ -49,23 +47,18 @@ const SelectedItemsPageGclassique = () => {
   const foragePilote = location.state.selectedItemsData.foragePilote;
   const comment = location.state.selectedItemsData.comment;
   const brandSurgeon = location.state.selectedItemsData.brandSurgeonKit;
-  const implantBrandValue = location.state.selectedItemsData.implantBrandValues; // tb3inn les dents // to do never show the input type of eror[object object ]
-  const implantBrandInput = location.state.selectedItemsData.implantBrandInputs;
+  const implantBrandValue = location.state.selectedItemsData.implantBrandValues;
   const textareaValu = location.state.selectedItemsData.textareaValue;
   const additionalGuidesImpressionn =
     location.state.selectedItemsData.additionalGuidesImpression;
   const additionalGuidesClavettess =
     location.state.selectedItemsData.additionalGuidesClavettes;
-  const showAdditionalGuidesInput =
-    location.state.selectedItemsData.additionalGuidesClavettes; //to do mta33 clavette a wassimos type of eror [object object]
-  const selectedTeeth = location.state.selectedItemsData.selectedTeeth;
+    location.state.selectedItemsData.additionalGuidesClavettes;
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
   const [currentOffer, setCurrentOffer] = useState(null);
-  const originalCost = selectedItemsData.originalCost;
-  // const cost = selectedItemsData.cost;
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -91,7 +84,7 @@ const SelectedItemsPageGclassique = () => {
                 },
               }
             );
-
+ 
             if (userResponse.data && userResponse.data.offre) {
               const offerData = userResponse.data.offre;
               setCurrentOffer({

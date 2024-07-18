@@ -51,7 +51,71 @@ const GouttiereBruxismes = () => {
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
+    const storedState = localStorage.getItem("guideBruxismeState");
+    if (storedState) {
+      try {
+        const {
+          originalCost,
+          cost,
+          first,
+          second,
+          selectedTeeth,
+          comment,
+          textareaValue,
+          additionalGuides,
+        } = JSON.parse(storedState);
+        setAdditionalGuides(additionalGuides)
+        setComment(comment)
+        setCost(cost);
+        setFirst(first);
+        setOriginalCost(originalCost);
+        setSecond(second);
+        setSelectedTeeth(selectedTeeth);
+        setTextareaValue(textareaValue);
 
+        const storedFullname = localStorage.getItem("fullName");
+        const storedCaseNumber = localStorage.getItem("caseNumber");
+
+      if (!storedFullname || !storedCaseNumber) {
+        navigate("/sign/nouvelle-demande");
+      } else {
+        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
+
+        const fetchOfferData = async () => {
+          const token = getToken();
+          if (token && user && user.id) {
+            try {
+              const userResponse = await axios.get(
+                `http://localhost:1337/api/users/${user.id}?populate=offre`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+
+              if (userResponse.data && userResponse.data.offre) {
+                const offerData = userResponse.data.offre;
+                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
+                setCurrentOffer(offer);
+                const discountedCost = applyDiscount(originalCost, offer.discount);
+                setCost(discountedCost);
+              } else {
+                console.error("Offer data not found in the user response");
+                setCurrentOffer(null);
+              }
+            } catch (error) {
+              console.error("Error fetching offer data:", error);
+              setCurrentOffer(null);
+            }
+          }
+        };
+
+        fetchOfferData();
+      }
+      } catch (error) {
+        console.error("Error parsing stored state:", error);
+        localStorage.removeItem("guideClassiqueState");
+      }
+    } else {
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
     } else {
@@ -102,6 +166,7 @@ const GouttiereBruxismes = () => {
 
       fetchOfferData();
     }
+  }
   }, [navigate, user]);
 
   const getDiscount = (plan) => {
@@ -188,7 +253,7 @@ const GouttiereBruxismes = () => {
       } else {
         affectedIndexes.forEach((index) => newSelectedTeeth.add(index));
         updateCost(100);
-      }
+      } 
       return Array.from(newSelectedTeeth);
     });
   };
@@ -200,11 +265,23 @@ const GouttiereBruxismes = () => {
       originalCost: originalCost,
       comment: comment,
       additionalGuides: additionalGuides,
-      textareaValue: textareaValue,
+      textareaValue: first ? textareaValue : "",
       selectedTeeth: selectedTeeth,
     };
 
-    console.log("Switch state (second):", second,cost, second ? cost+ deliveryCost : cost+ 0)
+    const store = {
+      title: language === "french" ? "Gouttière de bruxisme" : "Bruxism splint",
+      cost: second ? cost+ deliveryCost : cost+ 0,
+      originalCost: originalCost,
+      comment: comment,
+      additionalGuides: additionalGuides,
+      textareaValue: first ? textareaValue : "",
+      selectedTeeth: selectedTeeth,
+      first: first,
+      second: second,
+    };
+
+    localStorage.setItem("guideBruxismeState", JSON.stringify(store));
 
     navigate("/SelectedItemsPageGbruxisme", {
       state: {
@@ -213,7 +290,7 @@ const GouttiereBruxismes = () => {
           first: first,
           second: second,
           additionalGuides: additionalGuides,
-          textareaValue: textareaValue,
+          textareaValue: first ? textareaValue : "",
           selectedTeeth: selectedTeeth,
         },
       },
@@ -342,7 +419,7 @@ const GouttiereBruxismes = () => {
                             : "Digital extraction of teeth"}
                         </p>
                       </div>
-                      {showTextarea && (
+                      {first && (
                         <Textarea
                           placeholder={
                             language === "french"
@@ -420,6 +497,7 @@ const GouttiereBruxismes = () => {
                             ? "Ajoutez vos instructions cliniques"
                             : "Add your clinical instructions"
                         }
+                        value={comment}
                         onChange={handleCommentChange}
                       />
                     </div>

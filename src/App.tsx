@@ -55,8 +55,8 @@ const App: React.FC = () => {
               <Route path="/service1-success" element={<Service1Success />} />
               <Route path="/service2-success" element={<Service2Success />} />
               <Route path="/service3-success" element={<Service3Success />} />
-              <Route path="/service6-success" element={<Service6Success />} />
               <Route path="/service4-success" element={<Service4Success />} />
+              <Route path="/service6-success" element={<Service6Success />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
 
               <Route path="/login" element={<Login />} />
