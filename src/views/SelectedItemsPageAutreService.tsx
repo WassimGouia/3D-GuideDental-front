@@ -65,28 +65,60 @@ const SelectedItemsPageAutreService = () => {
   useEffect(() => {
     axios.get("http://localhost:1337/api/services").then(() => {});
   }, []);
+
   const handleNextClick = async () => {
-    // Check if the comment field is filled
-    const isCommentFilled = comment.trim() !== "";
+    const token = getToken();
+    if (!token) {
+      console.error("No auth token found");
+      return;
+    }
 
-    if (isCommentFilled) {
+    const data = {
+      comment: comment,
+      service_impression_et_expedition: isCheckboxChecked,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      submit: false,
+      archive: false, // Set to true initially
+      En_attente_approbation: false,
+      en__cours_de_modification: false,
+      soumis: false,
+      approuve: false,
+      produire_expide: false,
+      Demande_devis: true, // We don't need this field as per the flow
+      user: user.id,
+    };
 
-      const res = await axios.post(
+    try {
+      const response = await axios.post(
         "http://localhost:1337/api/autres-services-de-conceptions",
+        { data },
         {
-          data: {
-            service: 5,
-            comment,
-            patient: patientData.fullname,
-            numero_cas: patientData.caseNumber,
-            service_impression_et_expedition: isCheckboxChecked,
-            submit: false,
-            archive: true,
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
         }
       );
+
+      if (response.status === 200) {
+        alert(
+          language === "french"
+            ? "Service archivé avec succès"
+            : "Service archived successfully"
+        );
+        navigate("/sign/mes-fichier");
+      }
+    } catch (error) {
+      console.error("Error archiving service:", error);
+      alert(
+        language === "french"
+          ? "Erreur lors de l'archivage du service"
+          : "Error archiving service"
+      );
     }
   };
+
+  // Remove handleNextClickArchive as it's no longer needed
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");

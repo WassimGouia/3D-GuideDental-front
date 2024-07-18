@@ -207,6 +207,11 @@ const SelectedItemsPageGETAGE = () => {
         submit: false,
         archive: true,
         En_attente_approbation: false,
+        soumis: false,
+        en__cours_de_modification: false,
+        approuve: false,
+        produire_expide: false,
+        user: user.id, // Make sure to associate the guide with the user
       },
     });
     const requestData = {
@@ -303,6 +308,11 @@ const SelectedItemsPageGETAGE = () => {
         submit: false,
         archive: true,
         En_attente_approbation: false,
+        soumis: false,
+        en__cours_de_modification: false,
+        approuve: false,
+        produire_expide: false,
+        user: user.id, // Make sure to associate the guide with the user
       },
     });
   };
