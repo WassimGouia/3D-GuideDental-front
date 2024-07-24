@@ -63,8 +63,10 @@ const SelectedItemsPageGETAGE = () => {
     location.state?.selectedItemsData?.selectSurgicalKitBrand;
   const implantBrandValue =
     location.state?.selectedItemsData?.implantBrandValues;
+    const originalCost =
+    location.state?.selectedItemsData?.originalCost;
 
-  const [patientData, setPatientData] = useState({
+  const [patientData, setPatientData] = useState({ 
     fullname: "",
     caseNumber: "",
   });
@@ -193,25 +195,22 @@ const SelectedItemsPageGETAGE = () => {
             active: fifthSwitch,
           },
         ],
-        cout: [
-          {
-            cout: costt,
-          },
-        ],
+        cout: costt,  
         options_generiques: [
           {
             title: "Smile Design",
             active: smileDesign,
           },
         ],
-        submit: false,
         archive: true,
         En_attente_approbation: false,
         soumis: false,
         en__cours_de_modification: false,
         approuve: false,
         produire_expide: false,
-        user: user.id, // Make sure to associate the guide with the user
+        user: user.id,
+        offre:currentOffer?.currentPlan,
+        originalCost:originalCost,
       },
     });
     const requestData = {
@@ -294,27 +293,30 @@ const SelectedItemsPageGETAGE = () => {
             active: fifthSwitch,
           },
         ],
-        cout: [
-          {
-            cout: costt,
-          },
-        ],
+        cout: costt,
         options_generiques: [
           {
             title: "Smile Design",
             active: smileDesign,
           },
         ],
-        submit: false,
         archive: true,
         En_attente_approbation: false,
         soumis: false,
         en__cours_de_modification: false,
         approuve: false,
         produire_expide: false,
-        user: user.id, // Make sure to associate the guide with the user
+        user: user.id,
+        offre:currentOffer?.currentPlan,
+        originalCost:originalCost,
       },
     });
+    if (res.status === 200) {
+      localStorage.removeItem("guideEtageState")
+      navigate("/mes-fichier");
+    } else {
+      alert(res.status);
+    }
   };
 
   return (
@@ -544,69 +546,65 @@ const SelectedItemsPageGETAGE = () => {
                 </Button>
 
                 <div className="flex space-x-3">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2`}
-                      >
-                        {language === "french" ? "Archiver" : "Archive"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
+                <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2">
+                          {language === "french" ? "Archiver" : "Archive"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
+                          <AlertDialogTitle>
+                            {language === "french"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                              : "Are you sure you want to archive this case?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
                           {language === "french"
-                            ? "Voulez-vous vraiment archiver ce cas?"
-                            : "Are you sure you want to archive this case?"}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {language === "french"
-                            ? " cela archivera le cas."
-                            : " this will archive the case."}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>
-                          {language === "french" ? "Annuler" : "Cancel"}
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handleNextClickArchive}>
-                          {language === "french" ? "Continuer" : "Continue"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {language === "french" ? "Annuler" : "Cancel"}
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={handleNextClickArchive}>
+                            {language === "french" ? "Continuer" : "Continue"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
 
                   <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all`}
-                      >
-                        {language === "french" ? "Soumettre" : "Submit"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all">
+                          {language === "french" ? "Soumettre" : "Submit"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
+                          <AlertDialogTitle>
                           {language === "french"
-                            ? "Voulez-vous vraiment soumettre ce cas?"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
                             : "Are you sure you want to submit this case?"}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
                           {language === "french"
-                            ? " cela soumettra le cas."
-                            : " this will submit the case."}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>
-                          {language === "french" ? "Annuler" : "Cancel"}
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={handlePayment}>
-                          {language === "french" ? "Continuer" : "Continue"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {language === "french" ? "Annuler" : "Cancel"}
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={handlePayment}>
+                            {language === "french" ? "Continuer" : "Continue"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
               </div>
             </div>

@@ -184,7 +184,7 @@ const GouttiereBruxismes = () => {
       const country = user.location[0].country.toLocaleLowerCase();
       const europeanCountries = ["belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
 
-      const cost = country === "france" && second  ? 7 :
+      const cost = country === "france" && second  ? 7.5 :
         europeanCountries.includes(country) && second ? 15 : 0;
       
       setDeliveryCost(cost);

@@ -208,7 +208,7 @@ const GuideEtage = () => {
     return discounts[plan] || 0;
   };
 
-  const deliveryCost = user && user.location[0].country?.toLocaleLowerCase() === "france" ? 7 : 15;
+  const deliveryCost = user && user.location[0].country?.toLocaleLowerCase() === "france" ? 7.5 : 15;
 
   const applyDiscount = (price, discountPercentage) => {
   const discountedPrice = price * (1 - discountPercentage / 100);

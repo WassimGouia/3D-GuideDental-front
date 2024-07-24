@@ -43,7 +43,7 @@ const SelectedItemsPageRapportRad = () => {
   const isBoxCheckedEliminerPathologie =
     location.state?.isBoxCheckedEliminerPathologie;
   const isBoxCheckedAutre = location.state?.isBoxCheckedAutre;
-  const [patientData, setPatientData] = useState({
+  const [patientData, setPatientData] = useState({ 
     fullname: "",
     caseNumber: "",
   });
@@ -115,16 +115,19 @@ const SelectedItemsPageRapportRad = () => {
           service: 6,
           first_comment: comment,
           date: date,
+          cout:cost,
           second_comment: secondComment,
           Implantation_prevue: isBoxCheckedImplantation,
           Evaluer_implant_existant: isBoxCheckeEvaluerImplant,
           Evaluation_de_ATM: isBoxCheckedEvaluationATM,
           Eliminer_une_pathologie: isBoxCheckedEliminerPathologie,
           autres: isBoxCheckedAutre,
-          submit: false,
+          soumis: false,
           archive: true,
           patient: patientData.fullname,
           numero_cas: patientData.caseNumber,
+          user: user.id,
+          originalCost:originalCost,
         },
       }
     );
@@ -134,7 +137,7 @@ const SelectedItemsPageRapportRad = () => {
       service: 6,
       patient: localStorage.getItem("fullName"),
       email: user && user.email,
-      guideId:res.data.data.id
+      guideId:res.data.data.id,
     };
 
     try {
@@ -155,10 +158,6 @@ const SelectedItemsPageRapportRad = () => {
 
   };
   const handleNextClickArchive = async () => {
-    const dataToStore = {
-      comment,
-      secondComment,
-    };
 
     const res = await axios.post(
       "http://localhost:1337/api/rapport-radiologiques",
@@ -166,8 +165,8 @@ const SelectedItemsPageRapportRad = () => {
       {
         data: {
           service: 6,
-
           first_comment: comment,
+          cout:cost,
           date: date,
           second_comment: secondComment,
           Implantation_prevue: isBoxCheckedImplantation,
@@ -175,18 +174,19 @@ const SelectedItemsPageRapportRad = () => {
           Evaluation_de_ATM: isBoxCheckedEvaluationATM,
           Eliminer_une_pathologie: isBoxCheckedEliminerPathologie,
           autres: isBoxCheckedAutre,
-          submit: false,
+          soumis: false,
           archive: true,
           patient: patientData.fullname,
           numero_cas: patientData.caseNumber,
+          user: user.id,
+          originalCost:originalCost,
         },
       }
     );
 
     if (res.status === 200) {
-      navigate("/selectedItemsPage", {
-        state: { selectedItemsData: dataToStore },
-      });
+      localStorage.removeItem("rapportRadioState")
+      navigate("/mes-fichier");
     } else {
       alert(res.status);
     }
@@ -204,6 +204,7 @@ const SelectedItemsPageRapportRad = () => {
                       ? "Rapport radiologique"
                       : "Radiological report"}
                   </h1>
+                  
                 </div>
                 <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
                   <h2 className="text-xl font-bold mb-3">
@@ -414,13 +415,13 @@ const SelectedItemsPageRapportRad = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>
                             {language === "french"
-                              ? "Voulez-vous vraiment archiver ce cas?"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? " cela archivera le cas."
-                              : " this will archive the case."}
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -443,14 +444,14 @@ const SelectedItemsPageRapportRad = () => {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            {language === "french"
-                              ? "Voulez-vous vraiment soumettre ce cas?"
-                              : "Are you sure you want to submit this case?"}
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                            : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? " cela soumettra le cas."
-                              : " this will submit the case."}
+                          {language === "french"
+                            ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
+                            : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

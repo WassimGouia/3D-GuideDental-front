@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
@@ -7,7 +7,19 @@ import { useLanguage } from "@/components/languageContext";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BEARER } from "@/components/Constant";
+import { useAuthContext } from "@/components/AuthContext";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription, 
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const DemandeProdExpAutreGuides = () => {
   const navigate = useNavigate();
@@ -15,89 +27,65 @@ const DemandeProdExpAutreGuides = () => {
   const { language } = useLanguage();
   const [inputValue, setInputValue] = useState(0);
   const [cost, setCost] = useState(0);
-  const { caseNumber, patient, typeDeTravail, guideType, guideId } =
+  const { caseNumber, patient, typeDeTravail, guideType, guideId,offre } =
     location.state;
-
-  console.log("Location state:", location.state);
-  console.log("Guide ID:", guideId);
-  console.log("Guide Type:", guideType);
+  const { user } = useAuthContext();
+  const stripePromise = loadStripe(
+    "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
+  );
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
+    };
+    return discounts[plan] || 0;
+  };
 
   useEffect(() => {
     setCost(inputValue * 40);
   }, [inputValue]);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
-    return {
-      Authorization: `${BEARER} ${token}`,
-      "Content-Type": "application/json",
-    };
-  };
-
-  const updateGuideStatus = async () => {
-    const statusUpdateData = {
-      data: {
-        produire_expide: true,
-        En_cours_de_modification: false,
-        En_attente_approbation: false,
-        approuve: false,
-        archive: false,
-        soumis: false,
-      },
-    };
-
-    console.log(`Updating guide status for ${guideType}/${guideId}`);
-
-    try {
-      const response = await axios.put(
-        `http://localhost:1337/api/${guideType}/${guideId}`,
-        statusUpdateData,
-        { headers: getAuthHeaders() }
-      );
-      console.log("Update response:", response);
-      alert("Guide status updated successfully!");
-    } catch (error) {
-      console.error("Failed to update guide status:", error);
-      // More detailed error logging
-      if (axios.isAxiosError(error)) {
-        console.error("Error response:", error.response?.data);
-        console.error("Error status:", error.response?.status);
-      }
-      alert(
-        "Failed to update guide status due to an error: " +
-          (error.response?.data?.error?.message || error.message)
-      );
-    }
-  };
-
   const handleNextClick = async () => {
-    const postData = {
-      patient,
-      caseNumber,
+    localStorage.setItem("guideType",guideType)
+    localStorage.setItem("guideId",guideId)
+    localStorage.setItem("offre",offre)
+    localStorage.setItem("originalCost",cost)
+
+    const requestData = {
+      cost: (cost * (1 - getDiscount(offre) /100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15),
+      patient: patient,
+      email: user && user.email,
+      caseNumber:caseNumber,
       type_travail: typeDeTravail,
-      cost: cost,
     };
+
     try {
+      const stripe = await stripePromise;
       const response = await axios.post(
         "http://localhost:1337/api/demande-produire-et-expidees",
-        { data: postData },
-        { headers: getAuthHeaders() }
+        requestData
       );
-      if (response.status === 200) {
-        await updateGuideStatus();
-        navigate("/successPage");
-      } else {
-        alert(`Submission failed with status: ${response.status}`);
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: response.data.stripeSession.id,
+      });
+      if (error) {
+        console.error("Stripe checkout error:", error);
       }
-    } catch (error) {
-      console.error("Failed to submit data:", error);
-      alert("Failed to submit the data due to an error.");
+    } catch (err) {
+      console.log(err);
     }
   };
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
   };
+
+  const handlePreviousClick = () => {
+    navigate("/mes-fichier")
+  };
+
 
   return (
     <SideBarContainer>
@@ -124,7 +112,11 @@ const DemandeProdExpAutreGuides = () => {
               {typeDeTravail}
             </p>
             <p>
-              {language === "french" ? "coût:" : "Cost:"} {cost}€
+              {language === "french" ? "Offre du cas:" : "Offre of the case:"}
+              {offre}
+            </p>
+            <p>
+              {language === "french" ? "coût:" : "Cost:"} ({cost} - {getDiscount(offre)}%) + {user && user.location[0].country.toLowerCase() === "france" ? 7.5 : 15} = {(cost * (1 - getDiscount(offre) /100)) + (user && user.location[0].country.toLowerCase() === "france" ? 7.5 : 15)} €
             </p>
           </div>
           <br />
@@ -144,15 +136,38 @@ const DemandeProdExpAutreGuides = () => {
             />
           </div>
           <div className="flex justify-between">
-            <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all  mt-9">
+            <Button onClick={handlePreviousClick} className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all  mt-9">
               {language === "french" ? "Précédent" : "Previous"}
             </Button>
-            <Button
-              className="bg-[#0e0004] text-[#fffa1b] px-4 py-2 rounded-md mt-9"
-              onClick={handleNextClick}
-            >
-              {language === "french" ? "Suivant" : "Next"}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="bg-[#0e0004] text-[#fffa1b] px-4 py-2 rounded-md mt-9">
+                  {language === "french" ? "Soumettre" : "Submit"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                  {language === "french"
+                    ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                    : "Are you sure you want to submit this case?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                  {language === "french"
+                    ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
+                    : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>
+                    {language === "french" ? "Annuler" : "Cancel"}
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={handleNextClick}>
+                    {language === "french" ? "Continuer" : "Continue"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </Card>
       </Container>

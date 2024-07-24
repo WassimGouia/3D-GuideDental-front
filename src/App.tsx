@@ -40,6 +40,9 @@ import Service6Success from "./views/successPages/service6success";
 import Service4Success from "./views/successPages/service4success";
 import Service2Success from "./views/successPages/service2success";
 import Service3Success from "./views/successPages/service3success";
+import Service7Success from "./views/successPages/service7success";
+import Service8Success from "./views/successPages/service8success";
+import Service5Success from "./views/successPages/service5success";
 
 const App: React.FC = () => {
   return (
@@ -56,7 +59,11 @@ const App: React.FC = () => {
               <Route path="/service2-success" element={<Service2Success />} />
               <Route path="/service3-success" element={<Service3Success />} />
               <Route path="/service4-success" element={<Service4Success />} />
+              <Route path="/service5-success" element={<Service5Success />} />
               <Route path="/service6-success" element={<Service6Success />} />
+              <Route path="/service7-success" element={<Service7Success />} />
+              <Route path="/service8-success" element={<Service8Success />} />
+
               <Route path="/payment-cancel" element={<PaymentCancel />} />
 
               <Route path="/login" element={<Login />} />

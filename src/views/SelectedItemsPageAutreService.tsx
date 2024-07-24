@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
@@ -9,9 +9,19 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
-import { loadStripe } from "@stripe/stripe-js";
 import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const SelectedItemsPageAutreService = () => {
   const navigate = useNavigate();
@@ -22,40 +32,18 @@ const SelectedItemsPageAutreService = () => {
   const comment = location.state.selectedItemsData.comment;
   const [currentOffer, setCurrentOffer] = useState(null);
   const { user } = useAuthContext();
-  const checkedValues = location.state.selectedItemsData.checkedValues; // to do
-  // const implantationPrevue = location.state.selectedItemsData.implantationPrevue;
-  // const implantationPrevueInverse = location.state.selectedItemsData.implantationPrevueInverse;
   const isCheckboxChecked = location.state.isCheckboxChecked;
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
   useEffect(() => {
-    // const fetchPatientData = async () => {
-    //   try {
-    //     const response = await axios.get(
-    //       "http://localhost:1337/api/patients?sort=id:desc&pagination[limit]=1"
-    //     );
-    //     // Assuming the first patient is the one you want
-    //     const patient = response.data.data[0].attributes;
-    //     setPatientData({
-    //       fullname: patient.fullname,
-    //       caseNumber: patient.caseNumber,
-    //     });
-    //   } catch (error) {
-    //     console.error("Error fetching patient data:", error);
-    //   }
-    // };
-
-    // fetchPatientData();
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
 
     if (!storedFullname || !storedCaseNumber) {
-      // Redirect to /sign/nouvelle-demande if data is missing
       navigate("/sign/nouvelle-demande");
     } else {
-      // If data exists in local storage, set it to patientData
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
@@ -66,60 +54,6 @@ const SelectedItemsPageAutreService = () => {
     axios.get("http://localhost:1337/api/services").then(() => {});
   }, []);
 
-  const handleNextClick = async () => {
-    const token = getToken();
-    if (!token) {
-      console.error("No auth token found");
-      return;
-    }
-
-    const data = {
-      comment: comment,
-      service_impression_et_expedition: isCheckboxChecked,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      submit: false,
-      archive: false, // Set to true initially
-      En_attente_approbation: false,
-      en__cours_de_modification: false,
-      soumis: false,
-      approuve: false,
-      produire_expide: false,
-      Demande_devis: true, // We don't need this field as per the flow
-      user: user.id,
-    };
-
-    try {
-      const response = await axios.post(
-        "http://localhost:1337/api/autres-services-de-conceptions",
-        { data },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        alert(
-          language === "french"
-            ? "Service archivé avec succès"
-            : "Service archived successfully"
-        );
-        navigate("/sign/mes-fichier");
-      }
-    } catch (error) {
-      console.error("Error archiving service:", error);
-      alert(
-        language === "french"
-          ? "Erreur lors de l'archivage du service"
-          : "Error archiving service"
-      );
-    }
-  };
-
-  // Remove handleNextClickArchive as it's no longer needed
-
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -129,7 +63,7 @@ const SelectedItemsPageAutreService = () => {
     } else {
       setPatientData({
         fullname: storedFullname,
-        caseNumber: storedCaseNumber,
+        caseNumber: storedCaseNumber, 
       });
 
       const fetchOfferData = async () => {
@@ -189,15 +123,59 @@ const SelectedItemsPageAutreService = () => {
             patient: patientData.fullname,
             numero_cas: patientData.caseNumber,
             service_impression_et_expedition: isCheckboxChecked,
-            submit: false,
+            soumis: false,
             archive: true,
+            cout:0,
+            Demande_devis:false,
+            produire_expide:false,
+            approuve:false,
+            en__cours_de_modification:false,
+            En_attente_approbation:false,
+            user: user.id,
+            offre:currentOffer?.currentPlan
           },
         }
       );
 
       if (res.status === 200) {
         localStorage.removeItem("autreServiceState")
-        navigate("/");
+        navigate("/mes-fichier");
+      } else {
+        alert(res.status);
+      }
+    }
+  };
+
+  const handleNextClick = async () => {
+    const isCommentFilled = comment.trim() !== "";
+
+    if (isCommentFilled) {
+      const res = await axios.post(
+        "http://localhost:1337/api/autres-services-de-conceptions",
+        {
+          data: {
+            service: 5,
+            comment,
+            patient: patientData.fullname,
+            numero_cas: patientData.caseNumber,
+            service_impression_et_expedition: isCheckboxChecked,
+            soumis: false,
+            archive: false,
+            cout:0,
+            Demande_devis:true,
+            produire_expide:false,
+            approuve:false,
+            en__cours_de_modification:false,
+            En_attente_approbation:false,
+            user: user.id,
+            offre:currentOffer?.currentPlan
+          },
+        }
+      );
+
+      if (res.status === 200) {
+        localStorage.removeItem("autreServiceState")
+        navigate("/mes-fichier");
       } else {
         alert(res.status);
       }
@@ -289,24 +267,65 @@ const SelectedItemsPageAutreService = () => {
                 </Button>
 
                 <div className="flex space-x-3">
-                  <Button
-                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
-                    onClick={handleNextClickArchive}
-                  >
-                    {language === "french" ? "Archiver" : "Archive"}
-                  </Button>
+                <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2">
+                          {language === "french" ? "Archiver" : "Archive"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {language === "french"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                              : "Are you sure you want to archive this case?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {language === "french" ? "Annuler" : "Cancel"}
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={handleNextClickArchive}>
+                            {language === "french" ? "Continuer" : "Continue"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
 
-                  <Button
-                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
-                    disabled={!comment.trim()}
-                    onClick={handleNextClick}
-                  >
-                    <Link to="/selectedItemsPage">
-                      {language === "french"
-                        ? "Demander un devis"
-                        : "Request a quote"}
-                    </Link>
-                  </Button>
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all">
+                          {language === "french" ? "Demander un devis" : "Request a quote"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                      <AlertDialogHeader>
+                          <AlertDialogTitle>
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir demander un devis pour cas ?"
+                            : "Are you sure you want to request a quote for this case?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                          {language === "french"
+                            ? "Demander un devis pour votre cas."
+                            : "Request a quote for your case."}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {language === "french" ? "Annuler" : "Cancel"}
+                          </AlertDialogCancel>
+                          <AlertDialogAction onClick={handleNextClick}>
+                            {language === "french" ? "Continuer" : "Continue"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
               </div>
             </div>

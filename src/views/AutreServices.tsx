@@ -48,7 +48,7 @@ const AutreServices = () => {
           implantationPrevue,
           implantationPrevueInverse
         } = JSON.parse(storedState);
-        setComment(comment);
+        setComment(comment); 
         setCheckedValues({implantationPrevue,implantationPrevueInverse})
 
         const storedFullname = localStorage.getItem("fullName");

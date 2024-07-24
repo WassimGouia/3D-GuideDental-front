@@ -39,6 +39,9 @@ const SelectedItemsPageGbruxisme = () => {
   const second = previousStates.second;
   const additionalGuidess = selectedItemsData.additionalGuides;
   const textareaValu = selectedItemsData.textareaValue;
+  const originalCost =
+  location.state.selectedItemsData.originalCost;
+
 console.log("first",first)
 console.log("second",second)
   const [patientData, setPatientData] = useState({
@@ -118,10 +121,11 @@ console.log("second",second)
         data: {
           service: 4,
           comment,
+          cout:cost,
           patient: patientData.fullname,
           numero_cas: patientData.caseNumber,
           selected_teeth: selectedTeeth,
-          les_options_generiques: [
+          options_generiques: [
             {
               title: "les options generiques",
               Impression_Formlabs: [
@@ -140,8 +144,15 @@ console.log("second",second)
               ],
             },
           ],
-          submit: false,
           archive: true,
+          En_attente_approbation: false,
+          soumis: false,
+          en__cours_de_modification: false,
+          approuve: false,
+          produire_expide: false,
+          user: user.id,
+          offre:currentOffer?.currentPlan,
+          originalCost:originalCost,
         },
       }
     );
@@ -179,10 +190,11 @@ console.log("second",second)
         data: {
           service: 4,
           comment,
+          cout:cost,
           patient: patientData.fullname,
           numero_cas: patientData.caseNumber,
           selected_teeth: selectedTeeth,
-          les_options_generiques: [
+          options_generiques: [
             {
               title: "les options generiques",
               Impression_Formlabs: [
@@ -201,15 +213,22 @@ console.log("second",second)
               ],
             },
           ],
-          submit: false,
           archive: true,
+          En_attente_approbation: false,
+          soumis: false,
+          en__cours_de_modification: false,
+          approuve: false,
+          produire_expide: false,
+          user: user.id,
+          offre:currentOffer?.currentPlan,
+          originalCost:originalCost,
         },
       }
     );
 
     if (res.status === 200) {
       localStorage.removeItem("guideBruxismeState")
-      navigate("/");
+      navigate("/mes-fichier");
     } else {
       alert(res.status);
     }
@@ -375,16 +394,16 @@ console.log("second",second)
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                        <AlertDialogHeader>
+                      <AlertDialogHeader>
                           <AlertDialogTitle>
                             {language === "french"
-                              ? "Voulez-vous vraiment archiver ce cas?"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? " cela archivera le cas."
-                              : " this will archive the case."}
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -405,16 +424,16 @@ console.log("second",second)
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                        <AlertDialogHeader>
+                      <AlertDialogHeader>
                           <AlertDialogTitle>
-                            {language === "french"
-                              ? "Voulez-vous vraiment soumettre ce cas?"
-                              : "Are you sure you want to submit this case?"}
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                            : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? " cela soumettra le cas."
-                              : " this will submit the case."}
+                          {language === "french"
+                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

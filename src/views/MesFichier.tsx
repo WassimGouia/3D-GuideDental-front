@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { BEARER } from "@/components/Constant";
 import { useAuthContext } from "@/components/AuthContext";
 import { useLanguage } from "@/components/languageContext";
-import { FileText, Box } from "lucide-react";
+import { FileText, Box, Trash, CheckCheck, ThumbsUp, Edit, Factory, Truck, FilePenLineIcon, PaperclipIcon, File, Pencil, Send, SendHorizonal } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,15 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import cn from "classnames";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
   Popover,
   PopoverContent,
@@ -46,9 +42,13 @@ import {
 import ReactPaginate from "react-paginate";
 import { statuses } from "@/components/DummyData";
 import { getToken } from "@/components/Helpers";
+import { Tooltip } from "@material-tailwind/react";
+import { loadStripe } from "@stripe/stripe-js";
+import { InfoCircleOutlined, NumberOutlined } from "@ant-design/icons";
 
 interface Guide {
   id: string;
+  offre: string;
   type: string;
   attributes: {
     numero_cas: string;
@@ -69,22 +69,24 @@ interface Guide {
     produire_expide: boolean;
     cout?: number;
     Demande_devis?: boolean;
-    // Add other fields as needed
   };
 }
-
-interface Status {
-  value: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
+type State = {
+  status: string;
+  message: string;
+};
 const MesFichier: React.FC = () => {
+  console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq")
   const [guides, setGuides] = useState<Guide[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [searchName, setSearchName] = useState("");
+  const [searchCaseNumber, setSearchCaseNumber] = useState("");
+
   const [searchDate, setSearchDate] = useState<Date | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<Status | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+
+  const [services, setServices] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthContext();
@@ -124,9 +126,7 @@ const MesFichier: React.FC = () => {
           };
           setCurrentOffer(offer);
 
-          // Assuming you have a way to get the original cost
-          // You might need to adjust this based on your actual data structure
-          const originalCost = 100; // Replace with actual original cost
+          const originalCost = 100;
           setOriginalCost(originalCost);
 
           const discountAmount = (originalCost * offer.discount) / 100;
@@ -150,57 +150,126 @@ const MesFichier: React.FC = () => {
     };
     return discounts[plan] || 0;
   };
+  const fetchGuides = async () => {
+    if (!user) return;
+
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const headers = { Authorization: `${BEARER} ${token}` };
+      const guideTypes = [
+        "guide-pour-gingivectomies",
+        "gouttiere-de-bruxismes",
+        "guide-a-etages",
+        "guide-classiques",
+        "autres-services-de-conceptions",
+        "rapport-radiologiques",
+      ];
+      // populate=*
+      const responses = await Promise.all(
+        guideTypes.map((type) =>
+          axios.get(
+            `http://localhost:1337/api/${type}?filters[user][id][$eq]=${user.id}&populate[options_generiques][populate]=*&populate[service]=*&populate[pdfFile]=*&populate[model3d]=*&populate[user]=*&populate[Options_supplementaires]=*`,
+            { headers }
+          )
+        )
+      );
+
+      const allGuides = responses.flatMap((response, index) =>
+        response.data.data.map((guide: any) => ({
+          ...guide,
+          type: guideTypes[index],
+        }))
+      );
+      const sortedGuides = allGuides.sort((a, b) => 
+        new Date(b.attributes.createdAt) - new Date(a.attributes.createdAt)
+      );
+      
+      console.log("cccccccccccc",sortedGuides)
+
+      setGuides(sortedGuides);
+      
+    } catch (error) {
+      console.error("Error fetching guides:", error);
+      setError("Failed to fetch guides. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const fetchServices = async () => {
+    try {
+
+      const responses = await axios.get(
+            `http://localhost:1337/api/services`,
+          )
+        
+      setServices(responses.data.data);
+      
+    } catch (error) {
+      console.error("Error fetching guides:", error);
+      setError("Failed to fetch guides. Please try again later.");
+    }
+  };
 
   useEffect(() => {
-    const fetchGuides = async () => {
-      if (!user) return;
-
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const headers = { Authorization: `${BEARER} ${token}` };
-        const guideTypes = [
-          "guide-pour-gingivectomies",
-          "gouttiere-de-bruxismes",
-          "guide-a-etages",
-          "guide-classiques",
-          "autres-services-de-conceptions",
-          "rapport-radiologiques",
-        ];
-
-        const responses = await Promise.all(
-          guideTypes.map((type) =>
-            axios.get(
-              `http://localhost:1337/api/${type}?filters[user][id][$eq]=${user.id}&populate=*`,
-              { headers }
-            )
-          )
-        );
-
-        const allGuides = responses.flatMap((response, index) =>
-          response.data.data.map((guide: any) => ({
-            ...guide,
-            type: guideTypes[index],
-          }))
-        );
-        setGuides(allGuides);
-      } catch (error) {
-        console.error("Error fetching guides:", error);
-        setError("Failed to fetch guides. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchGuides();
   }, [user]);
+  useEffect(() => {
+    fetchServices()
+  }, []);
 
+  const getCurrentState = (
+    attributes: Guide["attributes"],
+    type: string
+  ): State => {
+    if (type === "rapport-radiologiques") {
+      if (attributes.archive) return { status: "Archivé", message: "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé." };
+      if (attributes.soumis) return { status: "Soumis", message: "La demande de rapport radiologique a été soumise. Si le rapport n'apparaît pas sur votre compte dans les 3 jours ouvrés suivant sa soumission, veuillez nous contacter." };
+      return { status: "Indéfini", message: "" };
+    }
+    
+  
+    if (type === "autres-services-de-conceptions") {
+      if (attributes.Demande_devis) return {status:"Devis Demandé",message:"Le traitement de votre demande est en cours. Si vous ne recevez pas un devis dans les 3 jours ouvrés suivant la date de la demande, n'hésitez pas à nous contacter."};
+      if (attributes.En_attente_approbation) return {status:"En attente d'approbation",message:"En attente d'approbation"};
+      if (attributes.en__cours_de_modification) return {status:"En cours de modification",message:"Votre demande de modification a été enregistrée. Si le résultat ne figure pas sur votre compte dans les 2 jours ouvrés suivant la soumission, veuillez nous contacter."};
+      if (attributes.archive) return { status: "Archivé", message: "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé." };
+      if (attributes.soumis) return { status: "Soumis", message: "Votre cas a été soumis. Si le résultat ne s'affiche pas sur votre compte dans les 3 jours ouvrés suivant la soumission, veuillez nous contacter." };
+      if (attributes.approuve) return {status:"Approuvé",message:"Approuvé"};
+      if (attributes.produire_expide) return {status:"Cas produit et expédié",message:"Votre cas a été expédié. Si vous ne recevez pas le cas dans un délai de 7 jours ouvrables à compter de la date d'approbation de la production, n'hésitez pas à nous contacter."};
+      return {status:"Indéfini",message:""};
+    }
+    if(type === "guide-a-etage"){
+      if (attributes.soumis) return { status: "Soumis", message: "Votre demande de guide à étages a été soumise. Si le résultat ne figure pas sur votre compte dans les 5 jours ouvrés suivant la soumission, veuillez nous contacter." };
+      if (attributes.en__cours_de_modification) return {status:"En cours de modification",message:"Votre demande de modification a été enregistrée. Si le résultat ne figure pas sur votre compte dans les 3 jours ouvrés suivant la soumission, veuillez nous contacter."};
+    }
+    if (attributes.En_attente_approbation) return {status:"En attente d'approbation",message:"En attente d'approbation"};
+    if (attributes.en__cours_de_modification) return {status:"En cours de modification",message:"Votre demande de modification a été enregistrée. Si le résultat ne figure pas sur votre compte dans les 2 jours ouvrés suivant la soumission, veuillez nous contacter."};
+    if (attributes.archive) return { status: "Archivé", message: "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé." };
+    if (attributes.soumis) return { status: "Soumis", message: "Votre cas a été soumis. Si le résultat ne s'affiche pas sur votre compte dans les 3 jours ouvrés suivant la soumission, veuillez nous contacter." };
+    if (attributes.approuve) return {status:"Approuvé",message:"Approuvé"};
+    if (attributes.produire_expide) return {status:"Cas produit et expédié",message:"Votre cas a été expédié. Si vous ne recevez pas le cas dans un délai de 7 jours ouvrables à compter de la date d'approbation de la production, n'hésitez pas à nous contacter."};
+    return {status:"Indéfini",message:""};
+  };
+  
+  const handleSelectChange = (event) => {
+    const selectedValue = event.target.value;
+    console.log('Selected value:', selectedValue);
+    setSelectedStatus(selectedValue);
+  };
+  
+  const handleSelectChangeServices = (event) => {
+    // Handle the change event here
+    console.log(event.target.value);
+    setSelectedService(event.target.value);
+
+  };
   const filteredGuides = useMemo(() => {
-    return guides.filter((guide) => {
+    const filtered = guides.filter((guide) => {
       const nameMatch = guide.attributes.patient
         .toLowerCase()
         .includes(searchName.toLowerCase());
@@ -208,57 +277,28 @@ const MesFichier: React.FC = () => {
         !searchDate ||
         new Date(guide.attributes.createdAt).toDateString() ===
           searchDate.toDateString();
-      const stateMatch =
-        !selectedStatus ||
-        getCurrentState(guide.attributes) === selectedStatus.label;
-      return nameMatch && dateMatch && stateMatch;
+      const statusMatch =
+        !selectedStatus || getCurrentState(guide.attributes, guide.type).status === selectedStatus;
+      const serviceMatch =
+        !selectedService || guide.attributes.service?.data?.attributes?.title === selectedService;
+      const caseNumberMatch = guide.attributes.numero_cas
+        .toLowerCase()
+        .includes(searchCaseNumber.toLowerCase());
+      return nameMatch && dateMatch && statusMatch && serviceMatch && caseNumberMatch;
     });
-  }, [guides, searchName, searchDate, selectedStatus]);
-
+    console.log("Filtered Guides:", filtered); // Log filtered guides
+    return filtered;
+  }, [guides, searchName, searchDate, selectedStatus, selectedService, searchCaseNumber]);
+  
   const pageCount = Math.ceil(filteredGuides.length / guidesPerPage);
   const offset = currentPage * guidesPerPage;
   const currentPageData = filteredGuides.slice(offset, offset + guidesPerPage);
-
-  // const determineGuideType = (guide: any): string => {
-  //   if (guide.attributes.hasOwnProperty("guide_pour_gingivectomies"))
-  //     return "gingivectomies";
-  //   if (guide.attributes.hasOwnProperty("gouttiere_de_bruxismes"))
-  //     return "bruxism";
-  //   if (guide.attributes.hasOwnProperty("autres_services_de_conceptions"))
-  //     return "autres";
-  //   return "unknown";
-  // };
-
-  const getCurrentState = (
-    attributes: Guide["attributes"],
-    type: string
-  ): string => {
-    if (type === "rapport-radiologiques") {
-      if (attributes.archive) return "Archivé";
-      if (attributes.submit) return "Soumis";
-      return "Indéfini";
-    }
-
-    if (type === "autres-services-de-conceptions") {
-      if (attributes.Demande_devis) return "Devis Demandé";
-      if (attributes.En_attente_approbation) return "En attente d'approbation";
-      if (attributes.en__cours_de_modification)
-        return "En cours de modification";
-      if (attributes.archive) return "Archivé";
-      if (attributes.soumis) return "Soumis";
-      if (attributes.approuve) return "Approuvé";
-      if (attributes.produire_expide) return "Cas produit et expédié";
-      return "Indéfini";
-    }
-    // Existing logic for other guide types
-    if (attributes.En_attente_approbation) return "En attente d'approbation";
-    if (attributes.en__cours_de_modification) return "En cours de modification";
-    if (attributes.archive) return "Archivé";
-    if (attributes.soumis) return "Soumis";
-    if (attributes.approuve) return "Approuvé";
-    if (attributes.produire_expide) return "Cas produit et expédié";
-    return "Indéfini";
-  };
+  console.log("Filtered Guides:", filteredGuides);
+  console.log("Current Page:", currentPage);
+  console.log("Guides Per Page:", guidesPerPage);
+  console.log("Offset:", offset);
+  console.log("Current Page Data:", currentPageData);
+  
 
   const getEndpoint = (guideType: string): string => {
     switch (guideType) {
@@ -301,6 +341,13 @@ const MesFichier: React.FC = () => {
         }
       );
 
+      const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+        email:"hamedtriki5@gmail.com",
+        subject: "Case Status Update",
+        content: `We would like to inform you that the client of case number ${guide.attributes.numero_cas} has requested a quote.`,
+      })
+
+
       if (response.status === 200) {
         setGuides((prevGuides) =>
           prevGuides.map((g) =>
@@ -333,53 +380,48 @@ const MesFichier: React.FC = () => {
       );
     }
   };
+
+  const stripePromise = loadStripe(
+    "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
+  ); 
+
   const handlesoumettre = async (guide: Guide) => {
     try {
-      const endpoint = getEndpoint(guide.type);
-      const token = localStorage.getItem("authToken");
+      // const endpoint = getEndpoint(guide.type);
+      localStorage.setItem("caseNumber",guide.attributes.numero_cas)
+      localStorage.setItem("fullName",guide.attributes.patient)
+      const requestData = {
+        // cost: guide.attributes.service?.data.id === 5 ? guide.attributes.service_impression_et_expedition === false ? (guide.attributes.cout * (1 - getDiscount(currentOffer.currentPlan) /100)) : ((guide.attributes.cout * (1 - getDiscount(currentOffer.currentPlan) /100)) + user.location[0].country.toLowerCase() === "france" ? 7.5 : 15) :guide.attributes.cout,
+        cost: guide.attributes.service?.data.id === 5 
+        ? (guide.attributes.service_impression_et_expedition === false 
+            ? (guide.attributes.cout * (1 - getDiscount(currentOffer.currentPlan) / 100)) 
+            : ((guide.attributes.cout * (1 - getDiscount(currentOffer.currentPlan) / 100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15))) 
+        : guide.attributes.cout,
+        service: guide.attributes.service?.data.id,
+        patient: guide.attributes.patient,
+        email: user && user.email,
+        guideId:guide.id,
+        numero_cas:guide.attributes.numero_cas
+      };
 
-      const response = await axios.put(
-        `${endpoint}/${guide.id}`,
-        {
-          data: {
-            En_attente_approbation: true,
-            archive: false,
-            soumis: true,
-            submit: true,
-            en__cours_de_modification: false,
-            approuve: false,
-            produire_expide: false,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      console.log("req",requestData)
+  
+      try {
+        const stripe = await stripePromise;
+        const response = await axios.post(
+          "http://localhost:1337/api/commandes",
+          requestData
+        );
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: response.data.stripeSession.id,
+        });
+        if (error) {
+          console.error("Stripe checkout error:", error);
         }
-      );
+      } catch (err) {
+        console.log(err);
+      }
 
-      // Update the local state
-      setGuides((prevGuides) =>
-        prevGuides.map((g) =>
-          g.id === guide.id
-            ? {
-                ...g,
-                attributes: {
-                  ...g.attributes,
-                  En_attente_approbation: true,
-                  archive: false,
-                  soumis: true,
-                  submit: true,
-                  en__cours_de_modification: false,
-                  approuve: false,
-                  produire_expide: false,
-                },
-              }
-            : g
-        )
-      );
-
-      alert("Guide soumis avec succès");
     } catch (error) {
       console.error("Failed to soumettre guide:", error);
       if (axios.isAxiosError(error)) {
@@ -389,54 +431,275 @@ const MesFichier: React.FC = () => {
     }
   };
 
+
+  const handlesoumettrePiecephysique = async (guide: Guide) => {
+    try {  
+      localStorage.setItem("guideType",guide.type)
+      localStorage.setItem("guideId",guide.id)
+      localStorage.setItem("offre",guide.attributes.offre)
+      localStorage.setItem("originalCost",guide.attributes.piece_physique_cout)
+  
+      const requestData = {
+        cost: ((guide.attributes.piece_physique_cout * (1 - getDiscount(currentOffer.currentPlan) / 100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15)),
+        patient: guide.attributes.patient,
+        email: user && user.email,
+        caseNumber:guide.attributes.numero_cas,
+        type_travail: guide.type,
+      };
+      console.log("req",requestData)
+
+      try {
+        const stripe = await stripePromise;
+        const response = await axios.post(
+          "http://localhost:1337/api/demande-produire-et-expidees",
+          requestData
+        );
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: response.data.stripeSession.id,
+        });
+        if (error) {
+          console.error("Stripe checkout error:", error);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    } catch (error) {
+      console.error("Failed to soumettre guide:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Error response:", error.response?.data);
+      }
+      alert("Échec de la soumission du guide: " + (error as Error).message);
+    }
+  };
+
+
   const handleapprouver = async (guide: Guide) => {
     try {
       const endpoint = getEndpoint(guide.type);
       const token = localStorage.getItem("authToken");
-
-      console.log(
-        `Attempting to approve guide: ${guide.id} of type: ${guide.type}`
-      );
-
-      const response = await axios.put(
-        `${endpoint}/${guide.id}`,
-        {
-          data: {
-            En_attente_approbation: false,
-            approuve: true,
-            soumis: false,
-            en__cours_de_modification: false,
-            archive: false,
-            produire_expide: false,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      if(guide.type === "guide-a-etages"){
+        if(guide.attributes.Options_supplementaires.every(option => option.active === false)){
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: true,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: false,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          //guide.attributes.user.data.attributes.email
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"hamedtriki5@gmail.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
+          })
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: true,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: false,
+                    },
+                  }
+                : g
+            )
+          );
+        }else{
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: false,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: true,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"hamedtriki5@gmail.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
+          })
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: false,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: true,
+                    },
+                  }
+                : g
+            )
+          );
         }
-      );
+      }else if (guide.type === "autres-services-de-conceptions"){
+        const response = await axios.put(
+          `${endpoint}/${guide.id}`,
+          {
+            data: {
+              En_attente_approbation: false,
+              approuve: true,
+              soumis: false,
+              en__cours_de_modification: false,
+              archive: false,
+              produire_expide: false,
+            },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          email:"hamedtriki5@gmail.com",
+          subject:"Case Status Update",
+          content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
+        })
 
-      console.log(`Approve response:`, response.data);
+        setGuides((prevGuides) =>
+          prevGuides.map((g) =>
+            g.id === guide.id
+              ? {
+                  ...g,
+                  attributes: {
+                    ...g.attributes,
+                    En_attente_approbation: false,
+                    approuve: true,
+                    soumis: false,
+                    en__cours_de_modification: false,
+                    archive: false,
+                    produire_expide: false,
+                  },
+                }
+              : g
+          )
+        );
+      }
+      else{
+        if(guide.attributes.options_generiques[0].Impression_Formlabs[0].active === false){
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: true,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: false,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"hamedtriki5@gmail.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
+          })
 
-      setGuides((prevGuides) =>
-        prevGuides.map((g) =>
-          g.id === guide.id
-            ? {
-                ...g,
-                attributes: {
-                  ...g.attributes,
-                  En_attente_approbation: false,
-                  approuve: true,
-                  soumis: false,
-                  en__cours_de_modification: false,
-                  archive: false,
-                  produire_expide: false,
-                },
-              }
-            : g
-        )
-      );
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: true,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: false,
+                    },
+                  }
+                : g
+            )
+          );
+        }else{
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: false,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: true,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"hamedtriki5@gmail.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
+          })
+
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: false,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: true,
+                    },
+                  }
+                : g
+            )
+          );
+        }
+      }
+
+
+
 
       alert("Guide approuvé avec succès");
     } catch (error) {
@@ -467,8 +730,6 @@ const MesFichier: React.FC = () => {
         ? "/sign/Demande-de-production-et-expedition-guide-etage"
         : "/sign/Demande-de-production-et-expedition-autre-guides";
 
-    console.log("Navigating with guide:", guide); // Debug log
-
     navigate(route, {
       state: {
         caseNumber: guide.attributes.numero_cas,
@@ -476,7 +737,8 @@ const MesFichier: React.FC = () => {
         typeDeTravail: guide.attributes.service?.data?.attributes?.title,
         cost: guide.attributes.cout,
         guideType: guide.type,
-        guideId: guide.id, // Ensure this is the correct property for the guide ID
+        guideId: guide.id,
+        offre:guide.attributes.offre
       },
     });
   };
@@ -486,26 +748,14 @@ const MesFichier: React.FC = () => {
       const endpoint = getEndpoint(guide.type);
       const token = localStorage.getItem("authToken");
 
-      console.log(
-        `Attempting to delete guide: ${guide.id} of type: ${guide.type}`
-      );
-
       const response = await axios.delete(`${endpoint}/${guide.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log(`Delete response:`, response);
+      setGuides(filteredGuides.filter((g) => g.id !== guide.id));
 
-      // Immediately remove the rapport radiologique from the state
-      setGuides((prevGuides) => prevGuides.filter((g) => g.id !== guide.id));
-
-      if (guide.type === "rapport-radiologiques") {
-        alert("Rapport radiologique supprimé avec succès");
-      } else {
-        alert("Guide supprimé avec succès");
-      }
     } catch (error) {
       console.error(`Error deleting guide of type ${guide.type}:`, error);
       if (axios.isAxiosError(error)) {
@@ -516,13 +766,14 @@ const MesFichier: React.FC = () => {
     }
   };
 
-  const [open, setOpen] = React.useState(false);
-  null;
-
   const handlePageClick = (data: { selected: number }) => {
     setCurrentPage(data.selected);
   };
 
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
+  console.log("HHHHHHHHHHHHHHHHHHHHHH:",filteredGuides)
+console.log("AAAAAAAAAAAAAAAAAAAA",currentPageData)
   return (
     <main className="bg-white flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 w-auto min-h-screen ">
       <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
@@ -554,24 +805,41 @@ const MesFichier: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-max">N°</TableHead>
-              <TableHead>Nom du patient</TableHead>
-              <TableHead className="w-max">Date de création</TableHead>
-              <TableHead>Type de travail</TableHead>
-              <TableHead className="">Etat</TableHead>
-              <TableHead className="text-center">Action à faire</TableHead>
-              <TableHead className="text-center">Fichiers</TableHead>
+              <TableHead className="text-center">N°</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'Nom du patient' : 'Patient Name'}</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'Date de création' : 'Creation Date'}</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'Type de travail' : 'Type of Work'}</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'État' : 'Status'}</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'Action à faire' : 'Action Required'}</TableHead>
+              <TableHead className="text-center">{language === 'french' ? 'Fichiers' : 'Files'}</TableHead>
             </TableRow>
           </TableHeader>
           <TableHeader>
             <TableRow>
-              <TableHead></TableHead>
-              <TableHead>
+              <TableHead className="text-center">
+              <TableHead className="text-center">
+                <div className="relative">
+                  <Input
+                    id="search-bar"
+                    type="number"
+                    placeholder={`${language === "french" ? "Rechercher ..." : "Search ..."}`}
+                    className="pl-10 pr-4 py-2 w-32 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500"
+                    value={searchCaseNumber}
+                    onChange={(e) => setSearchCaseNumber(e.target.value)}
+                  />
+                  <NumberOutlined
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black"
+                    size={24}
+                  />
+                </div>
+              </TableHead>
+              </TableHead>
+              <TableHead className="text-center">
                 <div className="relative">
                   <Input
                     id="search-bar"
                     type="text"
-                    placeholder="Search"
+                    placeholder={`${language === "french" ? "Rechercher ..." : "Search ..."}`}
                     className="pl-10 pr-4 py-2 w-32 rounded-lg border border-gray-300 focus:outline-none focus:border-indigo-500"
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
@@ -582,7 +850,7 @@ const MesFichier: React.FC = () => {
                   />
                 </div>
               </TableHead>
-              <TableHead className="text-right">
+              <TableHead className="text-center">
                 <div className="flex items-center space-x-4">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -594,7 +862,7 @@ const MesFichier: React.FC = () => {
                         {searchDate ? (
                           format(searchDate, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Date</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -609,108 +877,870 @@ const MesFichier: React.FC = () => {
                   </Popover>
                 </div>
               </TableHead>
-              <TableHead></TableHead>
-              <TableHead className="text-right">
-                <div className="flex items-center space-x-4">
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-[150px] justify-start"
-                      >
-                        {selectedStatus ? (
-                          <>
-                            <selectedStatus.icon className="mr-2 h-4 w-4 shrink-0" />
-                            {selectedStatus.label}
-                          </>
-                        ) : (
-                          <>+ Statut</>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0" side="right" align="start">
-                      <Command>
-                        <CommandInput placeholder="Change status..." />
-                        <CommandList>
-                          <CommandEmpty>No results found.</CommandEmpty>
-                          <CommandGroup>
-                            {statuses.map((status) => (
-                              <CommandItem
-                                key={status.value}
-                                value={status.value}
-                                onSelect={(value) => {
-                                  setSelectedStatus(
-                                    statuses.find(
-                                      (priority) => priority.value === value
-                                    ) || null
-                                  );
-                                  setOpen(false);
-                                }}
-                              >
-                                <status.icon
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    status.value === selectedStatus?.value
-                                      ? "opacity-100"
-                                      : "opacity-40"
-                                  )}
-                                />
-                                <span>{status.label}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+              <TableHead className="text-center">
+              <div className="flex items-center space-x-4">
+                <select
+                  onChange={handleSelectChangeServices}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:text-gray-500 sm:text-sm bg-white text-gray-900"
+                >
+                    <option value="">{language === "french" ? "Tout" : "All"}</option>
+                    {services?.map((service) => (
+                      <option key={service.id} value={service.attributes.title} >
+                        {service.attributes.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </TableHead>
-              <TableHead className="text-right"></TableHead>
-              <TableHead className="text-right"></TableHead>
+              <TableHead className="text-center">
+                <div className="flex items-center space-x-4">
+                  <select
+                    onChange={handleSelectChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:text-gray-500 focus:text-gray-500 sm:text-sm bg-white text-gray-900"
+                  >
+                      <option value="" >
+                      {language === "french" ? "Tout" : "All"}
+                      </option>
+                      {statuses.map((status) => (
+                        <option key={status.value} value={status.value} >
+                          {status.value}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </TableHead>
+              <TableHead className="text-center"></TableHead>
+              <TableHead className="text-center"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentPageData.map((guide) => (
-              <TableRow key={guide.id}>
-                <TableCell>{guide.attributes.numero_cas}</TableCell>
-                <TableCell>{guide.attributes.patient}</TableCell>
-                <TableCell>
-                  {new Date(guide.attributes.createdAt).toLocaleDateString()}
+            {console.log("from html",currentPageData)}
+            {currentPageData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">
+                  {language === "french" ? "Aucune donnée disponible": "No data available"}
                 </TableCell>
-                <TableCell>
-                  {guide.attributes.service?.data?.attributes?.title ||
-                    "No service"}
-                </TableCell>
-                <TableCell>
-                  {getCurrentState(guide.attributes, guide.type)}
-                </TableCell>
-                <TableCell className="text-center">
-                  {guide.type === "rapport-radiologiques" ? (
-                    <>
-                      {guide.attributes.archive && (
-                        <>
+              </TableRow>
+            ) : (
+              currentPageData.map((guide) => (
+                <TableRow key={guide.id}>
+                  <TableCell className="text-center">{guide.attributes.numero_cas}</TableCell>
+                  <TableCell className="text-center">{guide.attributes.patient}</TableCell>
+                  <TableCell className="text-center">
+                    {new Date(guide.attributes.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {guide.attributes.service?.data?.attributes?.title || "No service"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex space-x-4">
+                      {getCurrentState(guide.attributes, guide.type).status}
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <InfoCircleOutlined className="h-4 w-auto cursor-pointer" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="bg-gray-200 bg-opacity-95">
+                          <p>
+                            {getCurrentState(guide.attributes, guide.type).message}
+                          </p>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {guide.type === "rapport-radiologiques" ? (
+                      <div className="flex space-x-4">
+                        {guide.attributes.archive && (
+                          <div className="flex space-x-4">
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Soumettre"
+                                      : "Submit"}`}>
+                              <AlertDialogTrigger asChild>
+                                <div className="relative">
+                                  <CheckCheck className="text-green-500 cursor-pointer w-6 h-6 animate-check" />
+                                </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                                    : "Are you sure you want to submit this case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {language === "french"
+                                    ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
+                                    : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handlesoumettre(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Soumettre"
+                                      : "Submit"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}`}>
+                              <AlertDialogTrigger asChild>
+                                  <div className="relative">
+                                    <Trash className="text-red-500 cursor-pointer w-6 h-6 hover:animate-delete" />
+                                  </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr(e) de vouloir supprimer définitivement le cas ?"
+                                      : "Are you sure you want to permanently delete the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr de vouloir supprimer ce cas ? Cette action est irréversible."
+                                      : "Are you sure you want to delete this case? This action cannot be undone."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                        {guide.attributes.soumis && (
+                          <Tooltip content={`${language === "french"
+                            ? "Soumis"
+                            : "Submissive"}`}>
+                            <div className="relative">
+                              <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
+                            </div>
+                          </Tooltip>
+                        )}
+                      </div>
+                    ) : guide.type === "autres-services-de-conceptions" ? (
+                      <div className="flex space-x-4">
+                        {guide.attributes.archive && (
+                          <>
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Demander un devis"
+                                      : "Request a quote"}`}>
+                              <AlertDialogTrigger asChild>
+                              <div className="relative cursor-pointer">
+                                <File className="text-gray-600 w-6 h-6" />
+                                <Pencil className="absolute text-gray-600 w-4 h-4 animate-write top-2 left-4 transform -translate-x-1/2 -translate-y-1/2" />
+                              </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr(e) de vouloir demander un devis ?"
+                                      : "Are you sure you want to request a quote?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Cliquez sur 'Demander un devis' pour obtenir gratuitement un devis sur votre demande."
+                                      : "Click 'Request a quote' to get a free quote on your request."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDemandeDevis(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Demander un devis"
+                                      : "Request a quote"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}`}>
+                              <AlertDialogTrigger asChild>
+                                <div className="relative">
+                                    <Trash className="text-red-500 cursor-pointer w-6 h-6 hover:animate-delete" />
+                                  </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr(e) de vouloir supprimer définitivement le cas ?"
+                                      : "Are you sure you want to permanently delete the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr de vouloir supprimer ce cas ? Cette action est irréversible."
+                                      : "Are you sure you want to delete this case? This action cannot be undone."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+
+                        {guide.attributes.Demande_devis && (
+                          <>
+                            {guide.attributes.cout === 0 ? (
+                              <Tooltip content={language === "french" ? "Demande de devis envoyée" : "Request for quote sent"}>
+                                <div className="relative">
+                                  <SendHorizonal className="text-purple-500 cursor-pointer w-6 h-6 animate-rocket" />
+                                </div>
+                              </Tooltip>
+                            ) : (
+                              <>
+                                <AlertDialog>
+                                <Tooltip content={`${language === "french"
+                                          ? "Soumettre"
+                                          : "Submit"}`}>
+                                  <AlertDialogTrigger asChild>
+                                    <div className="relative">
+                                      <CheckCheck className="text-green-400 cursor-pointer w-6 h-6 animate-check" />
+                                    </div>
+                                  </AlertDialogTrigger>
+                                  </Tooltip>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                      {language === "french"
+                                          ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                                          : "Are you sure you want to submit this case?"}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                      {language === "french"
+                                        ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                                        : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        {language === "french" ? "Annuler" : "Cancel"}
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handlesoumettre(guide)}
+                                      >
+                                        {language === "french"
+                                          ? "Soumettre"
+                                          : "Submit"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                                <AlertDialog>
+                              <Tooltip content={language === "french" ? "Supprimer" : "Delete"}>
+                                <AlertDialogTrigger asChild>
+                                  <div className="relative">
+                                    <Trash className="text-red-500 cursor-pointer w-6 h-6 hover:animate-delete" />
+                                  </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "french" ? "Êtes-vous sûr(e) de vouloir supprimer définitivement le cas ?" : "Are you sure you want to permanently delete the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french" ? "Êtes-vous sûr de vouloir supprimer ce cas ? Cette action est irréversible." : "Are you sure you want to delete this case? This action cannot be undone."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(guide)}>
+                                    {language === "french" ? "Supprimer" : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                                </AlertDialog>
+                          </>
+                        )}
+
+
+                        {guide.attributes.En_attente_approbation && (
+                          <div className="flex space-x-4">
+                            <AlertDialog>
+                            <Tooltip content={`${language==="french" ? "Approuver":"Approuve"}`}>
+                                <AlertDialogTrigger asChild>
+                                    <div className="relative">
+                                      <ThumbsUp className="text-blue-500 cursor-pointer w-6 h-6 hover:animate-thumbs-up" />
+                                    </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir approuver le cas ?"
+                                    : "Are you sure you want to approve the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {language === "french"
+                                    ? "Si la planification proposée vous convient, cliquez sur 'Approuver' pour valider le cas."
+                                    : "If the proposed planning is suitable for you, click on 'Approve' to validate the case."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleapprouver(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Approuver"
+                                      : "Approve"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                              <Tooltip content={`${language==="french" ? "Demande de modification":"Request for modification"}`}>
+                                <AlertDialogTrigger asChild>
+                                    <div className="relative w-10 h-10">
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Pencil className="text-orange-600 w-6 h-6 cursor-pointer hover:animate-edit-pencil" />
+                                      </div>
+                                    </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir modifier la planification ?"
+                                    : "Are you sure you want to modify the planning?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Si la planification proposée ne vous convient pas, cliquez sur 'Demande de modification' pour demander des rectifications"
+                                      : "If the proposed planning does not suit you, click 'Request modification' to request corrections"}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleModificationRequest(guide)
+                                    }
+                                  >
+                                    {language === "french"
+                                      ? "Demande de modification"
+                                      : "Request modification"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+
+                        {guide.attributes.en__cours_de_modification && (
+                          <Tooltip content={`${language === "french"
+                            ? "En cours de modification"
+                            : "In progress of modification"}
+                          `}>
+                          <div className="cursor-pointer spinner-border animate-spin inline-block w-4 h-4 border-4 rounded-full border-t-transparent border-orange-500"></div>
+                          </Tooltip>
+                        )}
+
+                        {guide.attributes.soumis && (
+                          <Tooltip content={`${language === "french"
+                            ? "Soumis"
+                            : "Submissive"}`}>
+                            <div className="relative">
+                              <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
+                            </div>
+                          </Tooltip>
+                        )}
+
+                        {guide.attributes.approuve && 
+                          supportedCountries.includes(country) && guide.attributes.service_impression_et_expedition === false && guide.attributes.piece_physique_cout > 0 && (
+                            <>
+                              <AlertDialog>
+                                <Tooltip content={language === "french" ? "Produire et expédier" : "Produce and ship"}>
+                                  <AlertDialogTrigger asChild>
+                                    <div className="relative flex space-x-2 text-gray-600 cursor-pointer">
+                                      <Factory className="relative z-10" />
+                                      <div className="absolute -left-2 -top-5 flex flex-col items-center space-y-1">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke delay-200"></div>
+                                      </div>
+                                    </div>
+                                  </AlertDialogTrigger>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {language === "french" ? "Confirmer la demande Produire et expédier" : "Confirm Production and Shipping"}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {language === "french" ? "Êtes-vous sûr de vouloir produire et expédier ce cas ?" : "Are you sure you want to produce and ship this case?"}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      {language === "french" ? "Annuler" : "Cancel"}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handlesoumettrePiecephysique(guide)}>
+                                      {language === "french" ? "Produire et expédier" : "Produce and ship"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )
+                        }
+                        {guide.attributes.produire_expide && (
+                          <Tooltip content={language === "french" ? 
+                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
+                          </Tooltip>
+                        )}
+                      </div>
+                    ) : guide.type === "guide-a-etages"?(
+                      <div className="flex space-x-4">
+                        {guide.attributes.produire_expide && (
+                          <Tooltip content={language === "french" ? 
+                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
+                          </Tooltip>
+                        )}
+                        {guide.attributes.En_attente_approbation && (
+                          <div className="flex space-x-4">
+                            <AlertDialog>
+                            <Tooltip content={`${language==="french" ? "Approuver":"Approuve"}`}>
+                                <AlertDialogTrigger asChild>
+                                <div className="relative">
+                                      <ThumbsUp className="text-blue-500 cursor-pointer w-6 h-6 hover:animate-thumbs-up" />
+                                </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir approuver le cas ?"
+                                    : "Are you sure you want to approve the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {language === "french"
+                                    ? "Si la planification proposée vous convient, cliquez sur 'Approuver' pour valider le cas."
+                                    : "If the proposed planning is suitable for you, click on 'Approve' to validate the case."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleapprouver(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Approuver"
+                                      : "Approve"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                              <Tooltip content={`${language==="french" ? "Demande de modification":"Request for modification"}`}>
+                                <AlertDialogTrigger asChild>
+                                <div className="relative w-10 h-10">
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Pencil className="text-orange-600 w-6 h-6 cursor-pointer hover:animate-edit-pencil" />
+                                      </div>
+                                    </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir modifier la planification ?"
+                                    : "Are you sure you want to modify the planning?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Si la planification proposée ne vous convient pas, cliquez sur 'Demande de modification' pour demander des rectifications"
+                                      : "If the proposed planning does not suit you, click 'Request modification' to request corrections"}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleModificationRequest(guide)
+                                    }
+                                  >
+                                    {language === "french"
+                                      ? "Demande de modification"
+                                      : "Request modification"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                        {guide.attributes.soumis && (
+                          <Tooltip content={`${language === "french"
+                            ? "Soumis"
+                            : "Submissive"}`}>
+                            <div className="relative">
+                              <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
+                            </div>
+                          </Tooltip>
+                        )}
+
+                        {guide.attributes.en__cours_de_modification && (
+                          <Tooltip content={`${language === "french"
+                            ? "En cours de modification"
+                            : "In progress of modification"}
+                          `}>
+                          <div className="cursor-pointer spinner-border animate-spin inline-block w-4 h-4 border-4 rounded-full border-t-transparent border-orange-500"></div>
+                          </Tooltip>
+                        )}
+                        {guide.attributes.approuve &&
+                              supportedCountries.includes(country) &&
+                              guide.attributes.Options_supplementaires.every(option => option.active === false) && (                            <>
+                              <AlertDialog>
+                                <Tooltip content={language === "french" ? "Produire et expédier" : "Produce and ship"}>
+                                  <AlertDialogTrigger asChild>
+                                    <div className="relative flex space-x-2 text-gray-600 cursor-pointer">
+                                      <Factory className="relative z-10" />
+                                      <div className="absolute -left-2 -top-5 flex flex-col items-center space-y-1">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke delay-200"></div>
+                                      </div>
+                                    </div>
+                                  </AlertDialogTrigger>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {language === "french" ? "Confirmer la demande Produire et expédier" : "Confirm Production and Shipping"}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {language === "french" ? "Êtes-vous sûr de vouloir produire et expédier ce cas ?" : "Are you sure you want to produce and ship this case?"}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      {language === "french" ? "Annuler" : "Cancel"}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handledemandedemodification1(guide)}>
+                                      {language === "french" ? "Produire et expédier" : "Produce and ship"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )
+                        }
+                        {guide.attributes.archive && (
+                            <div className="flex space-x-4">
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Soumettre"
+                                      : "Submit"}`}>
+                              <AlertDialogTrigger asChild>
+                                <div className="relative">
+                                  <CheckCheck className="text-green-400 cursor-pointer w-6 h-6 animate-check" />
+                                </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                      ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                                      : "Are you sure you want to submit this case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {language === "french"
+                                    ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                                    : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handlesoumettre(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Soumettre"
+                                      : "Submit"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+
+
+                            <AlertDialog>
+                            <Tooltip content={`${language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}`}>
+                              <AlertDialogTrigger asChild>
+                                  <div className="relative">
+                                    <Trash className="text-red-500 cursor-pointer w-6 h-6 hover:animate-delete" />
+                                  </div>
+                              </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr(e) de vouloir supprimer définitivement le cas ?"
+                                      : "Are you sure you want to permanently delete the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Êtes-vous sûr de vouloir supprimer ce cas ? Cette action est irréversible."
+                                      : "Are you sure you want to delete this case? This action cannot be undone."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Supprimer"
+                                      : "Delete"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                      </div>
+                    ): (
+                      <> 
+                      <div className="flex space-x-4">
+                      {guide.attributes.produire_expide && (
+                          <Tooltip content={language === "french" ? 
+                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
+                          </Tooltip>
+                        )}
+                        {guide.attributes.En_attente_approbation && (
+                          <>
+                            <AlertDialog>
+                            <Tooltip content={`${language==="french" ? "Approuver":"Approuve"}`}>
+                                <AlertDialogTrigger asChild>
+                                <div className="relative">
+                                      <ThumbsUp className="text-blue-500 cursor-pointer w-6 h-6 hover:animate-thumbs-up" />
+                                </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir approuver le cas ?"
+                                    : "Are you sure you want to approve the case?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {language === "french"
+                                    ? "Si la planification proposée vous convient, cliquez sur 'Approuver' pour valider le cas."
+                                    : "If the proposed planning is suitable for you, click on 'Approve' to validate the case."}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleapprouver(guide)}
+                                  >
+                                    {language === "french"
+                                      ? "Approuver"
+                                      : "Approve"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+
+                            <AlertDialog>
+                              <Tooltip content={`${language==="french" ? "Demande de modification":"Request for modification"}`}>
+                                <AlertDialogTrigger asChild>
+                                    <div className="relative w-10 h-10">
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <Pencil className="text-orange-600 w-6 h-6 cursor-pointer hover:animate-edit-pencil" />
+                                      </div>
+                                    </div>
+                                </AlertDialogTrigger>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                  {language === "french"
+                                    ? "Êtes-vous sûr de vouloir modifier la planification ?"
+                                    : "Are you sure you want to modify the planning?"}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {language === "french"
+                                      ? "Si la planification proposée ne vous convient pas, cliquez sur 'Demande de modification' pour demander des rectifications"
+                                      : "If the proposed planning does not suit you, click 'Request modification' to request corrections"}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {language === "french" ? "Annuler" : "Cancel"}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleModificationRequest(guide)
+                                    }
+                                  >
+                                    {language === "french"
+                                      ? "Demande de modification"
+                                      : "Request modification"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                        {guide.attributes.soumis && (
+                          <Tooltip content={`${language === "french"
+                            ? "Soumis"
+                            : "Submissive"}`}>
+                            <div className="relative">
+                              <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
+                            </div>
+                          </Tooltip>
+                        )}
+
+                        {guide.attributes.approuve && 
+                          guide.attributes.options_generiques[0].Impression_Formlabs[0].active === false &&
+                          supportedCountries.includes(country) && (
+                            <>
+                              <AlertDialog>
+                                <Tooltip content={language === "french" ? "Produire et expédier" : "Produce and ship"}>
+                                  <AlertDialogTrigger asChild>
+                                    <div className="relative flex space-x-2 text-gray-600 cursor-pointer">
+                                      <Factory className="relative z-10" />
+                                      <div className="absolute -left-2 -top-5 flex flex-col items-center space-y-1">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-smoke delay-200"></div>
+                                      </div>
+                                    </div>
+                                  </AlertDialogTrigger>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {language === "french" ? "Confirmer la demande Produire et expédier" : "Confirm Production and Shipping"}
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {language === "french" ? "Êtes-vous sûr de vouloir produire et expédier ce cas ?" : "Are you sure you want to produce and ship this case?"}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      {language === "french" ? "Annuler" : "Cancel"}
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handledemandedemodification1(guide)}>
+                                      {language === "french" ? "Produire et expédier" : "Produce and ship"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )
+                        }
+                        {guide.attributes.en__cours_de_modification && (
+                          <Tooltip content={`${language === "french"
+                            ? "En cours de modification"
+                            : "In progress of modification"}
+                          `}>
+                          <div className="cursor-pointer spinner-border animate-spin inline-block w-4 h-4 border-4 rounded-full border-t-transparent border-orange-500"></div>
+                          </Tooltip>
+                        )}
+                        {guide.attributes.archive && (
+                          <div className="flex space-x-4">
                           <AlertDialog>
+                          <Tooltip content={`${language === "french"
+                                    ? "Soumettre"
+                                    : "Submit"}`}>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                              >
-                                Soumettre
-                              </Button>
+                            <div className="relative">
+                              <CheckCheck className="text-green-500 cursor-pointer w-6 h-6 animate-check" />
+                            </div>
                             </AlertDialogTrigger>
+                            </Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer la soumission"
-                                    : "Confirm Submission"}
+                                {language === "french"
+                                    ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                                    : "Are you sure you want to submit this case?"}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr de vouloir soumettre ce rapport radiologique ?"
-                                    : "Are you sure you want to submit this radiological report?"}
+                                {language === "french"
+                                  ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                                  : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -727,12 +1757,17 @@ const MesFichier: React.FC = () => {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+
                           <AlertDialog>
+                          <Tooltip content={`${language === "french"
+                                    ? "Supprimer"
+                                    : "Delete"}`}>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" color="red">
-                                Supprimer
-                              </Button>
+                                  <div className="relative">
+                                    <Trash className="text-red-500 cursor-pointer w-6 h-6 hover:animate-delete" />
+                                  </div>
                             </AlertDialogTrigger>
+                            </Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
@@ -742,8 +1777,8 @@ const MesFichier: React.FC = () => {
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {language === "french"
-                                    ? "Êtes-vous sûr de vouloir supprimer ce rapport radiologique ? Cette action est irréversible."
-                                    : "Are you sure you want to delete this radiological report? This action cannot be undone."}
+                                    ? "Êtes-vous sûr de vouloir supprimer ce cas ? Cette action est irréversible."
+                                    : "Are you sure you want to delete this case? This action cannot be undone."}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -760,577 +1795,68 @@ const MesFichier: React.FC = () => {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </>
-                      )}
-                      {guide.attributes.soumis && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Soumis
-                        </Button>
-                      )}
-                    </>
-                  ) : guide.type === "autres-services-de-conceptions" ? (
-                    <>
-                      {guide.attributes.archive && (
-                        <>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                              >
-                                Demander un devis
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr(e) de vouloir demander un devis ?"
-                                    : "Are you sure you want to request a quote?"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Cliquez sur 'Demander un devis' pour obtenir gratuitement un devis sur votre demande."
-                                    : "Click 'Request a quote' to get a free quote on your request."}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDemandeDevis(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Demander un devis"
-                                    : "Request a quote"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" color="red">
-                                Supprimer
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer la suppression"
-                                    : "Confirm Deletion"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr de vouloir supprimer ce service ? Cette action est irréversible."
-                                    : "Are you sure you want to delete this service? This action cannot be undone."}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Supprimer"
-                                    : "Delete"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                      {guide.attributes.Demande_devis && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Demande de devis envoyée
-                        </Button>
-                      )}
-                      {guide.attributes.En_attente_approbation && (
-                        <>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                              >
-                                Approuver
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr(e) de vouloir approuver le cas ?"
-                                    : "Are you sure you want to approve the case?"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Si la planification proposée vous convient, cliquez sur 'Approuver' pour valider le cas"
-                                    : "If the proposed planning suits you, click 'Approve' to validate the case"}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleapprouver(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Approuver"
-                                    : "Approve"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" color="red">
-                                Demande de modification
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr(e) de vouloir modifier la planification?"
-                                    : "Are you sure you want to modify the planning?"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Si la planification proposée ne vous convient pas, cliquez sur 'Demande de modification' pour demander des rectifications"
-                                    : "If the proposed planning does not suit you, click 'Request modification' to request corrections"}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleModificationRequest(guide)
-                                  }
-                                >
-                                  {language === "french"
-                                    ? "Demande de modification"
-                                    : "Request modification"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                      {guide.attributes.en__cours_de_modification && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          En cours de modification
-                        </Button>
-                      )}
-                      {guide.attributes.soumis && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Soumis
-                        </Button>
-                      )}
-                      {guide.attributes.approuve && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mr-2"
-                            >
-                              Produire et expédier
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {language === "french"
-                                  ? "Confirmer la production et l'expédition"
-                                  : "Confirm Production and Shipping"}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {language === "french"
-                                  ? "Êtes-vous sûr de vouloir produire et expédier ce service ?"
-                                  : "Are you sure you want to produce and ship this service?"}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {language === "french" ? "Annuler" : "Cancel"}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handledemandedemodification1(guide)
-                                }
-                              >
-                                {language === "french"
-                                  ? "Confirmer"
-                                  : "Confirm"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                      {guide.attributes.produire_expide && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Cas produit et expédié
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {guide.attributes.En_attente_approbation && (
-                        <>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                              >
-                                Approuver
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer l'approbation"
-                                    : "Confirm Approval"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr de vouloir approuver ce guide ?"
-                                    : "Are you sure you want to approve this guide?"}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleapprouver(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Approuver"
-                                    : "Approve"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" color="red">
-                                Demande de modification
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer la demande de modification"
-                                    : "Confirm Modification Request"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Si la planification proposée ne vous convient pas, cliquez sur 'Demande de modification' pour demander des rectifications"
-                                    : "If the proposed planning does not suit you, click 'Request modification' to request corrections"}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleModificationRequest(guide)
-                                  }
-                                >
-                                  {language === "french"
-                                    ? "Demande de modification"
-                                    : "Request modification"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                      {guide.attributes.archive && (
-                        <>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                              >
-                                Soumettre
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer la soumission"
-                                    : "Confirm Submission"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr de vouloir soumettre ce guide ?"
-                                    : "Are you sure you want to submit this guide?"}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handlesoumettre(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Soumettre"
-                                    : "Submit"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          {/* <Button
-                            variant="outline"
-                            size="sm"
-                            color="red"
-                            onClick={() => handleDelete(guide)}
-                          >
-                            Supprimer
-                          </Button> */}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" color="red">
-                                Supprimer
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  {language === "french"
-                                    ? "Confirmer la suppression"
-                                    : "Confirm Deletion"}
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {language === "french"
-                                    ? "Êtes-vous sûr de vouloir supprimer ce guide ? Cette action est irréversible."
-                                    : "Are you sure you want to delete this guide? This action cannot be undone."}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>
-                                  {language === "french" ? "Annuler" : "Cancel"}
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(guide)}
-                                >
-                                  {language === "french"
-                                    ? "Supprimer"
-                                    : "Delete"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                      {guide.attributes.approuve && (
-                        // <Button
-                        //   variant="outline"
-                        //   size="sm"
-                        //   className="mr-2"
-                        //   onClick={() => handledemandedemodification1(guide)}
-                        // >
-                        //   Produire et expédier
-                        // </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" color="red">
-                              Produire et expédier
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {language === "french"
-                                  ? "Confirmer la demande Produire et expédier"
-                                  : "Confirm Production and Shipping"}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {language === "french"
-                                  ? " Êtes-vous sûr de vouloir produire et expédier ce guide ?"
-                                  : " Are you sure you want to produce and ship this guide?"}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {language === "french" ? "Annuler" : "Cancel"}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handledemandedemodification1(guide)
-                                }
-                              >
-                                {language === "french"
-                                  ? "Produire et expédier"
-                                  : "Produce and ship"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                      {guide.attributes.en__cours_de_modification && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          En cours de modification
-                        </Button>
-                      )}
-                      {guide.attributes.soumis && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Soumis
-                        </Button>
-                      )}
-                      {guide.attributes.produire_expide && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          disabled
-                        >
-                          Cas produit et expédié
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center space-x-4">
-                    <div className="flex flex-col items-center">
-                      {console.log("PDF File Data:", guide.attributes.pdfFile)}
-                      {guide.attributes.pdfFile?.data?.attributes?.url ? (
-                        <>
-                          {console.log(
-                            "PDF URL:",
-                            `http://localhost:1337${guide.attributes.pdfFile.data.attributes.url}`
-                          )}
+                        </div>
+                        )}
+                      </div>
+                      </>
+                    )}
+                    </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center space-x-4">
+                      <div className="flex flex-col items-center">
+                        {guide.attributes.pdfFile?.data?.attributes?.url ? (
                           <a
                             href={`http://localhost:1337${guide.attributes.pdfFile.data.attributes.url}`}
                             download
+                            target="_blank"
                             className="text-blue-500 hover:text-blue-700"
                             title="Download PDF"
-                            onClick={(e) => {
-                              console.log("PDF download clicked");
-                              // Uncomment the next line to prevent default behavior for debugging
-                              // e.preventDefault();
-                            }}
                           >
                             <FileText size={24} />
                           </a>
-                        </>
-                      ) : (
-                        <>
-                          {console.log("PDF not available")}
+                        ) : (
                           <FileText
                             size={24}
                             className="text-gray-300"
                             title="PDF not available"
                           />
-                        </>
-                      )}
-                      <span className="text-xs mt-1">PDF</span>
-                    </div>
-                    {guide.type !== "rapport-radiologiques" && (
-                      <div className="flex flex-col items-center">
-                        {console.log(
-                          "3D Model Data:",
-                          guide.attributes.model3d
                         )}
-                        {guide.attributes.model3d?.data?.attributes?.url ? (
-                          <>
-                            {console.log(
-                              "3D Model URL:",
-                              `http://localhost:1337${guide.attributes.model3d.data.attributes.url}`
-                            )}
+                        <span className="text-xs mt-1">PDF</span>
+                      </div>
+                      {guide.type !== "rapport-radiologiques" && (
+                        <div className="flex flex-col items-center">
+                          {guide.attributes.model3d?.data?.attributes?.url ? (
                             <a
                               href={`http://localhost:1337${guide.attributes.model3d.data.attributes.url}`}
                               download
                               className="text-blue-500 hover:text-blue-700"
                               title="Download 3D Model"
-                              onClick={(e) => {
-                                console.log("3D Model download clicked");
-                                // Uncomment the next line to prevent default behavior for debugging
-                                // e.preventDefault();
-                              }}
                             >
                               <Box size={24} />
                             </a>
-                          </>
-                        ) : (
-                          <>
-                            {console.log("3D Model not available")}
+                          ) : (
                             <Box
                               size={24}
                               className="text-gray-300"
                               title="3D Model not available"
                             />
-                          </>
-                        )}
-                        <span className="text-xs mt-1">3D</span>
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                          )}
+                          <span className="text-xs mt-1">3D</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+
           </TableBody>
         </Table>
       </div>
       <div className="flex justify-center">
         <ReactPaginate
-          previousLabel={"← Previous"}
-          nextLabel={"Next →"}
+          previousLabel={`← ${language==="french" ? "Précédent" : "Previous"}`}
+          nextLabel={`${language==="french" ? "Suivant" : "Next"} →`}
           breakLabel={"..."}
           pageCount={pageCount}
           marginPagesDisplayed={2}
