@@ -262,6 +262,7 @@ const InformationForm = () => {
       // setUser(response.data.user);
     } catch (err) {
       if (err instanceof AxiosError && err.response) {
+        console.log(err)
         setError(err.response.data.error.message);
       } else {
         setError("Registration failed. Please check the server logs.");
@@ -444,8 +445,8 @@ const InformationForm = () => {
                                   className="w-3/5"
                                   placeholder={
                                     language === "french"
-                                      ? "Département (requis)"
-                                      : "Department (required)"
+                                      ? "Département"
+                                      : "Department"
                                   }
                                   {...field}
                                 />

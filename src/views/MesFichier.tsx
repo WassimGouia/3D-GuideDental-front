@@ -1014,7 +1014,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "Submissive"}`}>
+                            : "submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1276,7 +1276,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "Submissive"}`}>
+                            : "submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1323,7 +1323,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
                             `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
-                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
                         )}
@@ -1333,7 +1333,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
                             `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
-                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
                         )}
@@ -1419,7 +1419,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "Submissive"}`}>
+                            : "submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1559,7 +1559,7 @@ const MesFichier: React.FC = () => {
                       {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
                             `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
-                            `Case produced and ship${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
+                            `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
                         )}
@@ -1646,7 +1646,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "Submissive"}`}>
+                            : "submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
