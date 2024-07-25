@@ -25,9 +25,7 @@ const Service3Success = () => {
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            localStorage.removeItem("caseNumber")
-            localStorage.removeItem("fullName")
-            localStorage.removeItem("guideginState")
+            localStorage.clear()
             setTimeout(function() {
               window.location.href = "/sign/Nouvelle-demande";
           }, 3000);

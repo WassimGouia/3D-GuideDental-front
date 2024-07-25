@@ -76,7 +76,6 @@ type State = {
   message: string;
 };
 const MesFichier: React.FC = () => {
-  console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq")
   const [guides, setGuides] = useState<Guide[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [searchName, setSearchName] = useState("");
@@ -87,17 +86,14 @@ const MesFichier: React.FC = () => {
   const [selectedService, setSelectedService] = useState("");
 
   const [services, setServices] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuthContext();
+  console.log("user",user)
   const navigate = useNavigate();
   const [currentOffer, setCurrentOffer] = useState<{
     currentPlan: string;
     discount: number;
   } | null>(null);
-  const [originalCost, setOriginalCost] = useState<number>(0);
-  const [cost, setCost] = useState<number>(0);
-  const { language } = useLanguage(); // Add this line
+  const { language } = useLanguage();
 
   const guidesPerPage = 10;
 
@@ -105,7 +101,7 @@ const MesFichier: React.FC = () => {
     const fetchOfferData = async () => {
       if (!user) return;
 
-      const token = localStorage.getItem("authToken");
+      const token = getToken();
       if (!token) return;
 
       try {
@@ -127,11 +123,9 @@ const MesFichier: React.FC = () => {
           setCurrentOffer(offer);
 
           const originalCost = 100;
-          setOriginalCost(originalCost);
 
           const discountAmount = (originalCost * offer.discount) / 100;
           const newCost = originalCost - discountAmount;
-          setCost(newCost);
         }
       } catch (error) {
         console.error("Error fetching offer data:", error);
@@ -153,11 +147,8 @@ const MesFichier: React.FC = () => {
   const fetchGuides = async () => {
     if (!user) return;
 
-    const token = localStorage.getItem("authToken");
+    const token = getToken()
     if (!token) return;
-
-    setIsLoading(true);
-    setError(null);
 
     try {
       const headers = { Authorization: `${BEARER} ${token}` };
@@ -185,19 +176,17 @@ const MesFichier: React.FC = () => {
           type: guideTypes[index],
         }))
       );
+
       const sortedGuides = allGuides.sort((a, b) => 
-        new Date(b.attributes.createdAt) - new Date(a.attributes.createdAt)
+        new Date(b.attributes.createdAt).getTime() - new Date(a.attributes.createdAt).getTime()
       );
-      
-      console.log("cccccccccccc",sortedGuides)
 
       setGuides(sortedGuides);
+      console.log("mmmmmmmmmmmmmmmmmmmmmmmm",sortedGuides)
       
     } catch (error) {
       console.error("Error fetching guides:", error);
-      setError("Failed to fetch guides. Please try again later.");
-    } finally {
-      setIsLoading(false);
+
     }
   };
   const fetchServices = async () => {
@@ -211,7 +200,7 @@ const MesFichier: React.FC = () => {
       
     } catch (error) {
       console.error("Error fetching guides:", error);
-      setError("Failed to fetch guides. Please try again later.");
+
     }
   };
 
@@ -286,19 +275,14 @@ const MesFichier: React.FC = () => {
         .includes(searchCaseNumber.toLowerCase());
       return nameMatch && dateMatch && statusMatch && serviceMatch && caseNumberMatch;
     });
-    console.log("Filtered Guides:", filtered); // Log filtered guides
+    console.log("Filtered Guides:", filtered);
     return filtered;
   }, [guides, searchName, searchDate, selectedStatus, selectedService, searchCaseNumber]);
   
   const pageCount = Math.ceil(filteredGuides.length / guidesPerPage);
   const offset = currentPage * guidesPerPage;
   const currentPageData = filteredGuides.slice(offset, offset + guidesPerPage);
-  console.log("Filtered Guides:", filteredGuides);
-  console.log("Current Page:", currentPage);
-  console.log("Guides Per Page:", guidesPerPage);
-  console.log("Offset:", offset);
-  console.log("Current Page Data:", currentPageData);
-  
+
 
   const getEndpoint = (guideType: string): string => {
     switch (guideType) {
@@ -342,7 +326,7 @@ const MesFichier: React.FC = () => {
       );
 
       const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-        email:"hamedtriki5@gmail.com",
+        email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${guide.attributes.numero_cas} has requested a quote.`,
       })
@@ -476,7 +460,7 @@ const MesFichier: React.FC = () => {
   const handleapprouver = async (guide: Guide) => {
     try {
       const endpoint = getEndpoint(guide.type);
-      const token = localStorage.getItem("authToken");
+      const token = getToken();
       if(guide.type === "guide-a-etages"){
         if(guide.attributes.Options_supplementaires.every(option => option.active === false)){
           const response = await axios.put(
@@ -499,7 +483,7 @@ const MesFichier: React.FC = () => {
           );
           //guide.attributes.user.data.attributes.email
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-            email:"hamedtriki5@gmail.com",
+            email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
           })
@@ -541,7 +525,7 @@ const MesFichier: React.FC = () => {
             }
           );
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-            email:"hamedtriki5@gmail.com",
+            email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
           })
@@ -584,7 +568,7 @@ const MesFichier: React.FC = () => {
           }
         );
         const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-          email:"hamedtriki5@gmail.com",
+          email:"no-reply@3dguidedental.com",
           subject:"Case Status Update",
           content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
         })
@@ -629,7 +613,7 @@ const MesFichier: React.FC = () => {
             }
           );
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-            email:"hamedtriki5@gmail.com",
+            email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
           })
@@ -672,7 +656,7 @@ const MesFichier: React.FC = () => {
             }
           );
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-            email:"hamedtriki5@gmail.com",
+            email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
           })
@@ -746,7 +730,7 @@ const MesFichier: React.FC = () => {
   const handleDelete = async (guide: Guide) => {
     try {
       const endpoint = getEndpoint(guide.type);
-      const token = localStorage.getItem("authToken");
+      const token = getToken();
 
       const response = await axios.delete(`${endpoint}/${guide.id}`, {
         headers: {
@@ -772,8 +756,6 @@ const MesFichier: React.FC = () => {
 
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
   const country = user && user.location[0].country.toLowerCase();
-  console.log("HHHHHHHHHHHHHHHHHHHHHH:",filteredGuides)
-console.log("AAAAAAAAAAAAAAAAAAAA",currentPageData)
   return (
     <main className="bg-white flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 w-auto min-h-screen ">
       <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
@@ -914,7 +896,6 @@ console.log("AAAAAAAAAAAAAAAAAAAA",currentPageData)
             </TableRow>
           </TableHeader>
           <TableBody>
-            {console.log("from html",currentPageData)}
             {currentPageData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center">
@@ -922,8 +903,8 @@ console.log("AAAAAAAAAAAAAAAAAAAA",currentPageData)
                 </TableCell>
               </TableRow>
             ) : (
-              currentPageData.map((guide) => (
-                <TableRow key={guide.id}>
+              currentPageData.map((guide,index) => (
+                <TableRow key={index}>
                   <TableCell className="text-center">{guide.attributes.numero_cas}</TableCell>
                   <TableCell className="text-center">{guide.attributes.patient}</TableCell>
                   <TableCell className="text-center">

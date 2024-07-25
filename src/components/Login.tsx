@@ -25,20 +25,6 @@ function Login() {
   const [error, setError] = useState("");
   const { setUser } = useAuthContext();
 
-  const handleForgotPassword = async (email) => {
-    try {
-      const response = await axios.post(
-        "http://localhost:1337/api/auth/forgot-password",
-        {
-          email: email,
-        }
-      );
-      console.log("Your user received an email");
-    } catch (error) {
-      console.log("An error occurred:", error.response);
-    }
-  };
-
   const handleLogin = async () => {
     setIsLoading(true);
     try {
@@ -50,8 +36,8 @@ function Login() {
       setUser(response.data.user);
       window.location.href="/cabinet"
     } catch (error) {
-      console.error("Login failed:", error);
-      setError("Failed to login. Please check your credentials and try again.");
+      console.error("Login failed:",error.response.data.error.message);
+      setError(error.response ? error.response.data.error.message : "Failed to login. Please check your credentials and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +60,7 @@ function Login() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {error && <div className="alert alert-error">{error}</div>}
+              {error && <div className="text-red-500 bold text-center">{error}</div>}
 
               <CardDescription>
                 <h3 className="mt-4 mb-4">
@@ -111,7 +97,6 @@ function Login() {
                     <Link
                       to="/reset-password-send-mail"
                       className="underline font-bold"
-                      onClick={() => handleForgotPassword("user@strapi.io")}
                     >
                       {language === "french"
                         ? "Mot de passe oublié ?"

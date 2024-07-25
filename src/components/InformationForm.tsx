@@ -213,7 +213,7 @@ const InformationForm = () => {
     );
 
     if (!isAddressValid) {
-      setError("Invalid address");
+      setError("Invalid postal code");
       setIsLoading(false);
       return;
     }

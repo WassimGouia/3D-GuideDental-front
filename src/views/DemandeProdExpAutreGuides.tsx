@@ -52,6 +52,7 @@ const DemandeProdExpAutreGuides = () => {
     localStorage.setItem("guideId",guideId)
     localStorage.setItem("offre",offre)
     localStorage.setItem("originalCost",cost)
+    localStorage.setItem("numberOfPieces",inputValue)
 
     const requestData = {
       cost: (cost * (1 - getDiscount(offre) /100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15),
@@ -146,7 +147,7 @@ const DemandeProdExpAutreGuides = () => {
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
-                <AlertDialogHeader>
+              <AlertDialogHeader>
                   <AlertDialogTitle>
                   {language === "french"
                     ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
@@ -154,8 +155,8 @@ const DemandeProdExpAutreGuides = () => {
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                   {language === "french"
-                    ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
-                    : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
+                    ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                    : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -25,6 +25,7 @@ const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
+    localStorage.clear()
     removeToken();
     window.location.href="/login"
   };
@@ -84,7 +85,7 @@ const SideBar = () => {
                   <AlertDialogTrigger asChild>
                     <Button
                       className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all dark:text-gray-400 dark:hover:text-white"
-                      onClick={handleLogout}
+                      
                     >
                       <LogOut className="h-4 w-4" />
                       {language === "french" ? "Déconnexion" : "Logout"}
@@ -104,8 +105,8 @@ const SideBar = () => {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction>Continue</AlertDialogAction>
+                      <AlertDialogCancel>{language === "french" ? "Annuler" : "Cancel"}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleLogout}>{language === "french" ? "Oui, déconnecter" : "Yes, logout"}</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

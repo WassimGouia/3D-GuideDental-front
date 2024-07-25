@@ -1,4 +1,5 @@
 import { BEARER } from '@/components/Constant';
+import { getToken } from '@/components/Helpers';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -17,7 +18,7 @@ const Service7Success = () => {
     const guideId = localStorage.getItem('guideId');
     const offre = localStorage.getItem('offre');
     const originalCost = localStorage.getItem('originalCost');
-    
+    const numberOfPieces = localStorage.getItem('numberOfPieces');
 
     if (sessionId && !requestMade) {
       setRequestMade(true);
@@ -27,18 +28,14 @@ const Service7Success = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId, type_travail, caseNumber,patient,offre,originalCost}),
+        body: JSON.stringify({ sessionId, type_travail, caseNumber,patient,offre,originalCost,numberOfPieces}),
       })
         .then(response => response.json())
         .then(async data => {
           if (data.success) {
               try {
                   await updateGuideStatus();
-                  localStorage.removeItem("guideType")
-                  localStorage.removeItem("guideId")
-                  localStorage.removeItem("offre")
-                  localStorage.removeItem("originalCost")
-
+                  localStorage.clear()
                   setTimeout(function() {
                     window.location.href = "/mes-fichier";
                 }, 3000);
@@ -57,7 +54,7 @@ const Service7Success = () => {
         });
     }
     const getAuthHeaders = () => {
-      const token = localStorage.getItem("authToken");
+      const token = getToken();
       return {
         Authorization: `${BEARER} ${token}`,
         "Content-Type": "application/json",

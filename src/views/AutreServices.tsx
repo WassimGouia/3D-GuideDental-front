@@ -105,7 +105,7 @@ const AutreServices = () => {
       setPatientData({
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
-      });
+      }); 
 
       const fetchOfferData = async () => {
         const token = getToken();
@@ -194,6 +194,9 @@ const AutreServices = () => {
       [name + "Inverse"]: !prevValues[name + "Inverse"],
     }));
   };
+
+  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const country = user && user.location[0].country.toLowerCase();
 
   return (
     <div>
@@ -312,12 +315,14 @@ const AutreServices = () => {
                   />
                 </div>
                 <br />
+                {supportedCountries.includes(country) ? (
                 <div className="w-full flex space-x-2">
                   <p className="font-semibold text-base">
                     {language === "french"
                       ? "Souhaitez-vous bénéficier du service d'impression et d'expédition?"
                       : "Do you want to take advantage of the printing and shipping service?"}
                   </p>
+
                   <div>
                     <Checkbox
                       checked={checkedValues.implantationPrevue}
@@ -335,6 +340,7 @@ const AutreServices = () => {
                     </Label>
                   </div>
                 </div>
+                ):null}
               </div>
               <div className="flex justify-between">
                 <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">

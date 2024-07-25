@@ -1,4 +1,5 @@
 import { BEARER } from '@/components/Constant';
+import { getToken } from '@/components/Helpers';
 import axios, { AxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -38,10 +39,7 @@ const Service8Success = () => {
           if (data.success) {
               try {
                   await updateGuideStatus();
-                  localStorage.removeItem("guideType")
-                  localStorage.removeItem("guideId")
-                  localStorage.removeItem("data")
-                  localStorage.removeItem("originalCost")
+                  localStorage.clear()
                   setTimeout(function() {
                     window.location.href = "/mes-fichier";
                 }, 3000);
@@ -61,7 +59,7 @@ const Service8Success = () => {
     }
   
     const getAuthHeaders = () => {
-      const token = localStorage.getItem("authToken");
+      const token = getToken();
       return {
         Authorization: `${BEARER} ${token}`,
         "Content-Type": "application/json",

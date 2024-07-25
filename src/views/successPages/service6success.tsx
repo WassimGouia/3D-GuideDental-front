@@ -25,8 +25,7 @@ const Service6Success = () => {
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            localStorage.removeItem("caseNumber")
-            localStorage.removeItem("fullName")
+            localStorage.clear()
             setTimeout(function() {
               window.location.href = "/sign/Nouvelle-demande";
           }, 3000);

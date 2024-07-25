@@ -9,6 +9,7 @@ import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
 import { BEARER } from "@/components/Constant";
 import { useLanguage } from "./languageContext";
+import { getToken } from "./Helpers";
 
 const Nouvmod = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Nouvmod = () => {
   const [modificationData, setModificationData] = useState([]);
   const {language} = useLanguage()
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
+    const token = getToken();
     return {
       Authorization: `${BEARER} ${token}`,
       "Content-Type": "application/json",
@@ -62,7 +63,7 @@ const Nouvmod = () => {
       );
       console.log("Update response:", response);
       const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-        email:"hamedtriki5@gmail.com",
+        email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${caseNumber} has requested a modification.`,
       })

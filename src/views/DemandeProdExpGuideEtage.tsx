@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getToken } from "@/components/Helpers";
 
 interface SelectedOptions {
   immediateLoading: boolean;
@@ -57,7 +58,7 @@ const DemandeProdExpGuideEtage: React.FC = () => {
     };
   
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("authToken");
+    const token = getToken();
     return {
       Authorization: `${BEARER} ${token}`,
       "Content-Type": "application/json",
@@ -222,17 +223,17 @@ const DemandeProdExpGuideEtage: React.FC = () => {
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                  {language === "french"
-                    ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                    : "Are you sure you want to submit this case?"}
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                  {language === "french"
-                    ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
-                    : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
-                  </AlertDialogDescription>
+            <AlertDialogHeader>
+                <AlertDialogTitle>
+                {language === "french"
+                  ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                  : "Are you sure you want to submit this case?"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                {language === "french"
+                  ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                  : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>
