@@ -56,6 +56,7 @@ const SelectedItemsPageGETAGE = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
+  const [calculatedCost, setCalculatedCost] = useState(0);
   const { user } = useAuthContext();
   const { selectedItemsData, previousStates } = location.state || {
     selectedItemsData: {},
@@ -157,11 +158,13 @@ const SelectedItemsPageGETAGE = () => {
               };
               setCurrentOffer(offer);
 
-              const discountAmount = (cost * offer.discount) / 100;
-              const newPrice = cost - discountAmount;
+              const discountAmount = (costt * offer.discount) / 100;
+              const newPrice = costt - discountAmount;
+              setCalculatedCost(newPrice);
             } else {
               console.error("Offer data not found in the user response");
               setCurrentOffer(null);
+              setCalculatedCost(costt);
             }
           } catch (error) {
             console.error(
@@ -169,13 +172,14 @@ const SelectedItemsPageGETAGE = () => {
               error.response ? error.response.data : error.message
             );
             setCurrentOffer(null);
+            setCalculatedCost(costt);
           }
         }
       };
 
       fetchOfferData();
     }
-  }, [navigate, user, cost]);
+  }, [navigate, user, costt]);
 
   const getDiscount = (plan) => {
     const discounts = {
@@ -280,6 +284,10 @@ const SelectedItemsPageGETAGE = () => {
           },
         }
       );
+
+      localStorage.removeItem("fullName");
+      localStorage.removeItem("caseNumber");
+      localStorage.removeItem("guideEtageFormState");
 
       console.log("Data saved successfully:", response.data);
       await handlePayment(response.data.data.id);
@@ -412,7 +420,11 @@ const SelectedItemsPageGETAGE = () => {
         }
       );
 
+      localStorage.removeItem("fullName");
+      localStorage.removeItem("caseNumber");
+      localStorage.removeItem("guideEtageFormState");
       console.log("Data archived successfully:", response.data);
+
       // Handle successful archiving (e.g., show a success message, navigate to a different page)
     } catch (error) {
       console.error("Error archiving guide etage data:", error);
@@ -484,6 +496,15 @@ const SelectedItemsPageGETAGE = () => {
                         : "Loading..."}
                     </p>
                   </div>
+                </div>
+                <div className="flex items-center space-x-2 mt-4">
+                  <Archive className="text-yellow-600" />
+                  <p>
+                    <span className="font-semibold">
+                      {language === "french" ? "Coût total: " : "Total cost: "}
+                    </span>
+                    {calculatedCost.toFixed(2)} €
+                  </p>
                 </div>
               </div>
               <br />

@@ -257,16 +257,11 @@ const GuideEtage = () => {
   };
 
   const updateCost = (change) => {
-    setFormState((prevState) => {
-      const newOriginalCost = prevState.originalCost + change;
-      const newDiscountedCost = currentOffer
-        ? applyDiscount(newOriginalCost, currentOffer.discount)
-        : newOriginalCost;
-      return {
-        ...prevState,
-        originalCost: newOriginalCost,
-        cost: newDiscountedCost,
-      };
+    setCost((prevCost) => {
+      const newCost = prevCost + change;
+      return currentOffer
+        ? applyDiscount(newCost, currentOffer.discount)
+        : newCost;
     });
   };
 
@@ -276,21 +271,17 @@ const GuideEtage = () => {
       updateCost(newState[field] ? costChange : -costChange);
       return newState;
     });
-    form.setValue(field, !form.getValues(field));
   };
 
   const handleImmediateLoadToggle = () =>
-    updateFormState("immediateLoad", !formState.immediateLoad, 150);
+    handleSwitchToggle("immediateLoad", 150);
   const handleSecondSwitchToggle = () =>
-    updateFormState("secondSwitch", !formState.secondSwitch, 100);
-  const handleThirdSwitchToggle = () =>
-    updateFormState("thirdSwitch", !formState.thirdSwitch, 300);
+    handleSwitchToggle("secondSwitch", 100);
+  const handleThirdSwitchToggle = () => handleSwitchToggle("thirdSwitch", 300);
   const handleFourthSwitchToggle = () =>
-    updateFormState("fourthSwitch", !formState.fourthSwitch, 400);
-  const handleFifthSwitchToggle = () =>
-    updateFormState("fifthSwitch", !formState.fifthSwitch);
-  const smileDesignToggle = () =>
-    updateFormState("smileDesign", !formState.smileDesign, 40);
+    handleSwitchToggle("fourthSwitch", 400);
+  const handleFifthSwitchToggle = () => handleSwitchToggle("fifthSwitch", 0);
+  const smileDesignToggle = () => handleSwitchToggle("smileDesign", 40);
 
   const handleForagePiloteSwitch = () => {
     updateFormState("foragePilote", true);
