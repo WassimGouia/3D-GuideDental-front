@@ -1,69 +1,57 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from "@/components/languageContext";
 
 const Nouvelle: React.FC = () => {
   const { language } = useLanguage();
-  const navigate = useNavigate();
   const location = useLocation();
-  const [value, setValue] = useState("OFFRE"); // Default tab based on default URL
-  const [selectedOption, setSelectedOption] = useState(""); // Assuming this is your selected option state
+  const [value, setValue] = useState("OFFRE");
 
   useEffect(() => {
-    // Ensure that tab state updates based on the URL, supporting direct URL access and back navigation
     const path = location.pathname;
-    if (path.includes("/sign/Nouvelle-demande")) {
+    if (path.includes("/sign/Nouvelle-demande") || path.includes("/sign/Nouvelle-modelisation")) {
       setValue("OFFRE");
-    } else if (path.includes("/sign/Nouvelle-modelisation")) {
+    } else if (path.includes("/guide-etage") || path.includes("/guide-classique") || 
+               path.includes("/guide-gingivectomie") || path.includes("/gouttiere-bruxismes") || 
+               path.includes("/autre-services") || path.includes("/rapport-radiologique")) {
       setValue("LOGIN");
-    } else if (path.includes("/sign/information")) {
+    } else if (path.includes("/SelectedItemsPageGETAGE") || path.includes("/SelectedItemsPageGbruxisme") || 
+               path.includes("/SelectedItemsPageGclassique") || path.includes("/selectedItemsPageAutreService") || 
+               path.includes("/selectedItemsPageGging") || path.includes("/selectedItemsPageRapportRad")) {
       setValue("INFORMATION");
     }
   }, [location]);
 
-  const handleTabChange = (newValue: string) => {
-    if (newValue === "OFFRE") {
-      navigate("/sign/Nouvelle-demande");
-    } else if (newValue === "LOGIN") {
-      // Directly use the selectedOption state
-      switch (selectedOption) {
-        case "Stackable guide":
-          navigate("/guide-etage");
-          break;
-        case "Rapport radiologique":
-          navigate("/rapport-radiologique");
-          break;
-        // Add more cases as needed for other options
-        default:
-          // Handle default case or show an error/notification
-          console.log("Unknown option selected in Nouvelle modelisation");
-      }
-    } else if (newValue === "INFORMATION" && formIsValid()) {
-      navigate("/sign/information");
-    }
-  };
-
-  // Placeholder for your form validation logic
-  const formIsValid = () => {
-    // Return true if form data is valid or conditions are met, otherwise false
-    return true; // Assume true for example purposes
+  const handleTabClick = (event: React.MouseEvent) => {
+    event.preventDefault();
   };
 
   return (
     <Tabs
       value={value}
-      onValueChange={handleTabChange}
       className="flex flex-col justify-center items-center gap-4 w-full"
     >
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="OFFRE" className="flex justify-center">
+        <TabsTrigger 
+          value="OFFRE" 
+          className="flex justify-center"
+          onClick={handleTabClick}
+        >
           {language === "french" ? "Informations" : "Information"}
         </TabsTrigger>
-        <TabsTrigger value="LOGIN" className="flex justify-center">
+        <TabsTrigger 
+          value="LOGIN" 
+          className="flex justify-center"
+          onClick={handleTabClick}
+        >
           {language === "french" ? "Détails" : "Details"}
         </TabsTrigger>
-        <TabsTrigger value="INFORMATION" className="flex justify-center">
+        <TabsTrigger 
+          value="INFORMATION" 
+          className="flex justify-center"
+          onClick={handleTabClick}
+        >
           {language === "french" ? "Fichier" : "File"}
         </TabsTrigger>
       </TabsList>

@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import dent11 from "@/assets/dents/11.png";
 import dent12 from "@/assets/dents/12.png";
 import dent13 from "@/assets/dents/13.png";
@@ -14,13 +15,13 @@ import dent45 from "@/assets/dents/45.png";
 import dent46 from "@/assets/dents/46.png";
 import dent47 from "@/assets/dents/47.png";
 import dent48 from "@/assets/dents/48.png";
-import { useEffect, useState } from "react";
+
 
 interface DentsProps {
   selectAll: boolean;
   onToothClick?: (index: number) => void;
   onTeethSelectionChange?: (selectedTeeth: number[]) => void;
-  selectedTeethData?: number[];
+  selectedTeethData: number[];
   isReadOnly?: boolean;
 }
 
@@ -32,60 +33,63 @@ interface Images {
 const Dents: React.FC<DentsProps> = ({
   selectAll,
   onToothClick,
-  selectedTeethData = [],
+  selectedTeethData,
   onTeethSelectionChange,
   isReadOnly = false,
 }) => {
-  const [selectedImagesUp, setSelectedImagesUp] = useState<number[]>(
-    selectedTeethData.filter((index) => index <= 28)
-  );
-  const [selectedImagesDown, setSelectedImagesDown] = useState<number[]>(
-    selectedTeethData.filter((index) => index >= 31)
-  );
+  const [selectedImagesUp, setSelectedImagesUp] = useState<number[]>([]);
+  const [selectedImagesDown, setSelectedImagesDown] = useState<number[]>([]);
+
+  useEffect(() => {
+    setSelectedImagesUp(selectedTeethData.filter((index) => index <= 28));
+    setSelectedImagesDown(selectedTeethData.filter((index) => index >= 31));
+  }, [selectedTeethData]);
 
   const isSelected = (index: number) =>
     selectedImagesUp.includes(index) || selectedImagesDown.includes(index);
 
+  const isUpperArchDisabled = selectedImagesDown.length > 0;
+  const isLowerArchDisabled = selectedImagesUp.length > 0;
+
   const handleClick = (index: number, isUpper: boolean) => {
     if (isReadOnly) return;
+    if ((isUpper && isUpperArchDisabled) || (!isUpper && isLowerArchDisabled))
+      return;
+
+    let newSelectedImagesUp = [...selectedImagesUp];
+    let newSelectedImagesDown = [...selectedImagesDown];
 
     if (isUpper) {
-      if (selectedImagesDown.length > 0) return;
-
       if (selectAll) {
-        if (selectedImagesUp.includes(index)) {
-          setSelectedImagesUp([]);
-        } else {
-          setSelectedImagesUp(imgsUp.map((img) => img.index));
-        }
+        newSelectedImagesUp = selectedImagesUp.includes(index)
+          ? []
+          : imgsUp.map((img) => img.index);
       } else {
         if (selectedImagesUp.includes(index)) {
-          setSelectedImagesUp(selectedImagesUp.filter((i) => i !== index));
+          newSelectedImagesUp = selectedImagesUp.filter((i) => i !== index);
         } else {
-          setSelectedImagesUp([...selectedImagesUp, index]);
+          newSelectedImagesUp = [...selectedImagesUp, index];
         }
       }
+      setSelectedImagesUp(newSelectedImagesUp);
     } else {
-      if (selectedImagesUp.length > 0) return;
-
       if (selectAll) {
-        if (selectedImagesDown.includes(index)) {
-          setSelectedImagesDown([]);
-        } else {
-          setSelectedImagesDown(imgsDown.map((img) => img.index));
-        }
+        newSelectedImagesDown = selectedImagesDown.includes(index)
+          ? []
+          : imgsDown.map((img) => img.index);
       } else {
         if (selectedImagesDown.includes(index)) {
-          setSelectedImagesDown(selectedImagesDown.filter((i) => i !== index));
+          newSelectedImagesDown = selectedImagesDown.filter((i) => i !== index);
         } else {
-          setSelectedImagesDown([...selectedImagesDown, index]);
+          newSelectedImagesDown = [...selectedImagesDown, index];
         }
       }
+      setSelectedImagesDown(newSelectedImagesDown);
     }
 
     if (onToothClick) onToothClick(index);
 
-    const newSelectedTeeth = [...selectedImagesUp, ...selectedImagesDown];
+    const newSelectedTeeth = [...newSelectedImagesUp, ...newSelectedImagesDown];
     onTeethSelectionChange?.(newSelectedTeeth);
   };
 
@@ -126,17 +130,6 @@ const Dents: React.FC<DentsProps> = ({
     { image: dent47, index: 37 },
     { image: dent48, index: 38 },
   ];
-  const notifyParentOfSelection = () => {
-    onTeethSelectionChange?.(selectedTeethData);
-  };
-
-  useEffect(() => {
-    notifyParentOfSelection();
-  }, [selectedTeethData, onTeethSelectionChange]);
-  
-  useEffect(() => {
-    onTeethSelectionChange?.([...selectedImagesUp, ...selectedImagesDown]);
-  }, [selectedImagesUp, selectedImagesDown, onTeethSelectionChange]);
 
   return (
     <div className="flex-col align-middle mt-3">
@@ -144,22 +137,19 @@ const Dents: React.FC<DentsProps> = ({
         {/* imgUp */}
         <div
           className={`flex space-x-2 ${
-            isReadOnly ? "pointer-events-none" : ""
+            isReadOnly || isUpperArchDisabled ? "pointer-events-none" : ""
           }`}
         >
           {imgsUp.map((img) => (
             <div
               key={img.index}
-              className={`${
-                isSelected(img.index) ? "scale-125 selected" : ""
-              } ${
-                !isReadOnly &&
-                !selectedTeethData.some((i) =>
-                  imgsDown.map((img) => img.index).includes(i)
-                )
-                  ? "hover:scale-125 hover:duration-200 duration-500"
-                  : ""
-              }`}
+              className={`${isSelected(img.index) ? "scale-125 selected" : ""} 
+                ${
+                  !isReadOnly && !isUpperArchDisabled
+                    ? "hover:scale-125 hover:duration-200 duration-500"
+                    : ""
+                }
+                ${isUpperArchDisabled ? "opacity-50" : ""}`}
               onClick={() => handleClick(img.index, true)}
             >
               <p>{img.index}</p>
@@ -175,22 +165,19 @@ const Dents: React.FC<DentsProps> = ({
         {/* imgDown */}
         <div
           className={`flex space-x-2 mb-3 ${
-            isReadOnly ? "pointer-events-none" : ""
+            isReadOnly || isLowerArchDisabled ? "pointer-events-none" : ""
           }`}
         >
           {imgsDown.map((img) => (
             <div
               key={img.index}
-              className={`${
-                isSelected(img.index) ? "scale-125 selected" : ""
-              } ${
-                !isReadOnly &&
-                !selectedTeethData.some((i) =>
-                  imgsUp.map((img) => img.index).includes(i)
-                )
-                  ? "hover:scale-125 hover:duration-200 duration-500"
-                  : ""
-              }`}
+              className={`${isSelected(img.index) ? "scale-125 selected" : ""} 
+                ${
+                  !isReadOnly && !isLowerArchDisabled
+                    ? "hover:scale-125 hover:duration-200 duration-500"
+                    : ""
+                }
+                ${isLowerArchDisabled ? "opacity-50" : ""}`}
               onClick={() => handleClick(img.index, false)}
             >
               <img

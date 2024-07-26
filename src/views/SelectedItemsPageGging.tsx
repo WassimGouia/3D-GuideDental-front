@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
 import { useLanguage } from "@/components/languageContext";
@@ -23,6 +23,26 @@ import Dents from "@/components/Dents";
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
+import {
+  Percent,
+  Archive,
+  FileDigit,
+  FolderUp,
+  UsersRound,
+  Package,
+} from "lucide-react";
+import Nouvelle from "@/components/Nouvelledemande";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 const SelectedItemsPageGging = () => {
   const { user } = useAuthContext();
@@ -51,6 +71,35 @@ const SelectedItemsPageGging = () => {
     caseNumber: "",
   });
   const [currentOffer, setCurrentOffer] = useState(null);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+
+  const formSchema = z.object({
+    file: z.instanceof(File, { message: "File is required" }),
+  });
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      file: null,
+    },
+  });
+
+  const handleArchiveClick = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowArchiveDialog(true);
+    }
+  };
+
+  const handleSubmitClick = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowSubmitDialog(true);
+    }
+  };
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -119,79 +168,108 @@ const SelectedItemsPageGging = () => {
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
-  const handleNextClick = async () => {
-    if(textareaValu === "" && previousStates.third)
-      {
-        return;
-      }
-    const res = await axios.post(
-      "http://localhost:1337/api/guide-pour-gingivectomies",
-      {
-        data: {
-          service: 3,
-          comment,
-          patient: patientData.fullname,
-          numero_cas: patientData.caseNumber,
-          cout: costt,
-          DICOM: [
-            {
-              title: "DICOM",
-              active: first,
-            },
-          ],
-          options_generiques: [
-            {
-              title: "options generiques",
-              Impression_Formlabs: [
-                {
-                  title: "Impression Formlabs",
-                  active: ImpressionFormlabs,
-                  Guide_supplementaire: additionalGuidess,
-                },
-              ],
-              Suppression_numerique: [
-                {
-                  title: "Suppression numérique de dents",
-                  active: supressionumerique,
-                  description: textareaValu,
-                },
-              ],
-              Smile_Design: [
-                {
-                  title: "Smile Design",
-                  active: smiledesign,
-                },
-              ],
-            },
-          ],
-          selected_teeth: selectedTeethData,
-          archive: true,
-          En_attente_approbation: false,
-          soumis: false,
-          en__cours_de_modification: false,
-          approuve: false,
-          produire_expide: false,
-          user: user.id,
-          offre:currentOffer?.currentPlan,
-          originalCost:originalCost,
-        },
-      }
-    );
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+
+    const guideData = {
+      service: 3, // Assuming this is the ID for the Guide pour Gingivectomie service
+      comment: selectedItemsData.comment,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      cout: costt,
+      DICOM: [
+        {
+          title: "DICOM",
+          active: first,
+        },
+      ],
+      options_generiques: [
+        {
+          title: "options generiques",
+          Impression_Formlabs: [
+            {
+              title: "Impression Formlabs",
+              active: ImpressionFormlabs,
+              Guide_supplementaire: additionalGuidess,
+            },
+          ],
+          Suppression_numerique: [
+            {
+              title: "Suppression numérique de dents",
+              active: supressionumerique,
+              description: textareaValu,
+            },
+          ],
+          Smile_Design: [
+            {
+              title: "Smile Design",
+              active: smiledesign,
+            },
+          ],
+        },
+      ],
+      submit: true,
+      archive: false,
+      En_attente_approbation: true,
+      en__cours_de_modification: false,
+      soumis: true,
+      approuve: false,
+      produire_expide: false,
+      selected_teeth: selectedTeethData,
+      user: user.id, // Relation with the authenticated user
+    };
+
+    formData.append("data", JSON.stringify(guideData));
+
+    if (data.file) {
+      formData.append("files.User_Upload", data.file, data.file.name);
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/guide-pour-gingivectomies",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      console.log("Data saved successfully:", response.data);
+      await handlePayment(response.data.data.id);
+    } catch (error) {
+      console.error("Error saving guide pour gingivectomie data:", error);
+    }
+  };
+
+  const handlePayment = async (guideId) => {
+    const stripe = await stripePromise;
     const requestData = {
-      cost: cost,
+      cost: costt,
       service: 3,
-      patient: localStorage.getItem("fullName"),
-      email: user && user.email,
-      guideId:res.data.data.id
+      patient: patientData.fullname,
+      email: user.email,
+      guideId: guideId,
     };
 
     try {
-      const stripe = await stripePromise;
       const response = await axios.post(
         "http://localhost:1337/api/commandes",
-        requestData
-      ); 
+        requestData,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`, // Include the user's token for authentication
+          },
+        }
+      );
       const { error } = await stripe.redirectToCheckout({
         sessionId: response.data.stripeSession.id,
       });
@@ -201,7 +279,6 @@ const SelectedItemsPageGging = () => {
     } catch (err) {
       console.log(err);
     }
-
   };
 
   const handleNextClickArchive = async () => {
@@ -260,177 +337,212 @@ const SelectedItemsPageGging = () => {
     );
 
     if (res.status === 200) {
-      localStorage.removeItem("guideginState")
-      navigate("/mes-fichier");
+      localStorage.removeItem("guideginState");
+      navigate("/");
     } else {
       alert(res.status);
     }
   };
-  const handlePreviousClick = ()=>{
-    // navigate("/guide-classique")
-    window.location.href="/guide-gingivectomie"
-  }
+  const handlePreviousClick = () => {
+    navigate("/guide-gingivectomie", { state: { fromSelectedItems: true } });
+  };
   return (
-    <div>
-      <SideBarContainer>
-        <Container>
-          <div className="p-2">
-            <Card className="h-auto p-3 font-SF-Pro-Display">
-              <div>
-                <ul>
-                  <div className="flex items-center justify-center">
-                    <h1 className="font-lato text-5xl ">
-                      {language === "french"
-                        ? "Guide pour gingivectomie"
-                        : "Gingivectomy guide"}
-                    </h1>
+    <SideBarContainer>
+      <Container>
+        <Nouvelle />
+        <br />
+        <div className="p-4 max-w-6xl mx-auto">
+          <Card className="w-full shadow-lg">
+            <CardHeader className="bg-gray-100 py-6">
+              <CardTitle className="text-3xl font-bold text-center text-gray-800">
+                {language === "french"
+                  ? "Guide pour gingivectomie"
+                  : "Gingivectomy Guide"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="bg-gray-100 p-6 rounded-lg shadow-sm mb-8">
+                <h2 className="text-2xl font-bold mb-4">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <UsersRound className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french" ? "Patient: " : "Patient: "}
+                      </span>
+                      {patientData.fullname}
+                    </p>
                   </div>
-                  <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
-                    <h2 className="text-xl font-bold mb-3">
-                      {language === "french"
-                        ? "Détails du cas"
-                        : "Case Details"}
-                    </h2>
-                    <div className="grid grid-cols-2 gap-2">
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french" ? "Patient: " : "Patient: "}
-                        </span>
-                        {patientData.fullname}
-                      </p>
-                      <p>
-                        <span className="font-semibold">
-                          {language === "french"
-                            ? "Numéro du cas: "
-                            : "Case number: "}
-                        </span>
-                        {patientData.caseNumber}
-                      </p>
-                      <p>
-                        <span className="font-semibold">
-                          {language === "french"
-                            ? "Offre actuelle: "
-                            : "Current offer: "}
-                        </span>
-                        {currentOffer ? currentOffer.currentPlan : "Loading..."}
-                      </p>
-                      <p>
-                        <span className="font-semibold">
-                          {language === "french" ? "Réduction: " : "Discount: "}
-                        </span>
-                        {currentOffer
-                          ? `${currentOffer.discount}%`
-                          : "Loading..."}
-                      </p>
-                      <p>
-                        <span className="font-semibold">
-                          {language === "french" ? "Coût: " : "Cost: "}
-                        </span>
+                  <div className="flex items-center space-x-3">
+                    <FileDigit className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Numéro du cas: "
+                          : "Case number: "}
+                      </span>
+                      {patientData.caseNumber}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Package className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french"
+                          ? "Offre actuelle: "
+                          : "Current offer: "}
+                      </span>
+                      {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Percent className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
+                      <span className="font-semibold">
+                        {language === "french" ? "Réduction: " : "Discount: "}
+                      </span>
+                      {currentOffer
+                        ? `${currentOffer.discount}%`
+                        : "Loading..."}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-                        <span className="font-bold text-green-600">
-                          {cost.toFixed(2)} €
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-lg font-semibold">
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold mb-4">
+                  {language === "french"
+                    ? "Options sélectionnées"
+                    : "Selected Options"}
+                </h3>
+
+                <div className="mb-6">
+                  <h4 className="font-semibold mb-2">
                     {language === "french"
-                      ? "Options sélectionnées"
-                      : "Selected Options"}
-                  </p>
-                  <div className="flex flex-col items-center justify-center ">
+                      ? "Dents sélectionnées:"
+                      : "Selected Teeth:"}
+                  </h4>
+                  <div className="flex justify-center">
                     <Dents
                       selectAll={false}
                       selectedTeethData={selectedTeethData}
                       isReadOnly={true}
                     />
-                    <div className="flex space-x-2">
-                      <p>
-                        {language === "french" ? "avec DICOM" : "with DICOM"}
-                      </p>
-
-                      <p>
-                        <Switch checked={previousStates?.first} />
-                      </p>
-                    </div>
                   </div>
+                </div>
 
-                  <div className="flex space-x-2">
+                <div className="flex items-center justify-between mb-4">
+                  <p>{language === "french" ? "avec DICOM" : "with DICOM"}</p>
+                  <Switch checked={previousStates?.first} />
+                </div>
+
+                <div className="flex items-center justify-between mb-4">
+                  <p>
+                    {language === "french" ? "Smile Design" : "Smile Design"}
+                  </p>
+                  <Switch checked={previousStates?.second} />
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
                     <p>
-                      {language === "french" ? "Smile Design" : "Smile Design"}
+                      {language === "french"
+                        ? "Suppression numérique de dents"
+                        : "Digital extraction of teeth"}
                     </p>
+                    <Switch checked={previousStates?.third} />
+                  </div>
+                  {previousStates?.third && (
+                    <Input
+                      style={{
+                        border:
+                          textareaValu === "pas de texte" || textareaValu === ""
+                            ? "2px solid red"
+                            : "none",
+                      }}
+                      value={textareaValu}
+                      readOnly
+                      className="w-full mt-2"
+                    />
+                  )}
+                </div>
 
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
                     <p>
-                      <Switch checked={previousStates?.second} />
+                      {language === "french"
+                        ? "Impression Formlabs®"
+                        : "Formlabs® impression"}
                     </p>
+                    <Switch checked={previousStates?.fourth} />
                   </div>
+                  {previousStates?.fourth && (
+                    <Input
+                      value={selectedItemsData.additionalGuides}
+                      readOnly
+                      className="w-full mt-2"
+                    />
+                  )}
+                </div>
 
-                  <div>
-                    <div className="flex space-x-2">
-                      <p>
-                        {language === "french"
-                          ? "Suppression numérique de dents"
-                          : "Digital extraction of teeth"}
-                      </p>
-
-                      <p>
-                        <Switch checked={previousStates?.third} />
-                      </p>
-                    </div>
-                    {previousStates?.third && (
-                      <Input style={{
-                        border: textareaValu === "pas de texte" ||textareaValu === "" ? "2px solid red" : "none",
-                    }} value={textareaValu} readOnly className="w-2/5" />
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex space-x-2">
-                      <p>
-                        {language === "french"
-                          ? "Impression Formlabs®"
-                          : "Formlabs® impression"}
-                      </p>
-
-                      <p>
-                        <Switch checked={previousStates?.fourth} />
-                      </p>
-                    </div>
-                    {previousStates?.fourth && (
-                      <Input
-                        value={selectedItemsData.additionalGuides}
-                        readOnly
-                        className="w-2/5"
-                      />
-                    )}
-                  </div>
-
-                  <li>Comment:</li>
+                <div className="mb-6">
+                  <h4 className="font-semibold mb-2">
+                    {language === "french" ? "Commentaire" : "Comment"}
+                  </h4>
                   <Input
                     value={selectedItemsData ? selectedItemsData.comment : ""}
                     readOnly
-                    className="w-2/5"
+                    className="w-full"
                   />
-                </ul>
-              </div>
-              <div>
-                <div className="mt-5 mb-5">
-                  <p className="text-lg font-semibold">
-                    {language === "french"
-                      ? "Ajouter des fichiers:"
-                      : "Add files:"}
-                  </p>
-                  <Input className="w-2/5" type="file" />
                 </div>
-                <div className="mt-5 flex justify-between">
-                  <Button onClick={handlePreviousClick} className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
+
+                <Form {...form}>
+                  <form>
+                    <FormField
+                      control={form.control}
+                      name="file"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {language === "french"
+                              ? "Ajouter des fichiers:"
+                              : "Add files:"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              onChange={(e) =>
+                                field.onChange(e.target.files[0])
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+
+                <div className="flex justify-between items-center mt-8">
+                  <Button
+                    onClick={handlePreviousClick}
+                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all"
+                  >
                     {language === "french" ? "Précédent" : "Previous"}
                   </Button>
 
                   <div className="flex space-x-3">
-                  <AlertDialog>
+                    <AlertDialog
+                      open={showArchiveDialog}
+                      onOpenChange={setShowArchiveDialog}
+                    >
                       <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2">
+                        <Button
+                          onClick={handleArchiveClick}
+                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                        >
                           {language === "french" ? "Archiver" : "Archive"}
                         </Button>
                       </AlertDialogTrigger>
@@ -442,25 +554,36 @@ const SelectedItemsPageGging = () => {
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                            {language === "french"
+                              ? "Cela archivera le cas."
+                              : "This will archive the case."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleNextClickArchive}>
+                          <AlertDialogAction
+                            onClick={() => {
+                              form.handleSubmit(handleNextClickArchive)();
+                              setShowArchiveDialog(false);
+                            }}
+                          >
                             {language === "french" ? "Continuer" : "Continue"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
 
-                  <AlertDialog>
+                    <AlertDialog
+                      open={showSubmitDialog}
+                      onOpenChange={setShowSubmitDialog}
+                    >
                       <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all">
+                        <Button
+                          onClick={handleSubmitClick}
+                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                        >
                           {language === "french" ? "Soumettre" : "Submit"}
                         </Button>
                       </AlertDialogTrigger>
@@ -472,16 +595,21 @@ const SelectedItemsPageGging = () => {
                             : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                            {language === "french"
+                              ? "Cela soumettra le cas."
+                              : "This will submit the case."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleNextClick}>
+                          <AlertDialogAction
+                            onClick={() => {
+                              form.handleSubmit(handleSubmit)();
+                              setShowSubmitDialog(false);
+                            }}
+                          >
                             {language === "french" ? "Continuer" : "Continue"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -490,11 +618,11 @@ const SelectedItemsPageGging = () => {
                   </div>
                 </div>
               </div>
-            </Card>
-          </div>
-        </Container>
-      </SideBarContainer>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Container>
+    </SideBarContainer>
   );
 };
 

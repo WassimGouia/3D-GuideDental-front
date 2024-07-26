@@ -3,8 +3,20 @@ import Dents from "@/components/Dents";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   HoverCard,
   HoverCardContent,
@@ -22,11 +34,19 @@ import { FaTooth } from "react-icons/fa";
 import axios from "axios";
 import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
+import {
+  Percent,
+  ReceiptEuro,
+  FileDigit,
+  Truck,
+  UsersRound,
+  Package,
+} from "lucide-react";
 
 const GuideEtage = () => {
   const { completeStep } = useStepTracking();
   const navigate = useNavigate();
-  const [originalCost, setOriginalCost] = useState(450 );
+  const [originalCost, setOriginalCost] = useState(450);
   const [cost, setCost] = useState(450);
   const [immediateLoad, setImmediateLoad] = useState(false);
   const [secondSwitch, setSecondSwitch] = useState(false);
@@ -42,6 +62,24 @@ const GuideEtage = () => {
   const [selectSurgicalKitBrand, setSelectSurgicalKitBrand] = useState("");
   const [lateralPinBrand, setLateralPinBrand] = useState("");
   const [implantBrandValues, setImplantBrandValues] = useState({});
+  const [formState, setFormState] = useState({
+    originalCost: 450,
+    cost: 450,
+    immediateLoad: false,
+    secondSwitch: false,
+    thirdSwitch: false,
+    fourthSwitch: false,
+    fifthSwitch: false,
+    smileDesign: false,
+    comment: "",
+    foragePilote: false,
+    fullGuide: false,
+    selectedTeeth: [],
+    implantBrandInputs: [],
+    selectSurgicalKitBrand: "",
+    lateralPinBrand: "",
+    implantBrandValues: {},
+  });
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
@@ -52,97 +90,77 @@ const GuideEtage = () => {
     discount: number;
   }
 
+  const formSchema = z.object({
+    selectedTeeth: z
+      .array(z.number())
+      .min(1, "Please select at least one tooth"),
+    drillingType: z.enum(["foragePilote", "fullGuide"], {
+      required_error: "Please select either Pilot drilling or Fully guided",
+    }),
+    lateralPinBrand: z.string().min(1, "Lateral pin brand is required"),
+    selectSurgicalKitBrand: z.string().min(1, "Surgical kit brand is required"),
+    implantBrandValues: z.record(
+      z.string().min(1, "Implant brand is required")
+    ),
+    comment: z.string().min(1, "Comment is required"),
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("Form submitted with values:", values);
+    handleNextClick(values);
+  };
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      selectedTeeth: [],
+      drillingType: undefined,
+      lateralPinBrand: "",
+      selectSurgicalKitBrand: "",
+      implantBrandValues: {},
+      comment: "",
+    },
+  });
+
   const [currentOffer, setCurrentOffer] = useState<Offer | null>(null);
   const { user } = useAuthContext();
   const { language } = useLanguage();
- 
+
   useEffect(() => {
+    const storedFormState = localStorage.getItem("guideEtageFormState");
+    const locationState = location.state;
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
-    const storedState = localStorage.getItem("guideEtageState");
-    if (storedState) {
-      try {
-        const {
-          comment,
-          cost,
-          fifthSwitch,
-          foragePilote,
-          fourthSwitch,
-          fullGuide,
-          immediateLoad,
-          implantBrandInputs,
-          implantBrandValues,
-          lateralPinBrand,
-          originalCost,
-          secondSwitch,
-          selectedTeeth,
-          selectSurgicalKitBrand,
-          selectedSwitchLabel,
-          smileDesign,
-          thirdSwitch,
-        } = JSON.parse(storedState);
-        setComment(comment);
-        setCost(cost);
-        setFifthSwitch(fifthSwitch)
-        setForagePilote(foragePilote);
-        setFourthSwitch(fourthSwitch)
-        setFullGuide(fullGuide);
-        setImmediateLoad(immediateLoad);
-        setImplantBrandInputs(implantBrandInputs);
-        setImplantBrandValues(implantBrandValues);
-        setLateralPinBrand(lateralPinBrand)
-        setOriginalCost(originalCost);
-        setSecondSwitch(secondSwitch)
-        setSelectSurgicalKitBrand(selectSurgicalKitBrand)
-        setFullGuide(selectedSwitchLabel)
-        setSelectedTeeth(selectedTeeth);
-        setSmileDesign(smileDesign)
-        setThirdSwitch(thirdSwitch)
-        console.log(selectedTeeth)
- 
-        const storedFullname = localStorage.getItem("fullName");
-      const storedCaseNumber = localStorage.getItem("caseNumber");
 
-      if (!storedFullname || !storedCaseNumber) {
-        navigate("/sign/nouvelle-demande");
-      } else {
-        setPatientData({ fullname: storedFullname, caseNumber: storedCaseNumber });
+    const setStateFromData = (data) => {
+      setFormState(data);
+      setSelectedTeeth(data.selectedTeeth || []);
+      setImplantBrandInputs(data.implantBrandInputs || []);
+      setImplantBrandValues(data.implantBrandValues || {});
+      setLateralPinBrand(data.lateralPinBrand || "");
+      setSelectSurgicalKitBrand(data.selectSurgicalKitBrand || "");
+      setComment(data.comment || "");
+      setImmediateLoad(data.immediateLoad || false);
+      setSecondSwitch(data.secondSwitch || false);
+      setThirdSwitch(data.thirdSwitch || false);
+      setFourthSwitch(data.fourthSwitch || false);
+      setFifthSwitch(data.fifthSwitch || false);
+      setSmileDesign(data.smileDesign || false);
+      setForagePilote(data.foragePilote || false);
+      setFullGuide(data.fullGuide || false);
+      setCost(data.cost || 450);
+      setOriginalCost(data.originalCost || 450);
 
-        const fetchOfferData = async () => {
-          const token = getToken();
-          if (token && user && user.id) {
-            try {
-              const userResponse = await axios.get(
-                `http://localhost:1337/api/users/${user.id}?populate=offre`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
-              );
+      form.reset({
+        selectedTeeth: data.selectedTeeth || [],
+        drillingType: data.foragePilote ? "foragePilote" : "fullGuide",
+        lateralPinBrand: data.lateralPinBrand || "",
+        selectSurgicalKitBrand: data.selectSurgicalKitBrand || "",
+        implantBrandValues: data.implantBrandValues || {},
+        comment: data.comment || "",
+      });
+    };
 
-              if (userResponse.data && userResponse.data.offre) {
-                const offerData = userResponse.data.offre;
-                const offer = { currentPlan: offerData.CurrentPlan, discount: getDiscount(offerData.CurrentPlan) };
-                setCurrentOffer(offer);
-                const discountedCost = applyDiscount(originalCost, offer.discount);
-                setCost(discountedCost);
-              } else {
-                console.error("Offer data not found in the user response");
-                setCurrentOffer(null);
-              }
-            } catch (error) {
-              console.error("Error fetching offer data:", error);
-              setCurrentOffer(null);
-            }
-          }
-        };
-
-        fetchOfferData();
-      }
-      } catch (error) {
-        console.error("Error parsing stored state:", error);
-        localStorage.removeItem("guideClassiqueState");
-      }
-    } else {
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
     } else {
@@ -150,6 +168,13 @@ const GuideEtage = () => {
         fullname: storedFullname,
         caseNumber: storedCaseNumber,
       });
+
+      if (locationState) {
+        setStateFromData(locationState);
+      } else if (storedFormState) {
+        const parsedState = JSON.parse(storedFormState);
+        setStateFromData(parsedState);
+      }
 
       const fetchOfferData = async () => {
         const token = getToken();
@@ -164,8 +189,6 @@ const GuideEtage = () => {
               }
             );
 
-            console.log("User Response:", userResponse.data);
-
             if (userResponse.data && userResponse.data.offre) {
               const offerData = userResponse.data.offre;
               const offer = {
@@ -175,7 +198,7 @@ const GuideEtage = () => {
               setCurrentOffer(offer);
 
               const discountedCost = applyDiscount(
-                originalCost,
+                formState.originalCost,
                 offer.discount
               );
               setCost(discountedCost);
@@ -195,8 +218,7 @@ const GuideEtage = () => {
 
       fetchOfferData();
     }
-  }
-  }, [navigate, user, originalCost]);
+  }, [navigate, location, form, user]);
 
   const getDiscount = (plan) => {
     const discounts = {
@@ -208,133 +230,166 @@ const GuideEtage = () => {
     return discounts[plan] || 0;
   };
 
-  const deliveryCost = user && user.location[0].country?.toLocaleLowerCase() === "france" ? 7.5 : 15;
+  const deliveryCost =
+    user && user.location[0].country?.toLocaleLowerCase() === "france"
+      ? 7.5
+      : 15;
 
-  const applyDiscount = (price, discountPercentage) => {
-  const discountedPrice = price * (1 - discountPercentage / 100);
-  return discountedPrice + deliveryCost;
-};
-
-
-  const updateCost = (change) => {
-    setOriginalCost((prevCost) => {
-      const newOriginalCost = prevCost + change;
+  const updateFormState = (field, value, costChange = 0) => {
+    setFormState((prevState) => {
+      const newState = { ...prevState, [field]: value };
+      const newOriginalCost =
+        prevState.originalCost + (value ? costChange : -costChange);
       const newDiscountedCost = currentOffer
         ? applyDiscount(newOriginalCost, currentOffer.discount)
         : newOriginalCost;
-      setCost(newDiscountedCost);
-      return newOriginalCost;
+      return {
+        ...newState,
+        originalCost: newOriginalCost,
+        cost: newDiscountedCost,
+      };
     });
   };
 
+  const applyDiscount = (price, discountPercentage) => {
+    const discountedPrice = price * (1 - discountPercentage / 100);
+    return discountedPrice + deliveryCost;
+  };
+
+  const updateCost = (change) => {
+    setFormState((prevState) => {
+      const newOriginalCost = prevState.originalCost + change;
+      const newDiscountedCost = currentOffer
+        ? applyDiscount(newOriginalCost, currentOffer.discount)
+        : newOriginalCost;
+      return {
+        ...prevState,
+        originalCost: newOriginalCost,
+        cost: newDiscountedCost,
+      };
+    });
+  };
+
+  const handleSwitchToggle = (field, costChange = 0) => {
+    setFormState((prevState) => {
+      const newState = { ...prevState, [field]: !prevState[field] };
+      updateCost(newState[field] ? costChange : -costChange);
+      return newState;
+    });
+    form.setValue(field, !form.getValues(field));
+  };
+
+  const handleImmediateLoadToggle = () =>
+    updateFormState("immediateLoad", !formState.immediateLoad, 150);
+  const handleSecondSwitchToggle = () =>
+    updateFormState("secondSwitch", !formState.secondSwitch, 100);
+  const handleThirdSwitchToggle = () =>
+    updateFormState("thirdSwitch", !formState.thirdSwitch, 300);
+  const handleFourthSwitchToggle = () =>
+    updateFormState("fourthSwitch", !formState.fourthSwitch, 400);
+  const handleFifthSwitchToggle = () =>
+    updateFormState("fifthSwitch", !formState.fifthSwitch);
+  const smileDesignToggle = () =>
+    updateFormState("smileDesign", !formState.smileDesign, 40);
+
   const handleForagePiloteSwitch = () => {
-    setForagePilote(!foragePilote);
-    if (!foragePilote) {
-      setFullGuide(false);
-      updateCost(0);
-    } else {
-      updateCost(0);
-    }
+    updateFormState("foragePilote", true);
+    updateFormState("fullGuide", false);
+    form.setValue("drillingType", "foragePilote");
   };
 
   const handleFullGuideSwitch = () => {
-    setFullGuide(!fullGuide);
-    if (!fullGuide) {
-      setForagePilote(false);
-      updateCost(0);
-    } else {
-      updateCost(0);
-    }
+    updateFormState("foragePilote", false);
+    updateFormState("fullGuide", true);
+    form.setValue("drillingType", "fullGuide");
   };
 
-  const handleImmediateLoadToggle = () => {
-    setImmediateLoad((prev) => !prev);
-    immediateLoad ? updateCost(-150) : updateCost(150);
-  };
+  // const handleForagePiloteSwitch = () => {
+  //   setForagePilote(true);
+  //   setFullGuide(false);
+  //   form.setValue("drillingType", "foragePilote");
+  // };
 
-  const handleSecondSwitchToggle = () => {
-    setSecondSwitch((prev) => !prev);
-    secondSwitch ? updateCost(-100) : updateCost(100);
-  };
+  // const handleFullGuideSwitch = () => {
+  //   setFullGuide(true);
+  //   setForagePilote(false);
+  //   form.setValue("drillingType", "fullGuide");
+  // };
 
-  const handleThirdSwitchToggle = () => {
-    setThirdSwitch((prev) => !prev);
-    thirdSwitch ? updateCost(-300) : updateCost(300);
-  };
+  // const handleImmediateLoadToggle = () => {
+  //   setImmediateLoad((prev) => {
+  //     const newValue = !prev;
+  //     updateCost(newValue ? 150 : -150);
+  //     return newValue;
+  //   });
+  // };
 
-  const handleFourthSwitchToggle = () => {
-    setFourthSwitch((prev) => !prev);
-    fourthSwitch ? updateCost(-400) : updateCost(400);
-  };
+  // const handleSecondSwitchToggle = () => {
+  //   setSecondSwitch((prev) => {
+  //     const newValue = !prev;
+  //     updateCost(newValue ? 100 : -100);
+  //     return newValue;
+  //   });
+  // };
 
-  const handleFifthSwitchToggle = () => {
-    setFifthSwitch((prev) => !prev);
-    fifthSwitch ? updateCost(0) : updateCost(0);
-  };
+  // const handleThirdSwitchToggle = () => {
+  //   setThirdSwitch((prev) => {
+  //     const newValue = !prev;
+  //     updateCost(newValue ? 300 : -300);
+  //     return newValue;
+  //   });
+  // };
 
-  const smileDesignToggle = () => {
-    setSmileDesign((prev) => !prev);
-    smileDesign ? updateCost(-40) : updateCost(40);
-  };
+  // const handleFourthSwitchToggle = () => {
+  //   setFourthSwitch((prev) => {
+  //     const newValue = !prev;
+  //     updateCost(newValue ? 400 : -400);
+  //     return newValue;
+  //   });
+  // };
 
+  // const handleFifthSwitchToggle = () => {
+  //   setFifthSwitch((prev) => !prev);
+  // };
+
+  // const smileDesignToggle = () => {
+  //   setSmileDesign((prev) => {
+  //     const newValue = !prev;
+  //     updateCost(newValue ? 40 : -40);
+  //     return newValue;
+  //   });
+  // };
   const handleCommentChange = (e: any) => {
     setComment(e.target.value);
   };
 
-  const handleTeethSelectionChange = (selectedTeeth: number[]) => {
-    setSelectedTeeth(selectedTeeth);
+  const handleTeethSelectionChange = (selectedTeeth) => {
+    form.setValue("selectedTeeth", selectedTeeth);
   };
 
-  const handleNextClick = () => {
+  const handleNextClick = (values: z.infer<typeof formSchema>) => {
     completeStep("guide-etage");
-    const selectedSwitchLabel = foragePilote
-      ? language === "french"
-        ? "Forage pilote"
-        : "Pilot drilling"
-      : language === "french"
-      ? "Full guidée"
-      : "Fully guided";
-
     const yourData = {
-      title: language === "french" ? "Guide à étages" : "Stackable Guide",
-      cost: cost,
-      originalCost: originalCost,
-      immediateLoad: immediateLoad,
-      secondSwitch: secondSwitch,
-      thirdSwitch: thirdSwitch,
-      fourthSwitch: fourthSwitch,
-      fifthSwitch: fifthSwitch,
-      smileDesign: smileDesign,
-      comment: comment,
-      selectedSwitchLabel: selectedSwitchLabel,
-      selectedTeeth: selectedTeeth,
-      lateralPinBrand: lateralPinBrand,
-      selectSurgicalKitBrand: selectSurgicalKitBrand,
-      implantBrandValues: implantBrandValues,
-      implantBrandInputs: implantBrandInputs,
-      foragePilote: foragePilote,
-      fullGuide: fullGuide,
+      ...formState,
+      comment: values.comment,
+      selectedSwitchLabel:
+        values.drillingType === "foragePilote"
+          ? language === "french"
+            ? "Forage pilote"
+            : "Pilot drilling"
+          : language === "french"
+          ? "Full guidée"
+          : "Fully guided",
+      selectedTeeth: values.selectedTeeth,
+      lateralPinBrand: values.lateralPinBrand,
+      selectSurgicalKitBrand: values.selectSurgicalKitBrand,
+      implantBrandValues: values.implantBrandValues,
     };
-    localStorage.setItem("guideEtageState", JSON.stringify(yourData));
+    localStorage.setItem("guideEtageFormState", JSON.stringify(yourData));
 
     navigate("/SelectedItemsPageGETAGE", {
       state: {
         selectedItemsData: yourData,
-        previousStates: {
-          immediateLoad: immediateLoad,
-          secondSwitch: secondSwitch,
-          thirdSwitch: thirdSwitch,
-          fourthSwitch: fourthSwitch,
-          fifthSwitch: fifthSwitch,
-          smileDesign: smileDesign,
-          selectedTeeth: selectedTeeth,
-          lateralPinBrand: lateralPinBrand,
-          foragePilote: foragePilote,
-          fullGuide: fullGuide,
-          selectSurgicalKitBrand: selectSurgicalKitBrand,
-          implantBrandInputs: implantBrandInputs,
-          implantBrandValues: implantBrandValues,
-        },
       },
     });
   };
@@ -347,349 +402,490 @@ const GuideEtage = () => {
   };
 
   const handleToothClick = (index) => {
-    setSelectedTeeth((prevSelectedTeeth) => {
-      if (prevSelectedTeeth.includes(index)) {
-        return prevSelectedTeeth.filter((i) => i !== index);
-      } else {
-        return [...prevSelectedTeeth, index];
-      }
-    });
+    setFormState((prevState) => {
+      const newSelectedTeeth = prevState.selectedTeeth.includes(index)
+        ? prevState.selectedTeeth.filter((i) => i !== index)
+        : [...prevState.selectedTeeth, index];
 
-    setImplantBrandInputs((prevImplantInputs) => {
-      if (prevImplantInputs.includes(index)) {
-        return prevImplantInputs.filter((i) => i !== index);
-      } else {
-        return [...prevImplantInputs, index];
-      }
+      const newImplantBrandInputs = prevState.implantBrandInputs.includes(index)
+        ? prevState.implantBrandInputs.filter((i) => i !== index)
+        : [...prevState.implantBrandInputs, index];
+
+      return {
+        ...prevState,
+        selectedTeeth: newSelectedTeeth,
+        implantBrandInputs: newImplantBrandInputs,
+      };
     });
   };
 
   return (
     <SideBarContainer>
       <div className="m-4">
-        <Nouvelle />
-        <br />
         <Container>
-          <Card className=" p-3 font-SF-Pro-Display">
-            <div className="flex items-center justify-center">
-              <h1 className="font-lato text-5xl ">
-                {language === "french" ? "Guide à étages" : "Stackable Guide"}
-              </h1>
-            </div>
-            <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
-              <h2 className="text-xl font-bold mb-3">
-                {language === "french" ? "Détails du cas" : "Case Details"}
-              </h2>
-              <div className="grid grid-cols-2 gap-2">
-                <p className="text-lg">
-                  <span className="font-semibold">
-                    {language === "french" ? "Patient: " : "Patient: "}
-                  </span>
-                  {patientData.fullname}
-                </p>
-                <p>
-                  <span className="font-semibold">
+          <Nouvelle />
+          <br />
+          <Card className="w-full max-w-4xl mx-auto my-8 shadow-lg">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardHeader className="bg-gray-100">
+                  <CardTitle className="text-3xl font-bold text-center text-gray-800">
                     {language === "french"
-                      ? "Numéro du cas: "
-                      : "Case number: "}
-                  </span>
-                  {patientData.caseNumber}
-                </p>
-                <p>
-                  <span className="font-semibold">
-                    {language === "french"
-                      ? "Offre actuelle: "
-                      : "Current offer: "}
-                  </span>
-                  {currentOffer ? currentOffer.currentPlan : "Loading..."}
-                </p>
-                <p>
-                  <span className="font-semibold">
-                    {language === "french" ? "Réduction: " : "Discount: "}
-                  </span>
-                  {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
-                </p>
-
-                <p>
-                  <span className="font-semibold">
-                    {language === "french" ? "livraison: " : "Delivery: "}
-                  </span>
-                  {deliveryCost} €
-                </p>
-
-
-
-              </div>
-              <p className="text-center mt-3">
-                  <span className="font-semibold">
-                    {language === "french" ? "Coût: " : "Cost: "}
-                  </span>
-                  <span className="text-gray-500 font-bold">
-                  ({originalCost.toFixed(2)} - {currentOffer ? `${currentOffer.discount}%` : "Loading..."}) +{deliveryCost} = <span className="text-green-500">{cost.toFixed(2)} €</span>
-                  </span>{" "}
-                </p>
-            </div>
-            <br />
-            <div className="flex flex-col items-center justify-center ">
-              <h1 className="font-bold">
-                {language === "french"
-                  ? "Sélectionner la (les) dent(s) à traiter"
-                  : "Select the tooth (teeth) to treat."}
-              </h1>
-
-              <p>
-                {language === "french"
-                  ? "Si vous souhaitez un guide pour les deux arcades, veuillez ajouter une tâche par arcade."
-                  : "If you want a guide for both arches, please add a task for each arch."}
-              </p>
-              <div>
-
-                <Dents
-                  selectAll={false}
-                  selectedTeethData={implantBrandInputs}
-                  onToothClick={handleToothClick}
-                  onTeethSelectionChange={handleTeethSelectionChange}
-                />
-
-                <br />
-              </div>
-              <div className="flex space-x-2">
-                <div className="items-center space-x-2">
-                  <Switch
-                    checked={foragePilote}
-                    onClick={handleForagePiloteSwitch}
-                  />
-                  <Label htmlFor="airplane-mode">
-                    {language === "french" ? "Forage pilote" : "Pilot drilling"}
-                  </Label>
-                </div>
-                <div className="items-center space-x-2">
-                  <Switch checked={fullGuide} onClick={handleFullGuideSwitch} />
-                  <Label htmlFor="airplane-mode">
-                    {language === "french" ? "Full guidée" : "Fully guided"}
-                  </Label>
-                </div>
-              </div>
-            </div>
-            <br />
-            <div>
-              <p className="">
-                {language === "french"
-                  ? "Pour le forage pilote, nous utilisons les douilles de 2mm et forets pilotes diponibles de chez"
-                  : "For pilot drilling, we use 2mm sleeves and pilot drills available from"}
-                <span className="font-semibold">
-                  {language === "french"
-                    ? " Implants Diffusion International"
-                    : " Implants Diffusion International"}
-                </span>
-                .
-              </p>
-
-              <br />
-              <p>
-                {language === "french"
-                  ? "Pour le full guidée, vous devez disposer de la trousse adéquate fournie par votre fabricant."
-                  : "For fully guided drilling, you must have the appropriate kit provided by your manufacturer."}
-              </p>
-              <br />
-              <p className="">
-                {language === "french"
-                  ? "3D Guide Dental peut commander à votre place les douilles (directement de chez le fabricant) si vous optez pour l'option de production. Vous pouvez aussi commander les douilles et les envoyez à notre siège. Pour plus de détails, n'hésitez pas à nous contacter."
-                  : "3D Guide Dental can order sleeves on your behalf (directly from the manufacturer) if you opt for the production option. Alternatively, you can order the sleeves and send them to our headquarters. For further details, please feel free to contact us."}
-              </p>
-            </div>
-            <div>
-              <br />
-
-              <div>
-                <h1 className="font-bold">
-                  {language === "french"
-                    ? "Marque de la clavette:"
-                    : "Brand of the lateral pin"}
-                </h1>
-
-                <Input
-                  type="text"
-                  placeholder="Ex: IDI, Nobel, Straumann ..."
-                  className="w-2/5"
-                  value={lateralPinBrand}
-                  onChange={(event) => setLateralPinBrand(event.target.value)}
-                />
-              </div>
-              <div>
-                <h1 className="font-bold">
-                  {language === "french"
-                    ? "Marque de la trousse de chirugie utilisée:"
-                    : "Brand of the surgical kit used: "}
-                </h1>
-
-                <Input
-                  type="text"
-                  placeholder="Ex: IDI, Nobel, Straumann ..."
-                  className="w-2/5"
-                  value={selectSurgicalKitBrand}
-                  onChange={(event) =>
-                    setSelectSurgicalKitBrand(event.target.value)
-                  }
-                />
-              </div>
-              <div className="flex-col space-y-1">
-                <h1 className="font-bold">
-                  {language === "french"
-                    ? "Marque de l'implant pour la dent:"
-                    : "Brand of the implant for the tooth:"}
-                </h1>
-                {implantBrandInputs.map((index) => (
-                  <div key={index}>
-                    <div className="flex items-center ">
-                      <div className="flex space-x-2 items-center mr-2">
-                        <FaTooth />
-                        <span className=" flex items-center">{index}</span>
+                      ? "Guide à étages"
+                      : "Stackable Guide"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                    <h2 className="text-xl font-bold mb-3">
+                      {language === "french"
+                        ? "Détails du cas"
+                        : "Case Details"}
+                    </h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center space-x-2">
+                        <UsersRound className="text-yellow-600" />
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french" ? "Patient: " : "Patient: "}
+                          </span>
+                          {patientData.fullname}
+                        </p>
                       </div>
-                      <Input
-                        type="text"
-                        placeholder="Ex: IDI, Nobel, Straumann ..."
-                        className="w-2/5"
-                        onChange={(event) =>
-                          handleImplantBrandChange(index, event.target.value)
-                        }
-                      />
+                      <div className="flex items-center space-x-2">
+                        <FileDigit className="text-yellow-600" />
+
+                        <p>
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Numéro du cas: "
+                              : "Case number: "}
+                          </span>
+                          {patientData.caseNumber}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Package className="text-yellow-600" />
+
+                        <p>
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Offre actuelle: "
+                              : "Current offer: "}
+                          </span>
+                          {currentOffer
+                            ? currentOffer.currentPlan
+                            : "Loading..."}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Percent className="text-yellow-600" />
+
+                        <p>
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Réduction: "
+                              : "Discount: "}
+                          </span>
+                          {currentOffer
+                            ? `${currentOffer.discount}%`
+                            : "Loading..."}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Truck className="text-yellow-600" />
+
+                        <p>
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "livraison: "
+                              : "Delivery: "}
+                          </span>
+                          {deliveryCost} €
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex text-center mt-3 space-x-2">
+                      <ReceiptEuro className="text-yellow-600" />
+                      <span className="font-semibold">
+                        {language === "french" ? "Coût: " : "Cost: "}
+                      </span>
+                      <span className="text-gray-500 font-bold">
+                        ({originalCost.toFixed(2)} -{" "}
+                        {currentOffer
+                          ? `${currentOffer.discount}%`
+                          : "Loading..."}
+                        ) +{deliveryCost} ={" "}
+                        <span className="text-green-500">
+                          {cost.toFixed(2)} €
+                        </span>
+                      </span>{" "}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-            <br />
-            <div>
-              <p className="font-semibold text-lg">
-                {language === "french"
-                  ? "Options supplémentaires:"
-                  : "Additional options:"}
-              </p>
-              <br />
-              <div className="flex-col items-center space-y-2">
-                <div className="flex space-x-2 justify-between">
-                  <p>
+                  <br />
+
+                  <div className="flex flex-col items-center justify-center ">
+                    <h1 className="font-bold">
+                      {language === "french"
+                        ? "Sélectionner la (les) dent(s) à traiter"
+                        : "Select the tooth (teeth) to treat."}
+                    </h1>
+
+                    {/* <p>
                     {language === "french"
-                      ? "Mise en charge immédiate (impression de la prothèse immédiate)"
-                      : "Immediate loading (impression of the immediate prosthesis)"}
-                  </p>
-                  <Switch
-                    onClick={handleImmediateLoadToggle}
-                    checked={immediateLoad}
-                  />
-                </div>
-                <div className="flex space-x-2 justify-between">
-                  <p>
-                    {language === "french"
-                      ? "Impression des 2 étages en résine (prothèse immédiate non incluse)"
-                      : "Resin impression of both guide parts (immediate prosthesis not included) "}
-                  </p>
-                  <Switch
-                    onClick={handleSecondSwitchToggle}
-                    checked={secondSwitch}
-                  />
-                </div>
-                <div className="flex space-x-2 justify-between">
-                  <p>
-                    {language === "french"
-                      ? "Impression du premier étage en métal + deuxième étage en résine (prothèse immédiate non incluse)"
-                      : "Metal impression of first part + Resin impression of second part (immediate prosthesis not included) "}
-                  </p>
-                  <Switch
-                    onClick={handleThirdSwitchToggle}
-                    checked={thirdSwitch}
-                  />
-                </div>
-                <div className="flex space-x-2 justify-between">
-                  <p>
-                    {language === "french"
-                      ? "Impression des 2 étages en métal (prothèse immédiate non incluse)"
-                      : "Metal impression of both guide parts (immediate prosthesis not included) "}
-                  </p>
-                  <Switch
-                    onClick={handleFourthSwitchToggle}
-                    checked={fourthSwitch}
-                  />
-                </div>
-                <div className="flex space-x-2 justify-between">
-                  <p>
-                    {language === "french"
-                      ? "Ajout d'aimants pour solidariser les étages"
-                      : "Addition of magnets to secure the parts"}
-                  </p>
-                  <Switch
-                    onClick={handleFifthSwitchToggle}
-                    checked={fifthSwitch}
-                  />
-                </div>
-              </div>
-              <br />
-              <br />
-              <div className="flex-col items-center">
-                <p className="font-semibold text-lg">
-                  {language === "french"
-                    ? "Pour ce type de travail, les options génériques ci-dessous sont disponibles:"
-                    : "For this type of work, the following generic options are available:"}
-                </p>
-                <br />
-                <div className="flex items-center space-x-2">
-                  <Switch onClick={smileDesignToggle} checked={smileDesign} />
-                  <Label htmlFor="airplane-mode">
-                    {language === "french" ? "Smile Design" : "Smile Design"}
-                  </Label>
-                  <HoverCard>
-                    <HoverCardTrigger asChild>
-                      <Info className="h-4 w-auto" />
-                    </HoverCardTrigger>
-                    <HoverCardContent className="bg-gray-200 bg-opacity-95 h-auto w-72">
-                      <p>
+                      ? "Si vous souhaitez un guide pour les deux arcades, veuillez ajouter une tâche par arcade."
+                      : "If you want a guide for both arches, please add a task for each arch."}
+                  </p> */}
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name="selectedTeeth"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {language === "french"
+                                ? "Sélectionner la (les) dent(s) à traiter"
+                                : "Select the tooth (teeth) to treat"}
+                            </FormLabel>
+                            <FormDescription>
+                              {language === "french"
+                                ? "Si vous souhaitez un guide pour les deux arcades, veuillez ajouter une tâche par arcade."
+                                : "If you want a guide for both arches, please add a task for each arch."}
+                            </FormDescription>
+                            <FormControl>
+                              <Dents
+                                selectAll={false}
+                                selectedTeethData={field.value}
+                                onToothClick={handleToothClick}
+                                onTeethSelectionChange={(selectedTeeth) => {
+                                  field.onChange(selectedTeeth);
+                                  handleTeethSelectionChange(selectedTeeth);
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <br />
+                    </div>
+                    <div className="flex space-x-8">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={formState.foragePilote}
+                          onCheckedChange={handleForagePiloteSwitch}
+                        />
+                        <Label htmlFor="foragePilote" className="text-base">
+                          {language === "french"
+                            ? "Forage pilote"
+                            : "Pilot drilling"}
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={formState.fullGuide}
+                          onCheckedChange={handleFullGuideSwitch}
+                        />
+                        <Label htmlFor="fullGuide" className="text-base">
+                          {language === "french"
+                            ? "Full guidée"
+                            : "Fully guided"}
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  <br />
+                  <div>
+                    <p className="">
+                      {language === "french"
+                        ? "Pour le forage pilote, nous utilisons les douilles de 2mm et forets pilotes diponibles de chez"
+                        : "For pilot drilling, we use 2mm sleeves and pilot drills available from"}
+                      <span className="font-semibold">
                         {language === "french"
-                          ? "Veuillez inclure, en plus des fichiers transmis, une  photographie en vue de face du patient avec un sourire, afin de réaliser le Smile Design."
-                          : "Please include, in addition to the files provided, a front-facing photograph of the patient smiling, to facilitate the Smile Design."}
-                      </p>
-                    </HoverCardContent>
-                  </HoverCard>
-                </div>
-                <br />
-                <div>
+                          ? " Implants Diffusion International"
+                          : " Implants Diffusion International"}
+                      </span>
+                      .
+                    </p>
+
+                    <br />
+                    <p>
+                      {language === "french"
+                        ? "Pour le full guidée, vous devez disposer de la trousse adéquate fournie par votre fabricant."
+                        : "For fully guided drilling, you must have the appropriate kit provided by your manufacturer."}
+                    </p>
+                    <br />
+                    <p className="">
+                      {language === "french"
+                        ? "3D Guide Dental peut commander à votre place les douilles (directement de chez le fabricant) si vous optez pour l'option de production. Vous pouvez aussi commander les douilles et les envoyez à notre siège. Pour plus de détails, n'hésitez pas à nous contacter."
+                        : "3D Guide Dental can order sleeves on your behalf (directly from the manufacturer) if you opt for the production option. Alternatively, you can order the sleeves and send them to our headquarters. For further details, please feel free to contact us."}
+                    </p>
+                  </div>
+                  <div>
+                    <br />
+                    <FormField
+                      control={form.control}
+                      name="lateralPinBrand"
+                      render={({ field }) => (
+                        <FormItem className="mb-4">
+                          <FormLabel className="text-lg font-semibold">
+                            {language === "french"
+                              ? "Marque de la clavette:"
+                              : "Brand of the lateral pin:"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Ex: IDI, Nobel, Straumann ..."
+                              className="w-full md:w-2/5"
+                              value={formState.lateralPinBrand}
+                              onChange={(e) => {
+                                setFormState((prevState) => ({
+                                  ...prevState,
+                                  lateralPinBrand: e.target.value,
+                                }));
+                                field.onChange(e);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="selectSurgicalKitBrand"
+                      render={({ field }) => (
+                        <FormItem className="mb-4">
+                          <FormLabel className="text-lg font-semibold">
+                            {language === "french"
+                              ? "Marque de la trousse de chirugie utilisée:"
+                              : "Brand of the surgical kit used:"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Ex: IDI, Nobel, Straumann ..."
+                              className="w-full md:w-2/5"
+                              value={formState.selectSurgicalKitBrand}
+                              onChange={(e) => {
+                                setFormState((prevState) => ({
+                                  ...prevState,
+                                  selectSurgicalKitBrand: e.target.value,
+                                }));
+                                field.onChange(e);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-4 mt-4">
+                      <h2 className="text-lg font-semibold mb-2">
+                        {language === "french"
+                          ? "Marque de l'implant pour la dent:"
+                          : "Brand of the implant for the tooth:"}
+                      </h2>
+                      {formState.implantBrandInputs.map((index) => (
+                        <FormField
+                          key={index}
+                          control={form.control}
+                          name={`implantBrandValues.${index}`}
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-4 mb-2">
+                              <FormLabel className="flex items-center space-x-2 min-w-[60px]">
+                                <FaTooth />
+                                <span>{index}</span>
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="Ex: IDI, Nobel, Straumann ..."
+                                  className="w-full md:w-2/5"
+                                  value={
+                                    formState.implantBrandValues[index] || ""
+                                  }
+                                  onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    setFormState((prevState) => ({
+                                      ...prevState,
+                                      implantBrandValues: {
+                                        ...prevState.implantBrandValues,
+                                        [index]: newValue,
+                                      },
+                                    }));
+                                    field.onChange(e);
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <br />
                   <div>
                     <p className="font-semibold text-lg">
                       {language === "french"
-                        ? "Commentaire sur ce travail:"
-                        : "Comment on this work:"}
+                        ? "Options supplémentaires:"
+                        : "Additional options:"}
                     </p>
-                    <Textarea
-                      placeholder={
-                        language === "french"
-                          ? "Ajoutez vos instructions cliniques"
-                          : "Add your clinical instructions"
-                      }
-                      value={comment}
-                      onChange={handleCommentChange}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between">
-              <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">
-                <Link to="/sign/Nouvelle-modelisation">
-                  {language === "french" ? "Précédent" : "Previous"}
-                </Link>
-              </Button>
+                    <br />
+                    <div className="flex-col items-center space-y-2">
+                      <div className="flex space-x-2 justify-between">
+                        <p>
+                          {language === "french"
+                            ? "Mise en charge immédiate"
+                            : "Immediate loading"}
+                        </p>
+                        <Switch
+                          checked={formState.immediateLoad}
+                          onCheckedChange={handleImmediateLoadToggle}
+                        />
+                      </div>
+                      <div className="flex space-x-2 justify-between">
+                        <p>
+                          {language === "french"
+                            ? "Impression des 2 étages en résine"
+                            : "Resin impression of both guide parts"}
+                        </p>
+                        <Switch
+                          checked={formState.secondSwitch}
+                          onCheckedChange={handleSecondSwitchToggle}
+                        />
+                      </div>
+                      <div className="flex space-x-2 justify-between">
+                        <p>
+                          {language === "french"
+                            ? "Impression du premier étage en métal + deuxième étage en résine"
+                            : "Metal impression of first part + Resin impression of second part"}
+                        </p>
+                        <Switch
+                          onClick={handleThirdSwitchToggle}
+                          checked={formState.thirdSwitch}
+                        />
+                      </div>
+                      <div className="flex space-x-2 justify-between">
+                        <p>
+                          {language === "french"
+                            ? "Impression des 2 étages en métal"
+                            : "Metal impression of both guide parts"}
+                        </p>
+                        <Switch
+                          onClick={handleFourthSwitchToggle}
+                          checked={formState.fourthSwitch}
+                        />
+                      </div>
+                      <div className="flex space-x-2 justify-between">
+                        <p>
+                          {language === "french"
+                            ? "Ajout d'aimants pour solidariser les étages"
+                            : "Addition of magnets to secure the parts"}
+                        </p>
+                        <Switch
+                          onClick={handleFifthSwitchToggle}
+                          checked={formState.fifthSwitch}
+                        />
+                      </div>
+                    </div>
+                    <br />
+                    <br />
+                    <div className="flex-col items-center">
+                      <p className="font-semibold text-lg">
+                        {language === "french"
+                          ? "Pour ce type de travail, les options génériques ci-dessous sont disponibles:"
+                          : "For this type of work, the following generic options are available:"}
+                      </p>
+                      <br />
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          onClick={smileDesignToggle}
+                          checked={formState.smileDesign}
+                        />
+                        <Label htmlFor="airplane-mode">
+                          {language === "french"
+                            ? "Smile Design"
+                            : "Smile Design"}
+                        </Label>
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Info className="h-4 w-auto" />
+                          </HoverCardTrigger>
+                          <HoverCardContent className="bg-gray-200 bg-opacity-95 h-auto w-72">
+                            <p>
+                              {language === "french"
+                                ? "Veuillez inclure, en plus des fichiers transmis, une  photographie en vue de face du patient avec un sourire, afin de réaliser le Smile Design."
+                                : "Please include, in addition to the files provided, a front-facing photograph of the patient smiling, to facilitate the Smile Design."}
+                            </p>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </div>
+                      <br />
+                      <div>
+                        <br />
 
-              <Button
-                className={`w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all mt-9`}
-                disabled={!comment.trim()}
-                onClick={handleNextClick}
-              >
-                <Link to="/SelectedItemsPageGETAGE">
-                  {language === "french" ? "Suivant" : "Next"}
-                </Link>
-              </Button>
-            </div>
+                        <FormField
+                          control={form.control}
+                          name="comment"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {language === "french"
+                                  ? "Commentaire sur ce travail:"
+                                  : "Comment on this work:"}
+                              </FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  {...field}
+                                  placeholder={
+                                    language === "french"
+                                      ? "Ajoutez vos instructions cliniques"
+                                      : "Add your clinical instructions"
+                                  }
+                                  value={formState.comment}
+                                  onChange={(e) => {
+                                    setFormState((prevState) => ({
+                                      ...prevState,
+                                      comment: e.target.value,
+                                    }));
+                                    field.onChange(e);
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">
+                      <Link to="/sign/Nouvelle-modelisation">
+                        {language === "french" ? "Précédent" : "Previous"}
+                      </Link>
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all mt-9"
+                    >
+                      {language === "french" ? "Suivant" : "Next"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </form>
+            </Form>
           </Card>
         </Container>
       </div>

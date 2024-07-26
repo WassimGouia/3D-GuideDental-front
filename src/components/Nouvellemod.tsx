@@ -20,6 +20,14 @@ import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
 import { useStepTracking } from "@/components/StepTrackingContext";
 import axios from "axios";
+import {
+  Percent,
+  ReceiptEuro,
+  FileDigit,
+  Truck,
+  UsersRound,
+  Package,
+} from "lucide-react";
 
 const { SubMenu } = Menu;
 
@@ -36,7 +44,6 @@ function Nouvellemodd() {
   const storedCaseNumber = localStorage.getItem("caseNumber");
 
   useEffect(() => {
-
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/Nouvelle-demande", { replace: true });
     } else {
@@ -93,9 +100,18 @@ function Nouvellemodd() {
   const handleItemClick = (description: React.ReactNode) => {
     setSelectedDescription(description);
   };
-  const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
+  const supportedCountries = [
+    "france",
+    "belgium",
+    "portugal",
+    "germany",
+    "netherlands",
+    "luxembourg",
+    "italy",
+    "spain",
+  ];
   const country = user && user.location[0].country.toLowerCase();
-  
+
   // if (!formData) {
   //   return <><div>loading ...</div></>; // or return a loading spinner
   // }
@@ -111,32 +127,46 @@ function Nouvellemodd() {
               {language === "french" ? "Détails du cas" : "Case Details"}
             </h2>
             <div className="grid grid-cols-2 gap-2">
-              <p className="text-lg">
-                <span className="font-semibold">
-                  {language === "french" ? "Patient: " : "Patient: "}
-                </span>
-                {storedFullname}
-              </p>
-              <p>
-                <span className="font-semibold">
-                  {language === "french" ? "Numéro du cas: " : "Case number: "}
-                </span>
-                {storedCaseNumber}
-              </p>
-              <p>
-                <span className="font-semibold">
-                  {language === "french"
-                    ? "Offre actuelle: "
-                    : "Current offer: "}
-                </span>
-                {currentOffer ? currentOffer.currentPlan : "Loading..."}
-              </p>
-              <p>
-                <span className="font-semibold">
-                  {language === "french" ? "Réduction: " : "Discount: "}
-                </span>
-                {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
-              </p>
+              <div className="flex items-center space-x-2">
+                <UsersRound className="text-yellow-600" />
+                <p className="text-lg">
+                  <span className="font-semibold">
+                    {language === "french" ? "Patient: " : "Patient: "}
+                  </span>
+                  {storedFullname}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <FileDigit className="text-yellow-600" />
+                <p>
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Numéro du cas: "
+                      : "Case number: "}
+                  </span>
+                  {storedCaseNumber}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Package className="text-yellow-600" />
+                <p>
+                  <span className="font-semibold">
+                    {language === "french"
+                      ? "Offre actuelle: "
+                      : "Current offer: "}
+                  </span>
+                  {currentOffer ? currentOffer.currentPlan : "Loading..."}
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Percent className="text-yellow-600" />
+                <p>
+                  <span className="font-semibold">
+                    {language === "french" ? "Réduction: " : "Discount: "}
+                  </span>
+                  {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+                </p>
+              </div>
             </div>
           </div>
           <br />
@@ -152,8 +182,13 @@ function Nouvellemodd() {
                   icon={<AppstoreOutlined />}
                 >
                   {supportedCountries.includes(country) ? (
-                    <Menu.Item key="1" onClick={() => handleItemClick(<Description1 />)}>
-                      {language === "french" ? "Guide à étages" : "Stackable guide"}
+                    <Menu.Item
+                      key="1"
+                      onClick={() => handleItemClick(<Description1 />)}
+                    >
+                      {language === "french"
+                        ? "Guide à étages"
+                        : "Stackable guide"}
                     </Menu.Item>
                   ) : (
                     <></>

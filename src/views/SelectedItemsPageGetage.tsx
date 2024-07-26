@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +31,26 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getToken } from "@/components/Helpers";
 import { useAuthContext } from "@/components/AuthContext";
+import {
+  Percent,
+  Archive,
+  FileDigit,
+  FolderUp,
+  UsersRound,
+  Package,
+} from "lucide-react";
+import Nouvelle from "@/components/Nouvelledemande";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 const SelectedItemsPageGETAGE = () => {
   const navigate = useNavigate();
@@ -63,18 +83,46 @@ const SelectedItemsPageGETAGE = () => {
     location.state?.selectedItemsData?.selectSurgicalKitBrand;
   const implantBrandValue =
     location.state?.selectedItemsData?.implantBrandValues;
-    const originalCost =
-    location.state?.selectedItemsData?.originalCost;
+  const originalCost = location.state?.selectedItemsData?.originalCost;
 
-  const [patientData, setPatientData] = useState({ 
+  const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
   const [currentOffer, setCurrentOffer] = useState(null);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+
+  const [formState, setFormState] = useState(selectedItemsData);
 
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
+
+  const formSchema = z.object({
+    file: z.instanceof(File, { message: "File is required" }),
+  });
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: { file: null },
+  });
+
+  const handleArchiveClick = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowArchiveDialog(true);
+    }
+  };
+
+  const handleSubmitClick = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowSubmitDialog(true);
+    }
+  };
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -139,90 +187,118 @@ const SelectedItemsPageGETAGE = () => {
     return discounts[plan] || 0;
   };
 
-  const handlePayment = async () => {
+  const handleSubmit = async (data) => {
+    const formData = new FormData();
 
-    const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
-      data: {
-        service: 1,
-        comment,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
-        marque_implant_pour_la_dent: { " index": implantBrandValue },
-        Marque_de_la_clavette: [
-          {
-            title: "Marque de la clavette",
-            description: lateralPinBrandd,
+    const guideData = {
+      service: 1, // Assuming this is the ID of the related service
+      comment,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      marque_implant_pour_la_dent: JSON.stringify(implantBrandValues),
+      Marque_de_la_clavette: [
+        {
+          title: "Marque de la clavette",
+          description: lateralPinBrand,
+        },
+      ],
+      Marque_de_la_trousse: [
+        {
+          title: "Marque de la trousse",
+          description: selectSurgicalKitBrand,
+        },
+      ],
+      Full_guidee: [
+        {
+          title: "full guidée",
+          active: fullGuide,
+        },
+      ],
+      Forage_pilote: [
+        {
+          title: "forage pilote",
+          active: foragePilote,
+        },
+      ],
+      Options_supplementaires: [
+        {
+          title: "Mise en charge immédiate",
+          active: immediateLoad,
+        },
+        {
+          title: "Impression des 2 étages en résine",
+          active: secondSwitch,
+        },
+        {
+          title:
+            "Impression du premier étage en métal + deuxième étage en résine",
+          active: thirdSwitch,
+        },
+        {
+          title: "Impression des 2 étages en métal",
+          active: fourthSwitch,
+        },
+        {
+          title: "Ajout d'aimants pour solidariser les étages",
+          active: fifthSwitch,
+        },
+      ],
+      cout: [
+        {
+          cout: cost,
+        },
+      ],
+      options_generiques: [
+        {
+          title: "Smile Design",
+          active: smileDesign,
+        },
+      ],
+      submit: true,
+      archive: false,
+      En_attente_approbation: true,
+      soumis: true,
+      en__cours_de_modification: false,
+      approuve: false,
+      produire_expide: false,
+      user: user.id,
+    };
+
+    formData.append("data", JSON.stringify(guideData));
+
+    if (data.file) {
+      formData.append("files.User_Upload", data.file, data.file.name);
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/guide-a-etages",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
           },
-        ],
-        Marque_de_la_trousse: [
-          {
-            title: "Marque de la trousse",
-            description: selectSurgicalKitBrandd,
-          },
-        ],
-        Full_guidee: [
-          {
-            title: "full guidée",
-            active: fullGuide,
-          },
-        ],
-        Forage_pilote: [
-          {
-            title: "forage pilote",
-            active: foragePilote,
-          },
-        ],
-        Options_supplementaires: [
-          {
-            title: "Mise en charge immédiate",
-            active: immediateLoad,
-          },
-          {
-            title: "Impression des 2 étages en résine",
-            active: secondSwitch,
-          },
-          {
-            title:
-              "Impression du premier étage en métal + deuxième étage en résine",
-            active: thirdSwitch,
-          },
-          {
-            title: "Impression des 2 étages en métal",
-            active: fourthSwitch,
-          },
-          {
-            title: "Ajout d'aimants pour solidariser les étages",
-            active: fifthSwitch,
-          },
-        ],
-        cout: costt,  
-        options_generiques: [
-          {
-            title: "Smile Design",
-            active: smileDesign,
-          },
-        ],
-        archive: true,
-        En_attente_approbation: false,
-        soumis: false,
-        en__cours_de_modification: false,
-        approuve: false,
-        produire_expide: false,
-        user: user.id,
-        offre:currentOffer?.currentPlan,
-        originalCost:originalCost,
-      },
-    });
+        }
+      );
+
+      console.log("Data saved successfully:", response.data);
+      await handlePayment(response.data.data.id);
+    } catch (error) {
+      console.error("Error saving guide etage data:", error);
+    }
+  };
+
+  const handlePayment = async (guideId) => {
+    const stripe = await stripePromise;
     const requestData = {
-      cost: cost, 
+      cost: cost,
       service: 1,
       patient: localStorage.getItem("fullName"),
-      email: user && user.email,
-      guideId:res.data.data.id
+      email: user.email,
+      guideId: guideId,
     };
 
     try {
-      const stripe = await stripePromise;
       const response = await axios.post(
         "http://localhost:1337/api/commandes",
         requestData
@@ -239,111 +315,144 @@ const SelectedItemsPageGETAGE = () => {
   };
 
   const handleNextClickArchive = async () => {
-        const res = await axios.post("http://localhost:1337/api/guide-a-etages", {
-      data: {
-        service: 1,
-        comment,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
-        marque_implant_pour_la_dent: { " index": implantBrandValue },
-        Marque_de_la_clavette: [
-          {
-            title: "Marque de la clavette",
-            description: lateralPinBrandd,
-          },
-        ],
-        Marque_de_la_trousse: [
-          {
-            title: "Marque de la trousse",
-            description: selectSurgicalKitBrandd,
-          },
-        ],
-        Full_guidee: [
-          {
-            title: "full guidée",
-            active: fullGuide,
-          },
-        ],
-        Forage_pilote: [
-          {
-            title: "forage pilote",
-            active: foragePilote,
-          },
-        ],
-        Options_supplementaires: [
-          {
-            title: "Mise en charge immédiate",
-            active: immediateLoad,
-          },
-          {
-            title: "Impression des 2 étages en résine",
-            active: secondSwitch,
-          },
-          {
-            title:
-              "Impression du premier étage en métal + deuxième étage en résine",
-            active: thirdSwitch,
-          },
-          {
-            title: "Impression des 2 étages en métal",
-            active: fourthSwitch,
-          },
-          {
-            title: "Ajout d'aimants pour solidariser les étages",
-            active: fifthSwitch,
-          },
-        ],
-        cout: costt,
-        options_generiques: [
-          {
-            title: "Smile Design",
-            active: smileDesign,
-          },
-        ],
-        archive: true,
-        En_attente_approbation: false,
-        soumis: false,
-        en__cours_de_modification: false,
-        approuve: false,
-        produire_expide: false,
-        user: user.id,
-        offre:currentOffer?.currentPlan,
-        originalCost:originalCost,
-      },
-    });
-    if (res.status === 200) {
-      localStorage.removeItem("guideEtageState")
-      navigate("/mes-fichier");
-    } else {
-      alert(res.status);
+    const formData = new FormData();
+
+    const guideData = {
+      service: 1,
+      comment,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      marque_implant_pour_la_dent: JSON.stringify(implantBrandValues),
+      Marque_de_la_clavette: [
+        {
+          title: "Marque de la clavette",
+          description: lateralPinBrand,
+        },
+      ],
+      Marque_de_la_trousse: [
+        {
+          title: "Marque de la trousse",
+          description: selectSurgicalKitBrand,
+        },
+      ],
+      Full_guidee: [
+        {
+          title: "full guidée",
+          active: fullGuide,
+        },
+      ],
+      Forage_pilote: [
+        {
+          title: "forage pilote",
+          active: foragePilote,
+        },
+      ],
+      Options_supplementaires: [
+        {
+          title: "Mise en charge immédiate",
+          active: immediateLoad,
+        },
+        {
+          title: "Impression des 2 étages en résine",
+          active: secondSwitch,
+        },
+        {
+          title:
+            "Impression du premier étage en métal + deuxième étage en résine",
+          active: thirdSwitch,
+        },
+        {
+          title: "Impression des 2 étages en métal",
+          active: fourthSwitch,
+        },
+        {
+          title: "Ajout d'aimants pour solidariser les étages",
+          active: fifthSwitch,
+        },
+      ],
+      cout: [
+        {
+          cout: cost,
+        },
+      ],
+      options_generiques: [
+        {
+          title: "Smile Design",
+          active: smileDesign,
+        },
+      ],
+      submit: false,
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
+      en__cours_de_modification: false,
+      approuve: false,
+      produire_expide: false,
+      user: user.id,
+    };
+
+    formData.append("data", JSON.stringify(guideData));
+
+    if (form.getValues().file) {
+      formData.append(
+        "files.User_Upload",
+        form.getValues().file,
+        form.getValues().file.name
+      );
     }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/guide-a-etages",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("Data archived successfully:", response.data);
+      // Handle successful archiving (e.g., show a success message, navigate to a different page)
+    } catch (error) {
+      console.error("Error archiving guide etage data:", error);
+      // Handle error (e.g., show an error message to the user)
+    }
+  };
+
+  const handlePreviousClick = () => {
+    navigate("/guide-etage", { state: formState });
   };
 
   return (
     <SideBarContainer>
       <Container>
+        <Nouvelle />
+        <br />
         <div className="p-2">
-          <Card className="h-full p-3 font-SF-Pro-Display">
-            <div>
-              <ul>
-                <div className="flex items-center justify-center">
-                  <h1 className="font-lato text-5xl ">
-                    {language === "french"
-                      ? "Guide à étages"
-                      : "Stackable Guide"}
-                  </h1>
-                </div>
-                <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-bold mb-3">
-                    {language === "french" ? "Détails du cas" : "Case Details"}
-                  </h2>
-                  <div className="grid grid-cols-2 gap-2">
+          <Card className="w-full max-w-4xl mx-auto my-8 shadow-lg">
+            <CardHeader className="bg-gray-100">
+              <CardTitle className="text-3xl font-bold text-center text-gray-800">
+                {language === "french" ? "Guide à étages" : "Stackable Guide"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
+                <h2 className="text-xl font-bold mb-3">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center space-x-2">
+                    <UsersRound className="text-yellow-600" />
                     <p className="text-lg">
                       <span className="font-semibold">
                         {language === "french" ? "Patient: " : "Patient: "}
                       </span>
                       {patientData.fullname}
                     </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <FileDigit className="text-yellow-600" />
                     <p>
                       <span className="font-semibold">
                         {language === "french"
@@ -352,6 +461,9 @@ const SelectedItemsPageGETAGE = () => {
                       </span>
                       {patientData.caseNumber}
                     </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Package className="text-yellow-600" />
                     <p>
                       <span className="font-semibold">
                         {language === "french"
@@ -360,6 +472,9 @@ const SelectedItemsPageGETAGE = () => {
                       </span>
                       {currentOffer ? currentOffer.currentPlan : "Loading..."}
                     </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Percent className="text-yellow-600" />
                     <p>
                       <span className="font-semibold">
                         {language === "french" ? "Réduction: " : "Discount: "}
@@ -368,246 +483,259 @@ const SelectedItemsPageGETAGE = () => {
                         ? `${currentOffer.discount}%`
                         : "Loading..."}
                     </p>
-                    <p>
-                      <span className="font-semibold">
-                        {language === "french" ? "Coût: " : "Cost: "}
-                      </span>
-                      <span className="font-bold text-green-600">{cost} €</span>
-                    </p>
                   </div>
                 </div>
-                <br />
-                <div>
-                  <p className="text-lg font-semibold">
-                    {language === "french"
-                      ? "Selected Teeth:"
-                      : "Teeth Selected:"}
-                  </p>
-                  <div className="flex flex-col items-center justify-center ">
-                    <Dents
-                      selectAll={false}
-                      selectedTeethData={previousStates.selectedTeeth || []}
-                      isReadOnly={true}
-                    />
-                  </div>
-                </div>
-                <br />
-                <li className="text-lg font-semibold">
-                  {language === "french"
-                    ? "Options sélectionnées"
-                    : "Selected Options"}
-                </li>
-                <div className="flex space-x-2">
-                  <p>{selectedItemsData.selectedSwitchLabel}</p>
-                  <li>
-                    {/* <Switch checked={selectedItemsData.selectedSwitch.checked} /> */}
-                  </li>
-                </div>
-                <p className="font-semibold">
-                  {language === "french"
-                    ? "Marque de la clavette:"
-                    : "Brand of the lateral pin"}
-                </p>
-                <Input value={lateralPinBrand} readOnly className="w-2/5" />
-                <p className="font-semibold">
-                  {language === "french"
-                    ? "Marque de la trousse de chirugie utilisée:"
-                    : "Brand of the surgical kit used:"}
-                </p>
-                <Input
-                  value={selectSurgicalKitBrand}
-                  readOnly
-                  className="w-2/5"
-                />
-
-                <div className="flex-col space-y-1">
-                  <h1 className="font-bold">
-                    {language === "french"
-                      ? "Marque de l'implant pour la dent:"
-                      : "Brand of the implant for the tooth:"}
-                  </h1>
-                  {implantBrandInputs.map(
-                    (
-                      index:
-                        | boolean
-                        | ReactElement<any, string | JSXElementConstructor<any>>
-                        | Iterable<ReactNode>
-                        | Key
-                        | null
-                        | undefined
-                    ) => (
-                      <div key={index}>
-                        <div className="flex items-center ">
-                          <div className="flex space-x-2 items-center mr-2">
-                            <FaTooth />
-                            <span className=" flex items-center">{index}</span>
-                          </div>
-                          <Input
-                            value={implantBrandValues[index]}
-                            readOnly
-                            className="w-2/5"
-                          />
-                          {/* <Input
-                        type="text"
-                        placeholder="Ex: IDI, Nobel, Straumann ..."
-                        className="w-2/5"
-                        value=
-                        readOnly
-                      /> */}
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-                <br />
-                <div className="flex space-x-2">
-                  <p>
-                    {language === "french"
-                      ? "Mise en charge immédiate (impression de la prothèse immédiate)"
-                      : "Immediate loading (impression of the immediate prosthesis)"}
-                  </p>
-                  <li>
-                    <Switch checked={previousStates.immediateLoad} />
-                  </li>
-                </div>
-                <div className="flex space-x-2">
-                  <p>
-                    {language === "french"
-                      ? "Impression des 2 étages en résine (prothèse immédiate non incluse)"
-                      : "Resin impression of both guide parts (immediate prosthesis not included) "}
-                  </p>
-                  <li>
-                    <Switch checked={previousStates.secondSwitch} />
-                  </li>
-                </div>
-                <div className="flex space-x-2">
-                  <p>
-                    {language === "french"
-                      ? "Impression du premier étage en métal + deuxième étage en résine (prothèse immédiate non incluse)"
-                      : "Metal impression of first part + Resin impression of second part (immediate prosthesis not included) "}
-                  </p>
-                  <li>
-                    <Switch checked={previousStates.thirdSwitch} />
-                  </li>
-                </div>
-                <div className="flex space-x-2">
-                  <p>
-                    {language === "french"
-                      ? "Impression des 2 étages en métal (prothèse immédiate non incluse)"
-                      : "Metal impression of both guide parts (immediate prosthesis not included) "}
-                  </p>
-                  <li>
-                    <Switch checked={previousStates.fourthSwitch} />
-                  </li>
-                </div>
-                <div className="flex space-x-2">
-                  <p>
-                    {language === "french"
-                      ? "Ajout d'aimants pour solidariser les étages"
-                      : "Addition of magnets to secure the parts"}
-                  </p>
-                  <li>
-                    <Switch checked={previousStates.fifthSwitch} />
-                  </li>
-                </div>
-                <div className="flex space-x-2">
-                  {language === "french" ? "Smile Design" : "Smile Design"}
-                  <li>
-                    <Switch checked={previousStates.smileDesign} />
-                  </li>
-                </div>
-                <div className="flex-col">
-                  <p className="text-lg font-semibold">
-                    {" "}
-                    {language === "french" ? "commentaire" : "comment"}
-                  </p>
-                  <Input
-                    value={selectedItemsData.comment}
-                    readOnly
-                    className="w-2/5"
-                  />
-
-                  {/* <p> {selectedItemsData.comment}</p> */}
-                </div>
-              </ul>
-            </div>
-            <div>
-              <div className="mt-5 mb-5">
+              </div>
+              <br />
+              <div>
                 <p className="text-lg font-semibold">
                   {language === "french"
-                    ? "Ajouter des fichiers:"
-                    : "Add files:"}
+                    ? "Dents sélectionnées:"
+                    : "Selected Teeth:"}
                 </p>
-                <Input className="w-2/5" type="file" />
+                <div className="flex flex-col items-center justify-center ">
+                  <Dents
+                    selectAll={false}
+                    selectedTeethData={formState.selectedTeeth || []}
+                    isReadOnly={true}
+                  />
+                </div>
               </div>
-              <div className="mt-5 flex justify-between">
-                <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
-                  {language === "french" ? "Précédent" : "Previous"}
-                </Button>
+              <br />
+              <p className="text-lg font-semibold">
+                {language === "french"
+                  ? "Options sélectionnées"
+                  : "Selected Options"}
+              </p>
+              <div className="flex space-x-2">
+                <p>{formState.selectedSwitchLabel}</p>
+              </div>
+              <p className="font-semibold">
+                {language === "french"
+                  ? "Marque de la clavette:"
+                  : "Brand of the lateral pin"}
+              </p>
+              <Input
+                value={formState.lateralPinBrand}
+                readOnly
+                className="w-2/5"
+              />
+              <p className="font-semibold">
+                {language === "french"
+                  ? "Marque de la trousse de chirugie utilisée:"
+                  : "Brand of the surgical kit used:"}
+              </p>
+              <Input
+                value={formState.selectSurgicalKitBrand}
+                readOnly
+                className="w-2/5"
+              />
 
-                <div className="flex space-x-3">
-                <AlertDialog>
+              <div className="flex-col space-y-1">
+                <h1 className="font-bold">
+                  {language === "french"
+                    ? "Marque de l'implant pour la dent:"
+                    : "Brand of the implant for the tooth:"}
+                </h1>
+                {(formState.implantBrandInputs || []).map((index) => (
+                  <div key={index}>
+                    <div className="flex items-center ">
+                      <div className="flex space-x-2 items-center mr-2">
+                        <FaTooth />
+                        <span className=" flex items-center">{index}</span>
+                      </div>
+                      <Input
+                        value={formState.implantBrandValues[index] || ""}
+                        readOnly
+                        className="w-2/5"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <br />
+              <div className="space-y-4 mb-6">
+                {[
+                  {
+                    label:
+                      language === "french"
+                        ? "Mise en charge immédiate (impression de la prothèse immédiate)"
+                        : "Immediate loading (impression of the immediate prosthesis)",
+                    checked: formState.immediateLoad,
+                  },
+                  {
+                    label:
+                      language === "french"
+                        ? "Impression des 2 étages en résine (prothèse immédiate non incluse)"
+                        : "Resin impression of both guide parts (immediate prosthesis not included)",
+                    checked: formState.secondSwitch,
+                  },
+                  {
+                    label:
+                      language === "french"
+                        ? "Impression du premier étage en métal + deuxième étage en résine (prothèse immédiate non incluse)"
+                        : "Metal impression of first part + Resin impression of second part (immediate prosthesis not included)",
+                    checked: formState.thirdSwitch,
+                  },
+                  {
+                    label:
+                      language === "french"
+                        ? "Impression des 2 étages en métal (prothèse immédiate non incluse)"
+                        : "Metal impression of both guide parts (immediate prosthesis not included)",
+                    checked: formState.fourthSwitch,
+                  },
+                  {
+                    label:
+                      language === "french"
+                        ? "Ajout d'aimants pour solidariser les étages"
+                        : "Addition of magnets to secure the parts",
+                    checked: formState.fifthSwitch,
+                  },
+                  {
+                    label:
+                      language === "french" ? "Smile Design" : "Smile Design",
+                    checked: formState.smileDesign,
+                  },
+                ].map((option, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
+                    <p>{option.label}</p>
+                    <Switch checked={option.checked} readOnly />
+                  </div>
+                ))}
+              </div>
+              <div className="flex-col">
+                <p className="text-lg font-semibold">
+                  {language === "french" ? "commentaire" : "comment"}
+                </p>
+                <Input value={formState.comment} readOnly className="w-2/5" />
+              </div>
+
+              <div>
+                <Form {...form}>
+                  <form>
+                    <FormField
+                      control={form.control}
+                      name="file"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {language === "french"
+                              ? "Ajouter des fichiers:"
+                              : "Add files:"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                field.onChange(file);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+
+                <div className="mt-5 flex justify-between">
+                  <Button
+                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all"
+                    onClick={handlePreviousClick}
+                  >
+                    {language === "french" ? "Précédent" : "Previous"}
+                  </Button>
+
+                  <div className="flex space-x-3">
+                    <AlertDialog
+                      open={showArchiveDialog}
+                      onOpenChange={setShowArchiveDialog}
+                    >
                       <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2">
+                        <Button
+                          onClick={handleArchiveClick}
+                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                        >
                           {language === "french" ? "Archiver" : "Archive"}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                      <AlertDialogHeader>
+                        <AlertDialogHeader>
                           <AlertDialogTitle>
                             {language === "french"
-                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                              ? "Voulez-vous vraiment archiver ce cas?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                            {language === "french"
+                              ? "Cela archivera le cas."
+                              : "This will archive the case."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleNextClickArchive}>
+                          <AlertDialogAction
+                            onClick={() => {
+                              form.handleSubmit(handleNextClickArchive)();
+                              setShowArchiveDialog(false);
+                            }}
+                          >
                             {language === "french" ? "Continuer" : "Continue"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
 
-                  <AlertDialog>
+                    <AlertDialog
+                      open={showSubmitDialog}
+                      onOpenChange={setShowSubmitDialog}
+                    >
                       <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all">
+                        <Button
+                          onClick={handleSubmitClick}
+                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                        >
                           {language === "french" ? "Soumettre" : "Submit"}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                      <AlertDialogHeader>
+                        <AlertDialogHeader>
                           <AlertDialogTitle>
-                          {language === "french"
-                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                            : "Are you sure you want to submit this case?"}
+                            {language === "french"
+                              ? "Voulez-vous vraiment soumettre ce cas?"
+                              : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                            {language === "french"
+                              ? "Cela soumettra le cas."
+                              : "This will submit the case."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
-                          <AlertDialogAction onClick={handlePayment}>
+                          <AlertDialogAction
+                            onClick={() => {
+                              form.handleSubmit(handleSubmit)();
+                              setShowSubmitDialog(false);
+                            }}
+                          >
                             {language === "french" ? "Continuer" : "Continue"}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
           </Card>
         </div>
       </Container>

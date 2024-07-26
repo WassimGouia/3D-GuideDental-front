@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
 import { useLanguage } from "@/components/languageContext";
@@ -23,6 +23,27 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
+import {
+  Percent,
+  Archive,
+  FileDigit,
+  FolderUp,
+  UsersRound,
+  Package,
+} from "lucide-react";
+import Nouvelle from "@/components/Nouvelledemande";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
+import * as z from "zod";
 
 const SelectedItemsPageRapportRad = () => {
   const navigate = useNavigate();
@@ -30,13 +51,15 @@ const SelectedItemsPageRapportRad = () => {
   const { language } = useLanguage();
   const [currentOffer, setCurrentOffer] = useState(null);
   const { user } = useAuthContext();
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const originalCost = location.state?.selectedItemsData?.originalCost || 0;
   const cost = location.state?.selectedItemsData?.cost || 0;
   const selectedItemsData = location.state?.selectedItemsData;
   const previousState = location.state?.previousState;
   const comment = location.state?.selectedItemsData.comment1 || "";
   const secondComment = location.state?.selectedItemsData.comment2 || "";
-  const date = location.state?.selectedItemsData.date;
+  // const date = location.state?.selectedItemsData?.date;
   const isBoxCheckedImplantation = location.state?.isBoxCheckedImplantation;
   const isBoxCheckeEvaluerImplant = location.state?.isBoxCheckeEvaluerImplant;
   const isBoxCheckedEvaluationATM = location.state?.isBoxCheckedEvaluationATM;
@@ -47,6 +70,42 @@ const SelectedItemsPageRapportRad = () => {
     fullname: "",
     caseNumber: "",
   });
+  const checkboxGroup = location.state?.checkboxGroup || {};
+  const autreInput = location.state?.autreInput || "";
+
+  const renderCheckboxValue = (value) => {
+    return value === "oui" ? (
+      <Checkbox checked={true} />
+    ) : (
+      <Checkbox checked={false} />
+    );
+  };
+
+  const formSchema = z.object({
+    file: z.instanceof(File, { message: "File is required" }),
+  });
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      file: null,
+    },
+  });
+
+  const handleArchiveClick = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowArchiveDialog(true);
+    }
+  };
+
+  const handleSubmitClick = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setShowSubmitDialog(true);
+    }
+  };
+
   const stripePromise = loadStripe(
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
@@ -107,117 +166,176 @@ const SelectedItemsPageRapportRad = () => {
   };
 
   const handleNextClick = async () => {
-    const res = await axios.post(
-      "http://localhost:1337/api/rapport-radiologiques",
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
 
-      {
-        data: {
-          service: 6,
-          first_comment: comment,
-          date: date,
-          cout:cost,
-          second_comment: secondComment,
-          Implantation_prevue: isBoxCheckedImplantation,
-          Evaluer_implant_existant: isBoxCheckeEvaluerImplant,
-          Evaluation_de_ATM: isBoxCheckedEvaluationATM,
-          Eliminer_une_pathologie: isBoxCheckedEliminerPathologie,
-          autres: isBoxCheckedAutre,
-          soumis: false,
-          archive: true,
-          patient: patientData.fullname,
-          numero_cas: patientData.caseNumber,
-          user: user.id,
-          originalCost:originalCost,
-        },
-      }
-    );
+    const formData = new FormData();
 
-    const requestData = {
-      cost: cost,
-      service: 6,
-      patient: localStorage.getItem("fullName"),
-      email: user && user.email,
-      guideId:res.data.data.id,
+    const reportData = {
+      service: 6, // Assuming this is the ID for Rapport Radiologique service
+      first_comment: comment,
+      date: selectedItemsData?.date,
+      second_comment: secondComment,
+      Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
+      Evaluer_implant_existant: checkboxGroup.evaluerImplantExistant === "oui",
+      Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
+      Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
+      autres: checkboxGroup.autre === "oui",
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      submit: true,
+      archive: false,
+      user: user.id,
     };
 
+    formData.append("data", JSON.stringify(reportData));
+
+    if (file) {
+      formData.append("files.pdfFile", file, file.name);
+    }
+
     try {
-      const stripe = await stripePromise;
       const response = await axios.post(
+        "http://localhost:1337/api/rapport-radiologiques",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      console.log("Report submitted successfully:", response.data);
+
+      // Proceed with payment
+      const requestData = {
+        cost: cost,
+        service: 6,
+        patient: patientData.fullname,
+        email: user.email,
+        guideId: response.data.data.id,
+      };
+
+      const stripe = await stripePromise;
+      const paymentResponse = await axios.post(
         "http://localhost:1337/api/commandes",
-        requestData
+        requestData,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
       );
       const { error } = await stripe.redirectToCheckout({
-        sessionId: response.data.stripeSession.id,
+        sessionId: paymentResponse.data.stripeSession.id,
       });
       if (error) {
         console.error("Stripe checkout error:", error);
       }
     } catch (err) {
-      console.log(err);
+      console.error("Error submitting report or processing payment:", err);
     }
-
   };
+
   const handleNextClickArchive = async () => {
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
 
-    const res = await axios.post(
-      "http://localhost:1337/api/rapport-radiologiques",
+    const formData = new FormData();
 
-      {
-        data: {
-          service: 6,
-          first_comment: comment,
-          cout:cost,
-          date: date,
-          second_comment: secondComment,
-          Implantation_prevue: isBoxCheckedImplantation,
-          Evaluer_implant_existant: isBoxCheckeEvaluerImplant,
-          Evaluation_de_ATM: isBoxCheckedEvaluationATM,
-          Eliminer_une_pathologie: isBoxCheckedEliminerPathologie,
-          autres: isBoxCheckedAutre,
-          soumis: false,
-          archive: true,
-          patient: patientData.fullname,
-          numero_cas: patientData.caseNumber,
-          user: user.id,
-          originalCost:originalCost,
-        },
-      }
-    );
+    const reportData = {
+      service: 6, // Assuming this is the ID for Rapport Radiologique service
+      first_comment: comment,
+      date: selectedItemsData?.date,
+      second_comment: secondComment,
+      Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
+      Evaluer_implant_existant: checkboxGroup.evaluerImplantExistant === "oui",
+      Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
+      Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
+      autres: checkboxGroup.autre === "oui",
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      submit: false,
+      archive: true,
+      user: user.id,
+    };
 
-    if (res.status === 200) {
-      localStorage.removeItem("rapportRadioState")
-      navigate("/mes-fichier");
-    } else {
-      alert(res.status);
+    formData.append("data", JSON.stringify(reportData));
+
+    if (file) {
+      formData.append("files.pdfFile", file, file.name);
     }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/rapport-radiologiques",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      console.log("Report archived successfully:", response.data);
+      localStorage.removeItem("rapportRadiologiqueState");
+      navigate("/");
+    } catch (err) {
+      console.error("Error archiving report:", err);
+      alert(
+        language === "french"
+          ? "Erreur lors de l'archivage du rapport"
+          : "Error archiving report"
+      );
+    }
+  };
+
+  const handlePreviousClick = () => {
+    const currentState = {
+      ...location.state,
+      selectedItemsData: {
+        ...location.state.selectedItemsData,
+        date: selectedItemsData?.date
+          ? new Date(selectedItemsData.date).toISOString()
+          : null,
+      },
+    };
+    navigate("/rapport-radiologique", { state: currentState });
   };
   return (
-    <div>
-      <SideBarContainer>
-        <Container>
-          <div className="p-2">
-            <Card className="h-auto p-3 font-SF-Pro-Display">
-              <div>
-                <div className="flex items-center justify-center">
-                  <h1 className="font-lato text-5xl ">
-                    {language === "french"
-                      ? "Rapport radiologique"
-                      : "Radiological report"}
-                  </h1>
-                  
-                </div>
-                <div className="flex-col mt-3 bg-gray-100 p-4 rounded-lg shadow-sm">
-                  <h2 className="text-xl font-bold mb-3">
-                    {language === "french" ? "Détails du cas" : "Case Details"}
-                  </h2>
-                  <div className="grid grid-cols-2 gap-2">
+    <SideBarContainer>
+      <Container>
+        <Nouvelle />
+        <br />
+        <div className="p-4 max-w-6xl mx-auto">
+          <Card className="w-full shadow-lg">
+            <CardHeader className="bg-gray-100 py-6">
+              <CardTitle className="text-3xl font-bold text-center text-gray-800">
+                {language === "french"
+                  ? "Rapport radiologique"
+                  : "Radiological Report"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="bg-gray-100 p-6 rounded-lg shadow-sm mb-8">
+                <h2 className="text-2xl font-bold mb-4">
+                  {language === "french" ? "Détails du cas" : "Case Details"}
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3">
+                    <UsersRound className="text-yellow-600 w-6 h-6" />
                     <p className="text-lg">
                       <span className="font-semibold">
                         {language === "french" ? "Patient: " : "Patient: "}
                       </span>
                       {patientData.fullname}
                     </p>
-                    <p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <FileDigit className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
                       <span className="font-semibold">
                         {language === "french"
                           ? "Numéro du cas: "
@@ -225,7 +343,10 @@ const SelectedItemsPageRapportRad = () => {
                       </span>
                       {patientData.caseNumber}
                     </p>
-                    <p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Package className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
                       <span className="font-semibold">
                         {language === "french"
                           ? "Offre actuelle: "
@@ -233,7 +354,10 @@ const SelectedItemsPageRapportRad = () => {
                       </span>
                       {currentOffer ? currentOffer.currentPlan : "Loading..."}
                     </p>
-                    <p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Percent className="text-yellow-600 w-6 h-6" />
+                    <p className="text-lg">
                       <span className="font-semibold">
                         {language === "french" ? "Réduction: " : "Discount: "}
                       </span>
@@ -241,138 +365,157 @@ const SelectedItemsPageRapportRad = () => {
                         ? `${currentOffer.discount}%`
                         : "Loading..."}
                     </p>
-                    <p>
-                      <span className="font-semibold">
-                        {language === "french" ? "Coût: " : "Cost: "}
-                      </span>
-                      <span className="line-through">
-                        {originalCost.toFixed(2)} €
-                      </span>{" "}
-                      <span className="font-bold text-green-600">
-                        {cost.toFixed(2)} €
-                      </span>
-                    </p>
                   </div>
                 </div>
-                <p className="text-lg font-semibold">
-                  {language === "french"
-                    ? "Antécédents médicaux du patient:"
-                    : "Patient's medical history:"}{" "}
-                </p>
-                <p>{selectedItemsData.comment1}</p>
-                <p>date: {selectedItemsData.date}</p>
-
-                <p className="text-lg font-semibold">
-                  {language === "french"
-                    ? "Indication de l'examen radiologique tridimensionnel"
-                    : "Indication of the three-dimensional radiological examination"}
-                </p>
-
-                <div className="flex-col">
-                  <div className="items-center flex space-x-2">
-                    <p>
-                      {language === "french"
-                        ? "Implantation prévue"
-                        : "Planned implantation"}
-                    </p>
-
-                    <Checkbox checked={previousState.implantationPrevue} />
-
-                    <Label>{language === "french" ? "Oui" : "Yes"}</Label>
-                    <Checkbox
-                      checked={previousState.implantationPrevueInverse}
-                    />
-                    <Label>{language === "french" ? "Non" : "No"}</Label>
-                  </div>
-                  <div className="items-center flex space-x-2">
-                    <p>
-                      {language === "french"
-                        ? "Évaluer l'implant existant"
-                        : "Evaluate existing implant"}
-                    </p>
-
-                    <Checkbox checked={previousState.evaluerImplantExistant} />
-
-                    <Label>{language === "french" ? "Oui" : "Yes"}</Label>
-                    <Checkbox
-                      checked={previousState.evaluerImplantExistantInverse}
-                    />
-                    <Label>{language === "french" ? "Non" : "No"}</Label>
-                  </div>
-                  <div className="items-center flex space-x-2">
-                    <p>
-                      {language === "french"
-                        ? "Évaluer l'ATM existante"
-                        : "Evaluation of TMJ"}
-                    </p>
-
-                    <Checkbox checked={previousState.evaluationATM} />
-
-                    <Label>{language === "french" ? "Oui" : "Yes"}</Label>
-
-                    <Checkbox checked={previousState.evaluationATMInverse} />
-
-                    <Label>{language === "french" ? "Non" : "No"}</Label>
-                  </div>
-                  <div className="items-center flex space-x-2">
-                    <p>
-                      {language === "french"
-                        ? "Eliminer une pathologie"
-                        : "Eliminate a pathology"}
-                    </p>
-
-                    <Checkbox checked={previousState.eliminerPathologie} />
-
-                    <Label>{language === "french" ? "Oui" : "Yes"}</Label>
-
-                    <Checkbox
-                      checked={previousState.eliminerPathologieInverse}
-                    />
-
-                    <Label>{language === "french" ? "Non" : "No"}</Label>
-                  </div>
-
-                  <div className="items-center flex space-x-2">
-                    <p>{language === "french" ? "Autre" : " Other "}</p>
-
-                    <Checkbox checked={previousState.autre} />
-
-                    <Label>{language === "french" ? "Oui" : "Yes"}</Label>
-
-                    <Checkbox checked={previousState.autreInverse} />
-
-                    <Label>{language === "french" ? "Non" : "No"}</Label>
-                  </div>
-                </div>
-
-                <p className="text-lg font-semibold">
-                  {language === "french" ? "Commentaires:" : "Comments:"}{" "}
-                </p>
-                <p>{selectedItemsData.comment2}</p>
-                <Input
-                  value={selectedItemsData.comment2}
-                  readOnly
-                  className="w-2/5"
-                />
               </div>
-              <div>
-                <div className="mt-5 mb-5">
-                  <p className="text-lg font-semibold">
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">
                     {language === "french"
-                      ? "Ajouter des fichiers:"
-                      : "Add files:"}
+                      ? "Antécédents médicaux du patient:"
+                      : "Patient's medical history:"}
+                  </h3>
+                  <p className="bg-gray-50 p-3 rounded">
+                    {selectedItemsData.comment1}
                   </p>
-                  <Input className="w-2/5" type="file" />
                 </div>
-                <div className="flex">
-                  <p className="mr-2">
+
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {language === "french"
+                      ? "Date de l'examen:"
+                      : "Examination Date:"}
+                  </h3>
+                  <p className="bg-gray-50 p-3 rounded">
+                    {selectedItemsData?.date || "No date selected"}
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">
+                    {language === "french"
+                      ? "Indication de l'examen radiologique tridimensionnel"
+                      : "Indication of the three-dimensional radiological examination"}
+                  </h3>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        label:
+                          language === "french"
+                            ? "Implantation prévue"
+                            : "Planned implantation",
+                        value: checkboxGroup.implantationPrevue,
+                      },
+                      {
+                        label:
+                          language === "french"
+                            ? "Évaluer l'implant existant"
+                            : "Evaluate existing implant",
+                        value: checkboxGroup.evaluerImplantExistant,
+                      },
+                      {
+                        label:
+                          language === "french"
+                            ? "Évaluer l'ATM existante"
+                            : "Evaluation of TMJ",
+                        value: checkboxGroup.evaluationATM,
+                      },
+                      {
+                        label:
+                          language === "french"
+                            ? "Eliminer une pathologie"
+                            : "Eliminate a pathology",
+                        value: checkboxGroup.eliminerPathologie,
+                      },
+                      {
+                        label: language === "french" ? "Autre" : "Other",
+                        value: checkboxGroup.autre,
+                      },
+                    ].map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-gray-50 p-3 rounded"
+                      >
+                        <span>{item.label}</span>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            {renderCheckboxValue(item.value)}
+                            <Label>
+                              {language === "french" ? "Oui" : "Yes"}
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {renderCheckboxValue(
+                              item.value === "non" ? "oui" : "non"
+                            )}
+                            <Label>
+                              {language === "french" ? "Non" : "No"}
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {checkboxGroup.autre === "oui" && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold mb-2">
+                        {language === "french"
+                          ? "Précisions pour 'Autre':"
+                          : "Details for 'Other':"}
+                      </h4>
+                      <p className="bg-gray-50 p-3 rounded">{autreInput}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {language === "french" ? "Commentaires:" : "Comments:"}
+                  </h3>
+                  <Input
+                    value={selectedItemsData.comment2}
+                    readOnly
+                    className="w-full bg-gray-50"
+                  />
+                </div>
+
+                <Form {...form}>
+                  <form className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="file"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {language === "french"
+                              ? "Ajouter des fichiers:"
+                              : "Add files:"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              onChange={(e) =>
+                                field.onChange(e.target.files[0])
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+
+                <div className="flex items-center space-x-2 text-sm">
+                  <p>
                     {language === "french"
                       ? "En cliquant sur le bouton Soumettre ci-dessous, vous acceptez la clause de non-responsabilité "
                       : "By clicking the Submit button below, you agree to the disclaimer "}
                   </p>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <a className="text-[#828019] underline hover-button">
+                      <a className="text-blue-600 underline cursor-pointer">
                         {language === "french"
                           ? "énoncée ici."
                           : "stated here."}
@@ -387,7 +530,7 @@ const SelectedItemsPageRapportRad = () => {
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                           {language === "french"
-                            ? " cela archivera le cas."
+                            ? "3D Guide Dental n'offre aucune garantie quant à la suffisance ou à la pertinence de ses services d'interprétation radiologique et ne garantit ni leur exactitude ni leur exhaustivité. Les résultats doivent impérativement être vérifiés par un médecin clinicien afin d'assurer leur précision avant toute utilisation ou comparaison avec les images médicales fournies à l'entreprise. En aucun cas, 3D Guide Dental ne saurait être tenu responsable envers quiconque pour des actions entreprises en relation avec l'utilisation de ses services d'interprétation radiologique."
                             : "3D Guide Dental makes no warranty as to the sufficiency or relevance of its radiological interpretation services and does not guarantee their accuracy or completeness. The results must be verified by a clinical physician to ensure their accuracy before any use or comparison with the medical images provided to the company. Under no circumstances shall 3D Guide Dental be held liable to anyone for any actions taken in connection with the use of its radiological interpretation services."}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -399,79 +542,103 @@ const SelectedItemsPageRapportRad = () => {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-                <div className="mt-5 flex justify-between">
-                  <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all">
+
+                <div className="flex justify-between items-center mt-8">
+                  <Button
+                    onClick={handlePreviousClick}
+                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all"
+                  >
                     {language === "french" ? "Précédent" : "Previous"}
                   </Button>
 
-                  <div className="flex space-x-3">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2">
-                          {language === "french" ? "Archiver" : "Archive"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {language === "french"
-                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
-                              : "Are you sure you want to archive this case?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                          {language === "french"
-                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            {language === "french" ? "Annuler" : "Cancel"}
-                          </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleNextClickArchive}>
-                            {language === "french" ? "Continuer" : "Continue"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  <div className="flex space-x-4">
+                    <Button
+                      onClick={handleArchiveClick}
+                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                    >
+                      {language === "french" ? "Archiver" : "Archive"}
+                    </Button>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all">
-                          {language === "french" ? "Soumettre" : "Submit"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                          {language === "french"
-                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                            : "Are you sure you want to submit this case?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
-                            : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            {language === "french" ? "Annuler" : "Cancel"}
-                          </AlertDialogCancel>
-                          <AlertDialogAction onClick={handleNextClick}>
-                            {language === "french" ? "Continuer" : "Continue"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                      onClick={handleSubmitClick}
+                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                    >
+                      {language === "french" ? "Soumettre" : "Submit"}
+                    </Button>
                   </div>
                 </div>
+
+                <AlertDialog
+                  open={showArchiveDialog}
+                  onOpenChange={setShowArchiveDialog}
+                >
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {language === "french"
+                          ? "Voulez-vous vraiment archiver ce cas?"
+                          : "Are you sure you want to archive this case?"}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {language === "french"
+                          ? "Cela archivera le cas."
+                          : "This will archive the case."}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>
+                        {language === "french" ? "Annuler" : "Cancel"}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          form.handleSubmit(handleNextClickArchive)();
+                          setShowArchiveDialog(false);
+                        }}
+                      >
+                        {language === "french" ? "Continuer" : "Continue"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog
+                  open={showSubmitDialog}
+                  onOpenChange={setShowSubmitDialog}
+                >
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {language === "french"
+                          ? "Voulez-vous vraiment soumettre ce cas?"
+                          : "Are you sure you want to submit this case?"}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {language === "french"
+                          ? "Cela soumettra le cas."
+                          : "This will submit the case."}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>
+                        {language === "french" ? "Annuler" : "Cancel"}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          form.handleSubmit(handleNextClick)();
+                          setShowSubmitDialog(false);
+                        }}
+                      >
+                        {language === "french" ? "Continuer" : "Continue"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            </Card>
-          </div>
-        </Container>
-      </SideBarContainer>
-    </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Container>
+    </SideBarContainer>
   );
 };
 
