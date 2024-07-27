@@ -61,8 +61,9 @@ const SelectedItemsPageGbruxisme = () => {
   const second = previousStates.second;
   const additionalGuidess = selectedItemsData.additionalGuides;
   const textareaValu = selectedItemsData.textareaValue;
-  console.log("first", first);
-  console.log("second", second);
+  const originalCost =
+  location.state.selectedItemsData.originalCost;
+
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
@@ -175,7 +176,7 @@ const SelectedItemsPageGbruxisme = () => {
       numero_cas: patientData.caseNumber,
       cout: cost,
       selected_teeth: selectedTeeth,
-      les_options_generiques: [
+      options_generiques: [
         {
           title: "les options generiques",
           Impression_Formlabs: [
@@ -194,14 +195,16 @@ const SelectedItemsPageGbruxisme = () => {
           ],
         },
       ],
-      submit: false,
+
       archive: true,
       En_attente_approbation: false,
-      en__cours_de_modification: false,
       soumis: false,
+      en__cours_de_modification: false,
       approuve: false,
       produire_expide: false,
       user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -266,7 +269,7 @@ const SelectedItemsPageGbruxisme = () => {
       numero_cas: patientData.caseNumber,
       cout: cost,
       selected_teeth: selectedTeeth,
-      les_options_generiques: [
+      options_generiques: [
         {
           title: "les options generiques",
           Impression_Formlabs: [
@@ -285,14 +288,15 @@ const SelectedItemsPageGbruxisme = () => {
           ],
         },
       ],
-      submit: false,
       archive: true,
       En_attente_approbation: false,
-      en__cours_de_modification: false,
       soumis: false,
+      en__cours_de_modification: false,
       approuve: false,
       produire_expide: false,
       user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -315,8 +319,8 @@ const SelectedItemsPageGbruxisme = () => {
       );
 
       if (res.status === 200) {
-        localStorage.removeItem("guideBruxismeState");
-        navigate("/");
+        localStorage.clear();
+        navigate("/mes-fichier");
       } else {
         alert(res.status);
       }
@@ -543,16 +547,16 @@ const SelectedItemsPageGbruxisme = () => {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                {language === "french"
-                  ? "Voulez-vous vraiment archiver ce cas?"
-                  : "Are you sure you want to archive this case?"}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {language === "french"
-                  ? "Cela archivera le cas."
-                  : "This will archive the case."}
-              </AlertDialogDescription>
+            <AlertDialogTitle>
+              {language === "french"
+                ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                : "Are you sure you want to archive this case?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+            {language === "french"
+              ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+              : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+            </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setShowArchiveDialog(false)}>
@@ -573,16 +577,16 @@ const SelectedItemsPageGbruxisme = () => {
         <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                {language === "french"
-                  ? "Voulez-vous vraiment soumettre ce cas?"
-                  : "Are you sure you want to submit this case?"}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {language === "french"
-                  ? "Cela soumettra le cas."
-                  : "This will submit the case."}
-              </AlertDialogDescription>
+            <AlertDialogTitle>
+            {language === "french"
+              ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+              : "Are you sure you want to submit this case?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+            {language === "french"
+              ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+              : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+            </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setShowSubmitDialog(false)}>

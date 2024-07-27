@@ -30,7 +30,6 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import {
@@ -51,7 +50,6 @@ const GouttiereBruxismes = () => {
   const [comment, setComment] = useState("");
   const [showTextarea, setShowTextarea] = useState(false);
   const [showAdditionalGuides, setShowAdditionalGuides] = useState(false);
-  // const [impressionCost, setImpressionCost] = useState(0);
   const [additionalGuides, setAdditionalGuides] = useState(0);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const upperTeethIndexes = [
@@ -113,7 +111,7 @@ const GouttiereBruxismes = () => {
       form.reset({
         selectedTeeth: parsedState.selectedTeeth,
         comment: parsedState.comment,
-        digitalExtraction: parsedState.textareaValue, // Add this line
+        digitalExtraction: parsedState.textareaValue,
       });
     };
 
@@ -173,7 +171,6 @@ const GouttiereBruxismes = () => {
       }
     }
 
-    // Check if we're coming back from the selected items page
     if (location.state && location.state.fromSelectedItems) {
       const storedState = localStorage.getItem("guideBruxismeState");
       if (storedState) {
@@ -210,13 +207,6 @@ const GouttiereBruxismes = () => {
         "spain",
       ];
 
-      // const cost =
-      //   country === "france" && second
-      //     ? 7
-      //     : europeanCountries.includes(country) && second
-      //     ? 15
-      //     : 0;
-
       const cost = country === "france" && second  ? 7.5 :
         europeanCountries.includes(country) && second ? 15 : 0;
       
@@ -245,18 +235,13 @@ const GouttiereBruxismes = () => {
     setShowTextarea(!showTextarea);
   };
 
-  const handleTextareaChange = (event) => {
-    setTextareaValue(event.target.value);
-  };
 
   const handleImpressionSwitch = () => {
     setSecond((prevSecond) => {
       const newSecond = !prevSecond;
       if (newSecond) {
-        // Adding Formlabs® impression
         updateCost(40 + additionalGuides * 40);
       } else {
-        // Removing Formlabs® impression
         updateCost(-(40 + additionalGuides * 40));
         setAdditionalGuides(0);
       }
@@ -304,7 +289,7 @@ const GouttiereBruxismes = () => {
       originalCost: originalCost,
       comment: values.comment,
       additionalGuides: additionalGuides,
-      textareaValue: values.digitalExtraction, // Update this line
+      textareaValue: values.digitalExtraction,
       selectedTeeth: values.selectedTeeth,
       first: first,
       second: second,
@@ -338,7 +323,7 @@ const GouttiereBruxismes = () => {
   ];
   const country = user && user.location[0].country.toLowerCase();
   if (!user) {
-    return <div>Loading...</div>; // or any other loading indicator
+    return <div>Loading...</div>;
   }
   return (
     <SideBarContainer>

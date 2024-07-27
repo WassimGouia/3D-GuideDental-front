@@ -128,6 +128,7 @@ const SelectedItemsPageGETAGE = () => {
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
+    const storedFormState = localStorage.getItem("guideEtageFormState");
 
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
@@ -137,6 +138,22 @@ const SelectedItemsPageGETAGE = () => {
         caseNumber: storedCaseNumber,
       });
 
+      let stateToUse;
+
+      if (location.state && location.state.selectedItemsData) {
+        stateToUse = location.state.selectedItemsData;
+      } else if (storedFormState) {
+        stateToUse = JSON.parse(storedFormState);
+      } else {
+        // Handle the case where no state is available
+        console.error("No state available");
+        return;
+      }
+
+      setFormState(stateToUse);
+      setCalculatedCost(stateToUse.cost);
+
+      
       const fetchOfferData = async () => {
         const token = getToken();
         if (token && user && user.id) {
@@ -157,14 +174,9 @@ const SelectedItemsPageGETAGE = () => {
                 discount: getDiscount(offerData.CurrentPlan),
               };
               setCurrentOffer(offer);
-
-              const discountAmount = (costt * offer.discount) / 100;
-              const newPrice = costt - discountAmount;
-              setCalculatedCost(newPrice);
             } else {
               console.error("Offer data not found in the user response");
               setCurrentOffer(null);
-              setCalculatedCost(costt);
             }
           } catch (error) {
             console.error(
@@ -172,14 +184,13 @@ const SelectedItemsPageGETAGE = () => {
               error.response ? error.response.data : error.message
             );
             setCurrentOffer(null);
-            setCalculatedCost(costt);
           }
         }
       };
 
       fetchOfferData();
     }
-  }, [navigate, user, costt]);
+  }, [navigate, user]);
 
   const getDiscount = (plan) => {
     const discounts = {
@@ -195,21 +206,21 @@ const SelectedItemsPageGETAGE = () => {
     const formData = new FormData();
 
     const guideData = {
-      service: 1, // Assuming this is the ID of the related service
+      service: 1,
       comment,
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
-      marque_implant_pour_la_dent: JSON.stringify(implantBrandValues),
+      marque_implant_pour_la_dent: { " index": implantBrandValue },
       Marque_de_la_clavette: [
         {
           title: "Marque de la clavette",
-          description: lateralPinBrand,
+          description: formState.lateralPinBrand,
         },
       ],
       Marque_de_la_trousse: [
         {
           title: "Marque de la trousse",
-          description: selectSurgicalKitBrand,
+          description: formState.selectSurgicalKitBrand,
         },
       ],
       Full_guidee: [
@@ -247,25 +258,22 @@ const SelectedItemsPageGETAGE = () => {
           active: fifthSwitch,
         },
       ],
-      cout: [
-        {
-          cout: cost,
-        },
-      ],
+      cout: cost,  
       options_generiques: [
         {
           title: "Smile Design",
           active: smileDesign,
         },
       ],
-      submit: true,
-      archive: false,
-      En_attente_approbation: true,
-      soumis: true,
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
       en__cours_de_modification: false,
       approuve: false,
       produire_expide: false,
       user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -284,10 +292,6 @@ const SelectedItemsPageGETAGE = () => {
           },
         }
       );
-
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("caseNumber");
-      localStorage.removeItem("guideEtageFormState");
 
       console.log("Data saved successfully:", response.data);
       await handlePayment(response.data.data.id);
@@ -330,17 +334,17 @@ const SelectedItemsPageGETAGE = () => {
       comment,
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
-      marque_implant_pour_la_dent: JSON.stringify(implantBrandValues),
+      marque_implant_pour_la_dent: { " index": implantBrandValue },
       Marque_de_la_clavette: [
         {
           title: "Marque de la clavette",
-          description: lateralPinBrand,
+          description: formState.lateralPinBrand,
         },
       ],
       Marque_de_la_trousse: [
         {
           title: "Marque de la trousse",
-          description: selectSurgicalKitBrand,
+          description: formState.selectSurgicalKitBrand,
         },
       ],
       Full_guidee: [
@@ -378,18 +382,13 @@ const SelectedItemsPageGETAGE = () => {
           active: fifthSwitch,
         },
       ],
-      cout: [
-        {
-          cout: cost,
-        },
-      ],
+      cout: cost,  
       options_generiques: [
         {
           title: "Smile Design",
           active: smileDesign,
         },
       ],
-      submit: false,
       archive: true,
       En_attente_approbation: false,
       soumis: false,
@@ -397,6 +396,8 @@ const SelectedItemsPageGETAGE = () => {
       approuve: false,
       produire_expide: false,
       user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -420,20 +421,17 @@ const SelectedItemsPageGETAGE = () => {
         }
       );
 
-      localStorage.removeItem("fullName");
-      localStorage.removeItem("caseNumber");
-      localStorage.removeItem("guideEtageFormState");
+      localStorage.clear();
       console.log("Data archived successfully:", response.data);
 
-      // Handle successful archiving (e.g., show a success message, navigate to a different page)
+      navigate("/mes-fichier")
     } catch (error) {
       console.error("Error archiving guide etage data:", error);
-      // Handle error (e.g., show an error message to the user)
     }
   };
 
   const handlePreviousClick = () => {
-    navigate("/guide-etage", { state: formState });
+    navigate("/guide-etage", { state: { formState: formState } });
   };
 
   return (
@@ -500,10 +498,14 @@ const SelectedItemsPageGETAGE = () => {
                 <div className="flex items-center space-x-2 mt-4">
                   <Archive className="text-yellow-600" />
                   <p>
-                    <span className="font-semibold">
-                      {language === "french" ? "Coût total: " : "Total cost: "}
-                    </span>
-                    {calculatedCost.toFixed(2)} €
+                    <p>
+                      <span className="font-semibold">
+                        {language === "french" ? "Coût: " : "Cost: "}
+                      </span>
+                      <span className="font-bold text-green-600">
+                        {calculatedCost.toFixed(2)} €
+                      </span>
+                    </p>
                   </p>
                 </div>
               </div>
@@ -686,15 +688,15 @@ const SelectedItemsPageGETAGE = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
+                        <AlertDialogTitle>
                             {language === "french"
-                              ? "Voulez-vous vraiment archiver ce cas?"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela archivera le cas."
-                              : "This will archive the case."}
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -727,15 +729,15 @@ const SelectedItemsPageGETAGE = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {language === "french"
-                              ? "Voulez-vous vraiment soumettre ce cas?"
-                              : "Are you sure you want to submit this case?"}
+                        <AlertDialogTitle>
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                            : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela soumettra le cas."
-                              : "This will submit the case."}
+                          {language === "french"
+                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

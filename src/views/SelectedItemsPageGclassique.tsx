@@ -18,7 +18,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Dents from "@/components/Dents";
 import { useAuthContext } from "@/components/AuthContext";
@@ -50,9 +49,7 @@ const SelectedItemsPageGclassique = () => {
 
   const smileDesign = selectedItemsData.smileDesign;
   const digitalExtraction = selectedItemsData.digitalExtraction;
-  const formlabsImpression = selectedItemsData.formlabsImpression;
   const stabilizationPins = selectedItemsData.stabilizationPins;
-  const drillingType = previousStates.drillingType;
   const brandSurgeonKit = selectedItemsData.brandSurgeonKit;
   const implantBrandValues = selectedItemsData.implantBrandValues;
   const implantBrandInputs = selectedItemsData.implantBrandInputs;
@@ -71,12 +68,10 @@ const SelectedItemsPageGclassique = () => {
     selectedItemsData.additionalGuidesImpression;
   const additionalGuidesClavettess =
     selectedItemsData.additionalGuidesClavettes;
+    const originalCost =
+    location.state.selectedItemsData.originalCost;
 
-  // const brandSurgeonKit = previousStates.brandSurgeonKit;
-  // const implantBrandInputs = previousStates.implantBrandInputs || [];
-  // const implantBrandValues = previousStates.implantBrandValues || {};
-  const additionalGuidesClavettes =
-    previousStates.additionalGuidesClavettes || 0;
+
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
@@ -157,7 +152,7 @@ const SelectedItemsPageGclassique = () => {
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async () => {
     const isValid = await form.trigger();
     if (!isValid) {
       return;
@@ -169,7 +164,7 @@ const SelectedItemsPageGclassique = () => {
     const formData = new FormData();
 
     const guideData = {
-      service: 2, // Assuming this is the ID for the Classic Guide service
+      service: 2,
       comment,
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
@@ -197,21 +192,21 @@ const SelectedItemsPageGclassique = () => {
           Impression_Formlabs: [
             {
               title: "Impression Formlabs",
-              active: ImpressionFormlabs, // Changed from 'third' to 'ImpressionFormlabs'
+              active: ImpressionFormlabs, 
               Guide_supplementaire: additionalGuidesImpressionn,
             },
           ],
           Suppression_numerique: [
             {
               title: "Suppression numérique de dents",
-              active: Suppressionnumérique, // Changed from 'second' to 'Suppressionnumérique'
+              active: Suppressionnumérique,
               description: textareaValu,
             },
           ],
           Smile_Design: [
             {
               title: "Smile Design",
-              active: smileDesign, // Changed from 'first' to 'smileDesign'
+              active: smileDesign,
             },
           ],
         },
@@ -222,20 +217,17 @@ const SelectedItemsPageGclassique = () => {
           nombre_des_clavettes: additionalGuidesClavettess,
         },
       ],
-      cout: [
-        {
-          cout: cost,
-        },
-      ],
+      cout: cost,
       marque_implant_pour_la_dent: { " index": implantBrandValue },
-      submit: true,
-      archive: false,
-      En_attente_approbation: true,
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
       en__cours_de_modification: false,
-      soumis: true,
       approuve: false,
       produire_expide: false,
       user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
     console.log("Guide Data:", guideData);
@@ -260,11 +252,9 @@ const SelectedItemsPageGclassique = () => {
 
       console.log("Data saved successfully:", response.data);
 
-      // Proceed with payment
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide classique data:", error);
-      // Handle error (e.g., show an error message to the user)
     }
   };
 
@@ -312,78 +302,109 @@ const SelectedItemsPageGclassique = () => {
   }, []);
 
   const handleNextClickArchive = async () => {
-    const res = await axios.post("http://localhost:1337/api/guide-classiques", {
-      data: {
-        service: 2,
-        comment,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
-        Full_guidee: [
-          {
-            titlle: "Full guidée",
-            active: fullGuide,
-          },
-        ],
-        Forage_pilote: [
-          {
-            title: "forage pilote",
-            active: foragePilote,
-          },
-        ],
-        Marque_de_la_trousse: [
-          {
-            title: "Marque de la trousse de chirurgie utilisée",
-            description: brandSurgeon,
-          },
-        ],
-        options_generiques: [
-          {
-            title: "options generiques",
-            Impression_Formlabs: [
-              {
-                title: "Impression Formlabs",
-                active: ImpressionFormlabs,
-                Guide_supplementaire: additionalGuidesImpressionn,
-              },
-            ],
-            Suppression_numerique: [
-              {
-                title: "Suppression numérique de dents",
-                active: Suppressionnumérique,
-                description: textareaValu,
-              },
-            ],
-            Smile_Design: [
-              {
-                title: "Smile Design",
-                active: smileDesign,
-              },
-            ],
-          },
-        ],
-        Clavettes_de_stabilisation: [
-          {
-            title: "Clavettes de stabilisation",
-            nombre_des_clavettes: additionalGuidesClavettess,
-          },
-        ],
-        cout: [
-          {
-            cout: cost,
-          },
-        ],
-        marque_implant_pour_la_dent: { " index": implantBrandValue },
-        submit: false,
-        archive: true,
-      },
-    });
-
-    if (res.status === 200) {
-      localStorage.removeItem("guideClassiqueState");
-      navigate("/");
-    } else {
-      alert(res.status);
+    const isValid = await form.trigger();
+    if (!isValid) {
+      return;
     }
+
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+
+    const guideData = {
+      service: 2,
+      comment,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      Full_guidee: [
+        {
+          titlle: "Full guidée",
+          active: fullGuide,
+        },
+      ],
+      Forage_pilote: [
+        {
+          title: "forage pilote",
+          active: foragePilote,
+        },
+      ],
+      Marque_de_la_trousse: [
+        {
+          title: "Marque de la trousse de chirurgie utilisée",
+          description: brandSurgeon,
+        },
+      ],
+      options_generiques: [
+        {
+          title: "options generiques",
+          Impression_Formlabs: [
+            {
+              title: "Impression Formlabs",
+              active: ImpressionFormlabs,
+              Guide_supplementaire: additionalGuidesImpressionn,
+            },
+          ],
+          Suppression_numerique: [
+            {
+              title: "Suppression numérique de dents",
+              active: Suppressionnumérique,
+              description: textareaValu,
+            },
+          ],
+          Smile_Design: [
+            {
+              title: "Smile Design",
+              active: smileDesign,
+            },
+          ],
+        },
+      ],
+      Clavettes_de_stabilisation: [
+        {
+          title: "Clavettes de stabilisation",
+          nombre_des_clavettes: additionalGuidesClavettess,
+        },
+      ],
+      cout: cost, 
+      marque_implant_pour_la_dent: { " index": implantBrandValue },
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
+      en__cours_de_modification: false,
+      approuve: false,
+      produire_expide: false,
+      user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
+    };
+
+    formData.append("data", JSON.stringify(guideData));
+
+    if (file) {
+      formData.append("files.User_Upload", file, file.name);
+    }
+
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/guide-classiques",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      console.log("Data saved successfully:", response.data);
+
+    } catch (error) {
+      console.error("Error saving guide classique data:", error);
+    }
+
+    localStorage.clear();
+    navigate("/mes-fichier")
   };
 
   const handlePreviousClick = () => {
@@ -667,15 +688,15 @@ const SelectedItemsPageGclassique = () => {
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
+                        <AlertDialogTitle>
                             {language === "french"
-                              ? "Voulez-vous vraiment archiver ce cas?"
+                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela archivera le cas."
-                              : "This will archive the case."}
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -702,15 +723,15 @@ const SelectedItemsPageGclassique = () => {
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {language === "french"
-                              ? "Voulez-vous vraiment soumettre ce cas?"
-                              : "Are you sure you want to submit this case?"}
+                        <AlertDialogTitle>
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                            : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela soumettra le cas."
-                              : "This will submit the case."}
+                          {language === "french"
+                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

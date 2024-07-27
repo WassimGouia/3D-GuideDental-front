@@ -49,6 +49,8 @@ const GuideEtage = () => {
   const [originalCost, setOriginalCost] = useState(450);
   const [cost, setCost] = useState(450);
   const [immediateLoad, setImmediateLoad] = useState(false);
+  const [basePrice, setBasePrice] = useState(450);
+  const [additionalCost, setAdditionalCost] = useState(0);
   const [secondSwitch, setSecondSwitch] = useState(false);
   const [thirdSwitch, setThirdSwitch] = useState(false);
   const [fourthSwitch, setFourthSwitch] = useState(false);
@@ -127,39 +129,9 @@ const GuideEtage = () => {
   const { language } = useLanguage();
 
   useEffect(() => {
-    const storedFormState = localStorage.getItem("guideEtageFormState");
-    const locationState = location.state;
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
-
-    const setStateFromData = (data) => {
-      setFormState(data);
-      setSelectedTeeth(data.selectedTeeth || []);
-      setImplantBrandInputs(data.implantBrandInputs || []);
-      setImplantBrandValues(data.implantBrandValues || {});
-      setLateralPinBrand(data.lateralPinBrand || "");
-      setSelectSurgicalKitBrand(data.selectSurgicalKitBrand || "");
-      setComment(data.comment || "");
-      setImmediateLoad(data.immediateLoad || false);
-      setSecondSwitch(data.secondSwitch || false);
-      setThirdSwitch(data.thirdSwitch || false);
-      setFourthSwitch(data.fourthSwitch || false);
-      setFifthSwitch(data.fifthSwitch || false);
-      setSmileDesign(data.smileDesign || false);
-      setForagePilote(data.foragePilote || false);
-      setFullGuide(data.fullGuide || false);
-      setCost(data.cost || 450);
-      setOriginalCost(data.originalCost || 450);
-
-      form.reset({
-        selectedTeeth: data.selectedTeeth || [],
-        drillingType: data.foragePilote ? "foragePilote" : "fullGuide",
-        lateralPinBrand: data.lateralPinBrand || "",
-        selectSurgicalKitBrand: data.selectSurgicalKitBrand || "",
-        implantBrandValues: data.implantBrandValues || {},
-        comment: data.comment || "",
-      });
-    };
+    const storedFormState = localStorage.getItem("guideEtageFormState");
 
     if (!storedFullname || !storedCaseNumber) {
       navigate("/sign/nouvelle-demande");
@@ -169,12 +141,64 @@ const GuideEtage = () => {
         caseNumber: storedCaseNumber,
       });
 
-      if (locationState) {
-        setStateFromData(locationState);
+      let stateToUse;
+
+      if (location.state && location.state.formState) {
+        // If we have state from navigation, use that
+        stateToUse = location.state.formState;
       } else if (storedFormState) {
-        const parsedState = JSON.parse(storedFormState);
-        setStateFromData(parsedState);
+        // If we have stored state in localStorage, use that
+        stateToUse = JSON.parse(storedFormState);
+      } else {
+        // If no state is available, use the default state
+        stateToUse = {
+          originalCost: 450,
+          cost: 450,
+          immediateLoad: false,
+          secondSwitch: false,
+          thirdSwitch: false,
+          fourthSwitch: false,
+          fifthSwitch: false,
+          smileDesign: false,
+          comment: "",
+          foragePilote: false,
+          fullGuide: false,
+          selectedTeeth: [],
+          implantBrandInputs: [],
+          selectSurgicalKitBrand: "",
+          lateralPinBrand: "",
+          implantBrandValues: {},
+        };
       }
+
+      setFormState(stateToUse);
+      setCost(stateToUse.cost || 450);
+      setOriginalCost(stateToUse.originalCost || 450);
+      setAdditionalCost(stateToUse.additionalCost || 0);
+      setImmediateLoad(stateToUse.immediateLoad || false);
+      setSecondSwitch(stateToUse.secondSwitch || false);
+      setThirdSwitch(stateToUse.thirdSwitch || false);
+      setFourthSwitch(stateToUse.fourthSwitch || false);
+      setFifthSwitch(stateToUse.fifthSwitch || false);
+      setSmileDesign(stateToUse.smileDesign || false);
+      setComment(stateToUse.comment || "");
+      setForagePilote(stateToUse.foragePilote || false);
+      setFullGuide(stateToUse.fullGuide || false);
+      setSelectedTeeth(stateToUse.selectedTeeth || []);
+      setImplantBrandInputs(stateToUse.implantBrandInputs || []);
+      setSelectSurgicalKitBrand(stateToUse.selectSurgicalKitBrand || "");
+      setLateralPinBrand(stateToUse.lateralPinBrand || "");
+      setImplantBrandValues(stateToUse.implantBrandValues || {});
+
+      // Update form values
+      form.reset({
+        selectedTeeth: stateToUse.selectedTeeth || [],
+        drillingType: stateToUse.foragePilote ? "foragePilote" : "fullGuide",
+        lateralPinBrand: stateToUse.lateralPinBrand || "",
+        selectSurgicalKitBrand: stateToUse.selectSurgicalKitBrand || "",
+        implantBrandValues: stateToUse.implantBrandValues || {},
+        comment: stateToUse.comment || "",
+      });
 
       const fetchOfferData = async () => {
         const token = getToken();
@@ -196,12 +220,6 @@ const GuideEtage = () => {
                 discount: getDiscount(offerData.CurrentPlan),
               };
               setCurrentOffer(offer);
-
-              const discountedCost = applyDiscount(
-                formState.originalCost,
-                offer.discount
-              );
-              setCost(discountedCost);
             } else {
               console.error("Offer data not found in the user response");
               setCurrentOffer(null);
@@ -218,7 +236,7 @@ const GuideEtage = () => {
 
       fetchOfferData();
     }
-  }, [navigate, location, form, user]);
+  }, [navigate, location, user, form]);
 
   const getDiscount = (plan) => {
     const discounts = {
@@ -235,54 +253,6 @@ const GuideEtage = () => {
       ? 7.5
       : 15;
 
-  const updateFormState = (field, value, costChange = 0) => {
-    setFormState((prevState) => {
-      const newState = { ...prevState, [field]: value };
-      const newOriginalCost =
-        prevState.originalCost + (value ? costChange : -costChange);
-      const newDiscountedCost = currentOffer
-        ? applyDiscount(newOriginalCost, currentOffer.discount)
-        : newOriginalCost;
-      return {
-        ...newState,
-        originalCost: newOriginalCost,
-        cost: newDiscountedCost,
-      };
-    });
-  };
-
-  const applyDiscount = (price, discountPercentage) => {
-    const discountedPrice = price * (1 - discountPercentage / 100);
-    return discountedPrice + deliveryCost;
-  };
-
-  const updateCost = (change) => {
-    setCost((prevCost) => {
-      const newCost = prevCost + change;
-      return currentOffer
-        ? applyDiscount(newCost, currentOffer.discount)
-        : newCost;
-    });
-  };
-
-  const handleSwitchToggle = (field, costChange = 0) => {
-    setFormState((prevState) => {
-      const newState = { ...prevState, [field]: !prevState[field] };
-      updateCost(newState[field] ? costChange : -costChange);
-      return newState;
-    });
-  };
-
-  const handleImmediateLoadToggle = () =>
-    handleSwitchToggle("immediateLoad", 150);
-  const handleSecondSwitchToggle = () =>
-    handleSwitchToggle("secondSwitch", 100);
-  const handleThirdSwitchToggle = () => handleSwitchToggle("thirdSwitch", 300);
-  const handleFourthSwitchToggle = () =>
-    handleSwitchToggle("fourthSwitch", 400);
-  const handleFifthSwitchToggle = () => handleSwitchToggle("fifthSwitch", 0);
-  const smileDesignToggle = () => handleSwitchToggle("smileDesign", 40);
-
   const handleForagePiloteSwitch = () => {
     updateFormState("foragePilote", true);
     updateFormState("fullGuide", false);
@@ -295,61 +265,6 @@ const GuideEtage = () => {
     form.setValue("drillingType", "fullGuide");
   };
 
-  // const handleForagePiloteSwitch = () => {
-  //   setForagePilote(true);
-  //   setFullGuide(false);
-  //   form.setValue("drillingType", "foragePilote");
-  // };
-
-  // const handleFullGuideSwitch = () => {
-  //   setFullGuide(true);
-  //   setForagePilote(false);
-  //   form.setValue("drillingType", "fullGuide");
-  // };
-
-  // const handleImmediateLoadToggle = () => {
-  //   setImmediateLoad((prev) => {
-  //     const newValue = !prev;
-  //     updateCost(newValue ? 150 : -150);
-  //     return newValue;
-  //   });
-  // };
-
-  // const handleSecondSwitchToggle = () => {
-  //   setSecondSwitch((prev) => {
-  //     const newValue = !prev;
-  //     updateCost(newValue ? 100 : -100);
-  //     return newValue;
-  //   });
-  // };
-
-  // const handleThirdSwitchToggle = () => {
-  //   setThirdSwitch((prev) => {
-  //     const newValue = !prev;
-  //     updateCost(newValue ? 300 : -300);
-  //     return newValue;
-  //   });
-  // };
-
-  // const handleFourthSwitchToggle = () => {
-  //   setFourthSwitch((prev) => {
-  //     const newValue = !prev;
-  //     updateCost(newValue ? 400 : -400);
-  //     return newValue;
-  //   });
-  // };
-
-  // const handleFifthSwitchToggle = () => {
-  //   setFifthSwitch((prev) => !prev);
-  // };
-
-  // const smileDesignToggle = () => {
-  //   setSmileDesign((prev) => {
-  //     const newValue = !prev;
-  //     updateCost(newValue ? 40 : -40);
-  //     return newValue;
-  //   });
-  // };
   const handleCommentChange = (e: any) => {
     setComment(e.target.value);
   };
@@ -362,6 +277,9 @@ const GuideEtage = () => {
     completeStep("guide-etage");
     const yourData = {
       ...formState,
+      cost: cost,
+      originalCost: originalCost,
+      additionalCost: additionalCost,
       comment: values.comment,
       selectedSwitchLabel:
         values.drillingType === "foragePilote"
@@ -409,6 +327,116 @@ const GuideEtage = () => {
       };
     });
   };
+
+  const updateCost = () => {
+    const discountPercentage = currentOffer ? currentOffer.discount : 0;
+    const discountMultiplier = 1 - discountPercentage / 100;
+
+    const basePrice = 450; // Set the base price
+    let totalCost = basePrice + additionalCost;
+
+    // Apply discount
+    totalCost *= discountMultiplier;
+
+    // Add delivery cost if applicable
+    const shouldAddDeliveryCost =
+      formState.immediateLoad ||
+      formState.secondSwitch ||
+      formState.thirdSwitch ||
+      formState.fourthSwitch;
+    if (shouldAddDeliveryCost) {
+      totalCost += deliveryCost;
+    }
+
+    setOriginalCost(basePrice + additionalCost);
+    setCost(Math.round(totalCost * 100) / 100); // Round to 2 decimal places
+  };
+
+  const updateFormState = (field, value, costChange = 0) => {
+    setFormState((prevState) => {
+      const newState = { ...prevState, [field]: value };
+
+      // Ensure only one of the four options is selected
+      if (
+        field === "immediateLoad" ||
+        field === "secondSwitch" ||
+        field === "thirdSwitch" ||
+        field === "fourthSwitch"
+      ) {
+        newState.immediateLoad = field === "immediateLoad" ? value : false;
+        newState.secondSwitch = field === "secondSwitch" ? value : false;
+        newState.thirdSwitch = field === "thirdSwitch" ? value : false;
+        newState.fourthSwitch = field === "fourthSwitch" ? value : false;
+      }
+
+      setAdditionalCost((prevAdditionalCost) => {
+        if (value) {
+          return prevAdditionalCost + costChange;
+        } else {
+          return prevAdditionalCost - costChange;
+        }
+      });
+
+      return newState;
+    });
+  };
+
+  useEffect(() => {
+    updateCost();
+  }, [basePrice, additionalCost, currentOffer, formState]);
+
+  const applyDiscount = (price, discountPercentage) => {
+    return price * (1 - discountPercentage / 100);
+  };
+
+  const handleSwitchToggle = (field, costChange = 0) => {
+    setFormState((prevState) => {
+      const newState = { ...prevState };
+
+      // Handle the mutually exclusive options
+      if (
+        field === "secondSwitch" ||
+        field === "thirdSwitch" ||
+        field === "fourthSwitch"
+      ) {
+        // Deselect other options in this group
+        newState.secondSwitch =
+          field === "secondSwitch" ? !prevState[field] : false;
+        newState.thirdSwitch =
+          field === "thirdSwitch" ? !prevState[field] : false;
+        newState.fourthSwitch =
+          field === "fourthSwitch" ? !prevState[field] : false;
+
+        // Calculate cost change
+        const oldCost =
+          (prevState.secondSwitch ? 100 : 0) +
+          (prevState.thirdSwitch ? 300 : 0) +
+          (prevState.fourthSwitch ? 400 : 0);
+
+        const newCost = newState[field] ? costChange : 0;
+
+        setAdditionalCost((prev) => prev - oldCost + newCost);
+      } else {
+        // For other switches, toggle normally
+        newState[field] = !prevState[field];
+        setAdditionalCost((prev) =>
+          newState[field] ? prev + costChange : prev - costChange
+        );
+      }
+
+      return newState;
+    });
+  };
+
+  const handleImmediateLoadToggle = () =>
+    handleSwitchToggle("immediateLoad", 150);
+  const handleSecondSwitchToggle = () =>
+    handleSwitchToggle("secondSwitch", 100);
+  const handleThirdSwitchToggle = () => handleSwitchToggle("thirdSwitch", 300);
+  const handleFourthSwitchToggle = () =>
+    handleSwitchToggle("fourthSwitch", 400);
+  const handleFifthSwitchToggle = () => handleSwitchToggle("fifthSwitch", 0);
+  const smileDesignToggle = () => handleSwitchToggle("smileDesign", 40);
 
   return (
     <SideBarContainer>
@@ -510,7 +538,16 @@ const GuideEtage = () => {
                         {currentOffer
                           ? `${currentOffer.discount}%`
                           : "Loading..."}
-                        ) +{deliveryCost} ={" "}
+                        )
+                        {formState.immediateLoad ||
+                        formState.secondSwitch ||
+                        formState.thirdSwitch ||
+                        formState.fourthSwitch
+                          ? ` + ${deliveryCost} (${
+                              language === "french" ? "livraison" : "delivery"
+                            })`
+                          : ""}{" "}
+                        ={" "}
                         <span className="text-green-500">
                           {cost.toFixed(2)} €
                         </span>
@@ -762,8 +799,8 @@ const GuideEtage = () => {
                             : "Metal impression of first part + Resin impression of second part"}
                         </p>
                         <Switch
-                          onClick={handleThirdSwitchToggle}
                           checked={formState.thirdSwitch}
+                          onCheckedChange={handleThirdSwitchToggle}
                         />
                       </div>
                       <div className="flex space-x-2 justify-between">
@@ -773,8 +810,8 @@ const GuideEtage = () => {
                             : "Metal impression of both guide parts"}
                         </p>
                         <Switch
-                          onClick={handleFourthSwitchToggle}
                           checked={formState.fourthSwitch}
+                          onCheckedChange={handleFourthSwitchToggle}
                         />
                       </div>
                       <div className="flex space-x-2 justify-between">
@@ -784,8 +821,8 @@ const GuideEtage = () => {
                             : "Addition of magnets to secure the parts"}
                         </p>
                         <Switch
-                          onClick={handleFifthSwitchToggle}
                           checked={formState.fifthSwitch}
+                          onCheckedChange={handleFifthSwitchToggle}
                         />
                       </div>
                     </div>
@@ -800,8 +837,8 @@ const GuideEtage = () => {
                       <br />
                       <div className="flex items-center space-x-2">
                         <Switch
-                          onClick={smileDesignToggle}
                           checked={formState.smileDesign}
+                          onCheckedChange={smileDesignToggle}
                         />
                         <Label htmlFor="airplane-mode">
                           {language === "french"

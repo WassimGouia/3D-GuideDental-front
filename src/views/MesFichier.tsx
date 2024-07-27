@@ -424,7 +424,7 @@ const MesFichier: React.FC = () => {
       localStorage.setItem("originalCost",guide.attributes.piece_physique_cout)
   
       const requestData = {
-        cost: ((guide.attributes.piece_physique_cout * (1 - getDiscount(currentOffer.currentPlan) / 100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15)),
+        cost: ((guide.attributes.piece_physique_cout * (1 - getDiscount(guide.attributes.offre) / 100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15)),
         patient: guide.attributes.patient,
         email: user && user.email,
         caseNumber:guide.attributes.numero_cas,
@@ -1106,7 +1106,7 @@ const MesFichier: React.FC = () => {
 
                         {guide.attributes.Demande_devis && (
                           <>
-                            {guide.attributes.cout === 0 ? (
+                            {guide.attributes.cout === 0 || guide.attributes.cout === null ? (
                               <Tooltip content={language === "french" ? "Demande de devis envoyée" : "Request for quote sent"}>
                                 <div className="relative">
                                   <SendHorizonal className="text-purple-500 cursor-pointer w-6 h-6 animate-rocket" />

@@ -183,15 +183,18 @@ const SelectedItemsPageRapportRad = () => {
       autres: checkboxGroup.autre === "oui",
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
-      submit: true,
-      archive: false,
+      soumis: false,
+      archive: true,
       user: user.id,
+      originalCost:originalCost,
+      cout:cost,
+      other_description:autreInput
     };
 
     formData.append("data", JSON.stringify(reportData));
 
     if (file) {
-      formData.append("files.pdfFile", file, file.name);
+      formData.append("files.User_Upload", file, file.name);
     }
 
     try {
@@ -245,7 +248,7 @@ const SelectedItemsPageRapportRad = () => {
     const formData = new FormData();
 
     const reportData = {
-      service: 6, // Assuming this is the ID for Rapport Radiologique service
+      service: 6,
       first_comment: comment,
       date: selectedItemsData?.date,
       second_comment: secondComment,
@@ -256,15 +259,18 @@ const SelectedItemsPageRapportRad = () => {
       autres: checkboxGroup.autre === "oui",
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
-      submit: false,
+      soumis: false,
       archive: true,
       user: user.id,
+      originalCost:originalCost,
+      cout:cost,
+      other_description:autreInput
     };
 
     formData.append("data", JSON.stringify(reportData));
 
     if (file) {
-      formData.append("files.pdfFile", file, file.name);
+      formData.append("files.User_Upload", file, file.name);
     }
 
     try {
@@ -280,8 +286,8 @@ const SelectedItemsPageRapportRad = () => {
       );
 
       console.log("Report archived successfully:", response.data);
-      localStorage.removeItem("rapportRadiologiqueState");
-      navigate("/");
+      localStorage.clear();
+      navigate("/mes-fichier");
     } catch (err) {
       console.error("Error archiving report:", err);
       alert(
@@ -574,16 +580,16 @@ const SelectedItemsPageRapportRad = () => {
                 >
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {language === "french"
-                          ? "Voulez-vous vraiment archiver ce cas?"
-                          : "Are you sure you want to archive this case?"}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {language === "french"
-                          ? "Cela archivera le cas."
-                          : "This will archive the case."}
-                      </AlertDialogDescription>
+                    <AlertDialogTitle>
+                      {language === "french"
+                        ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                        : "Are you sure you want to archive this case?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                    {language === "french"
+                      ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                      : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                    </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>
@@ -607,16 +613,16 @@ const SelectedItemsPageRapportRad = () => {
                 >
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {language === "french"
-                          ? "Voulez-vous vraiment soumettre ce cas?"
-                          : "Are you sure you want to submit this case?"}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {language === "french"
-                          ? "Cela soumettra le cas."
-                          : "This will submit the case."}
-                      </AlertDialogDescription>
+                    <AlertDialogTitle>
+                          {language === "french"
+                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                            : "Are you sure you want to submit this case?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                          {language === "french"
+                            ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
+                            : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
+                          </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>

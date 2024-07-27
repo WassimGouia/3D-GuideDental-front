@@ -162,16 +162,16 @@ const SelectedItemsPageAutreService = () => {
         service_impression_et_expedition: selectedItemsData.implantationPrevue,
         patient: patientData.fullname,
         numero_cas: patientData.caseNumber,
-        submit: false,
         archive: false,
-        En_attente_approbation: true,
+        En_attente_approbation: false,
         en__cours_de_modification: false,
-        soumis: true,
+        soumis: false,
         approuve: false,
         produire_expide: false,
         Demande_devis: true,
         user: user.id,
-        service: 5, // Assuming this is the ID for Autres services de conception
+        service: 5,
+        offre:currentOffer?.currentPlan
       })
     );
 
@@ -189,14 +189,6 @@ const SelectedItemsPageAutreService = () => {
         }
       );
 
-      if (response.status === 200) {
-        alert(
-          language === "french"
-            ? "Demande de devis soumise avec succès"
-            : "Quote request submitted successfully"
-        );
-        navigate("/sign/mes-fichier");
-      }
     } catch (error) {
       console.error("Error submitting quote request:", error);
       alert(
@@ -228,7 +220,6 @@ const SelectedItemsPageAutreService = () => {
         service_impression_et_expedition: selectedItemsData.implantationPrevue,
         patient: patientData.fullname,
         numero_cas: patientData.caseNumber,
-        submit: false,
         archive: true,
         En_attente_approbation: false,
         en__cours_de_modification: false,
@@ -238,6 +229,7 @@ const SelectedItemsPageAutreService = () => {
         Demande_devis: false,
         user: user.id,
         service: 5, // Assuming this is the ID for Autres services de conception
+        offre:currentOffer?.currentPlan
       })
     );
 
@@ -256,8 +248,8 @@ const SelectedItemsPageAutreService = () => {
       );
 
       if (response.status === 200) {
-        localStorage.removeItem("autreServiceState");
-        navigate("/");
+        localStorage.clear();
+        navigate("/mes-fichier");
       } else {
         alert(response.status);
       }
@@ -457,15 +449,15 @@ const SelectedItemsPageAutreService = () => {
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
+                  <AlertDialogTitle>
                       {language === "french"
-                        ? "Voulez-vous vraiment archiver ce cas?"
+                        ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                         : "Are you sure you want to archive this case?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      {language === "french"
-                        ? "Cela archivera le cas."
-                        : "This will archive the case."}
+                    {language === "french"
+                      ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                      : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -490,15 +482,15 @@ const SelectedItemsPageAutreService = () => {
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {language === "french"
-                        ? "Voulez-vous vraiment soumettre cette demande de devis?"
-                        : "Are you sure you want to submit this quote request?"}
+                  <AlertDialogTitle>
+                    {language === "french"
+                      ? "Êtes-vous sûr de vouloir demander un devis pour cas ?"
+                      : "Are you sure you want to request a quote for this case?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      {language === "french"
-                        ? "Cela soumettra la demande de devis."
-                        : "This will submit the quote request."}
+                    {language === "french"
+                      ? "Demander un devis pour votre cas."
+                      : "Request a quote for your case."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

@@ -43,14 +43,12 @@ import {
   Percent,
   ReceiptEuro,
   FileDigit,
-  Truck,
   UsersRound,
   Package,
 } from "lucide-react";
 
 const RapportRadiologique = () => {
   const navigate = useNavigate();
-  const [date, setDate] = useState<Date>();
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedValues, setCheckedValues] = useState({
     implantationPrevue: false,
@@ -398,42 +396,6 @@ const RapportRadiologique = () => {
       },
     });
   };
-
-  // // Add this useEffect to load saved state when component mounts
-  // useEffect(() => {
-  //   const savedState = localStorage.getItem("rapportRadiologiqueState");
-  //   if (savedState) {
-  //     const parsedState = JSON.parse(savedState);
-
-  //     // Parse the date string back to a Date object
-  //     const savedDate = parsedState.date ? new Date(parsedState.date) : null;
-
-  //     form.reset({
-  //       ...parsedState,
-  //       dob: savedDate, // Set the date in the form
-  //     });
-
-  //     setDate(savedDate);
-  //     setSelectedDate(savedDate);
-  //     setOriginalCost(parsedState.originalCost);
-  //     setCost(parsedState.cost);
-  //   }
-  // }, [form]);
-
-  // // Add this useEffect to load saved state when component mounts
-  // useEffect(() => {
-  //   const savedState = localStorage.getItem("rapportRadiologiqueState");
-  //   if (savedState) {
-  //     const parsedState = JSON.parse(savedState);
-  //     form.reset(parsedState);
-  //     setDate(parsedState.date ? new Date(parsedState.date) : null);
-  //     setSelectedDate(
-  //       parsedState.selectedDate ? new Date(parsedState.selectedDate) : null
-  //     );
-  //     setOriginalCost(parsedState.originalCost);
-  //     setCost(parsedState.cost);
-  //   }
-  // }, []);
 
   const fieldLabels = {
     implantationPrevue: {

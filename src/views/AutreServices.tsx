@@ -1,15 +1,7 @@
 import Container from "@/components/Container";
-import { Info } from "lucide-react";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import Nouvelle from "@/components/Nouvelledemande";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -34,9 +26,7 @@ import {
 } from "@/components/ui/form";
 import {
   Percent,
-  Archive,
   FileDigit,
-  FolderUp,
   UsersRound,
   Package,
 } from "lucide-react";
@@ -44,17 +34,12 @@ import {
 const AutreServices = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const [comment, setComment] = useState("");
   const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
   const [currentOffer, setCurrentOffer] = useState(null);
   const { user } = useAuthContext();
-  const [checkedValues, setCheckedValues] = useState({
-    implantationPrevue: false,
-    implantationPrevueInverse: false,
-  });
 
   const formSchema = z.object({
     comment: z.string().min(1, "Comment is required"),
@@ -107,12 +92,6 @@ const AutreServices = () => {
                 discount: getDiscount(offerData.CurrentPlan),
               });
 
-              // Apply initial discount
-              const discountedCost = applyDiscount(
-                originalCost,
-                getDiscount(offerData.CurrentPlan)
-              );
-              setCost(discountedCost);
             } else {
               console.error("Offer data not found in the user response");
               setCurrentOffer(null);
@@ -146,21 +125,6 @@ const AutreServices = () => {
     });
   };
 
-  const handleCheck = (name) => {
-    setCheckedValues((prevValues) => ({
-      ...prevValues,
-      [name]: !prevValues[name],
-      [name + "Inverse"]: false,
-    }));
-  };
-
-  const handleInverseCheck = (name) => {
-    setCheckedValues((prevValues) => ({
-      ...prevValues,
-      [name]: false,
-      [name + "Inverse"]: !prevValues[name + "Inverse"],
-    }));
-  };
 
   const supportedCountries = ["france", "belgium", "portugal", "germany", "netherlands", "luxembourg", "italy", "spain"];
   const country = user && user.location[0].country.toLowerCase();
@@ -276,54 +240,7 @@ const AutreServices = () => {
                       />
 
                       <br />
-                      {/* <FormField
-                      control={form.control}
-                      name="file"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {language === "french"
-                              ? "Ajouter des fichiers"
-                              : "Add files"}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="file"
-                              accept=".zip,.rar,.7z,.tar"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const fileName = file.name;
-                                  const fileExtension = fileName
-                                    .split(".")
-                                    .pop()
-                                    .toLowerCase();
-                                  if (
-                                    !["zip", "rar", "7z", "tar"].includes(
-                                      fileExtension
-                                    )
-                                  ) {
-                                    alert(
-                                      "Please select a ZIP, RAR, 7Z, or TAR file"
-                                    );
-                                    e.target.value = "";
-                                  } else {
-                                    field.onChange(e.target.files);
-                                  }
-                                }
-                              }}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {language === "french"
-                              ? "Ajoutez les fichiers requis (CBCT, empreintes numériques, etc.) afin que 3D Guide Dental puisse fournir le service proposé."
-                              : "Add the required files (CBCT, digital impressions, etc.) so that 3D Guide Dental can provide the service offered."}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    /> */}
-                      <br />
+                      {supportedCountries.includes(country) ? (
                       <FormField
                         control={form.control}
                         name="implantationPrevue"
@@ -345,17 +262,21 @@ const AutreServices = () => {
                           </FormItem>
                         )}
                       />
+                      ) : null }
                     </div>
                     <div className="flex justify-between">
-                      <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">
-                        <Link to="/sign/Nouvelle-modelisation">
-                          {language === "french" ? "Précédent" : "Previous"}
-                        </Link>
-                      </Button>
-                      <Button type="submit">
-                        {language === "french" ? "Suivant" : "Next"}
-                      </Button>
-                    </div>
+                    <Button className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all mt-9">
+                      <Link to="/sign/Nouvelle-modelisation">
+                        {language === "french" ? "Précédent" : "Previous"}
+                      </Link>
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all mt-9"
+                    >
+                      {language === "french" ? "Suivant" : "Next"}
+                    </Button>
+                  </div>
                   </CardContent>
                 </form>
               </Form>

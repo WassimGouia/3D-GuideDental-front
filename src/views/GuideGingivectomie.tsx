@@ -167,7 +167,7 @@ const GuideGingivectomie = () => {
 
     fetchOfferData();
 
-    // Check if we're coming back from the selected items page
+
     if (location.state && location.state.fromSelectedItems) {
       const storedState = localStorage.getItem("guideginState");
       if (storedState) {
@@ -202,7 +202,7 @@ const GuideGingivectomie = () => {
         "luxembourg",
         "italy",
         "spain",
-      ];
+      ]; 
 
       // const cost =
       //   country === "france" && fourth
@@ -334,7 +334,7 @@ const GuideGingivectomie = () => {
   ];
   const country = user && user.location[0].country.toLowerCase();
   if (!user) {
-    return <div>Loading...</div>; // or any other loading indicator
+    return <div>Loading...</div>;
   }
 
   return (
@@ -439,7 +439,7 @@ const GuideGingivectomie = () => {
                             : "Loading..."}
                           ) +{deliveryCost} ={" "}
                           <span className="text-green-500">
-                            {(third ? cost + deliveryCost : cost + 0).toFixed(
+                            {(fourth ? cost + deliveryCost : cost + 0).toFixed(
                               2
                             )}{" "}
                             €

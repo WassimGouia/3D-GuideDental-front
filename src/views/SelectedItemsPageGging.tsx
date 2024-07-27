@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SideBarContainer from "@/components/SideBarContainer";
 import Container from "@/components/Container";
@@ -25,9 +25,7 @@ import { useAuthContext } from "@/components/AuthContext";
 import { getToken } from "@/components/Helpers";
 import {
   Percent,
-  Archive,
   FileDigit,
-  FolderUp,
   UsersRound,
   Package,
 } from "lucide-react";
@@ -51,14 +49,9 @@ const SelectedItemsPageGging = () => {
   const { language } = useLanguage();
 
   const originalCost = location.state?.selectedItemsData.originalCost || 0;
-  const cost = location.state?.selectedItemsData.cost || 0;
   const selectedItemsData = location.state?.selectedItemsData;
   const previousStates = location.state?.previousStates;
-  const textareaValue = previousStates?.textareaValue || {}; // for the Digital extraction of teeth
-  const additionalGuides = previousStates?.additionalGuides || {};
   const selectedTeethData = previousStates?.selectedTeeth || [];
-  const comment = location.state?.selectedItemsData.comment;
-  // const cost = location.state?.selectedItemsData.cost;
   const first = location.state?.selectedItemsData.first;
   const supressionumerique = location.state?.selectedItemsData.third;
   const textareaValu = location.state?.selectedItemsData.textareaValue;
@@ -146,7 +139,6 @@ const SelectedItemsPageGging = () => {
       fetchOfferData();
     }
 
-    // Check if any required data is missing and redirect if true
     if (
       !selectedItemsData ||
       !selectedItemsData.comment ||
@@ -169,16 +161,16 @@ const SelectedItemsPageGging = () => {
     "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
   );
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
 
     const fileInput = document.querySelector('input[type="file"]');
     const file = fileInput.files[0];
 
     const formData = new FormData();
 
+
     const guideData = {
-      service: 3, // Assuming this is the ID for the Guide pour Gingivectomie service
+      service: 3,
       comment: selectedItemsData.comment,
       patient: patientData.fullname,
       numero_cas: patientData.caseNumber,
@@ -214,23 +206,24 @@ const SelectedItemsPageGging = () => {
           ],
         },
       ],
-      submit: true,
-      archive: false,
-      En_attente_approbation: true,
+      selected_teeth: selectedTeethData,
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
       en__cours_de_modification: false,
-      soumis: true,
       approuve: false,
       produire_expide: false,
-      selected_teeth: selectedTeethData,
-      user: user.id, // Relation with the authenticated user
+      user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
     };
 
+    
     formData.append("data", JSON.stringify(guideData));
 
-    if (data.file) {
-      formData.append("files.User_Upload", data.file, data.file.name);
+    if (file) {
+      formData.append("files.User_Upload", file, file.name);
     }
-
     try {
       const response = await axios.post(
         "http://localhost:1337/api/guide-pour-gingivectomies",
@@ -282,66 +275,86 @@ const SelectedItemsPageGging = () => {
   };
 
   const handleNextClickArchive = async () => {
-    const res = await axios.post(
-      "http://localhost:1337/api/guide-pour-gingivectomies",
-      {
-        data: {
-          service: 3,
-          comment,
-          patient: patientData.fullname,
-          numero_cas: patientData.caseNumber,
-          cout: costt,
-          DICOM: [
-            {
-              title: "DICOM",
-              active: first,
-            },
-          ],
-          options_generiques: [
-            {
-              title: "options generiques",
-              Impression_Formlabs: [
-                {
-                  title: "Impression Formlabs",
-                  active: ImpressionFormlabs,
-                  Guide_supplementaire: additionalGuidess,
-                },
-              ],
-              Suppression_numerique: [
-                {
-                  title: "Suppression numérique de dents",
-                  active: supressionumerique,
-                  description: textareaValu,
-                },
-              ],
-              Smile_Design: [
-                {
-                  title: "Smile Design",
-                  active: smiledesign,
-                },
-              ],
-            },
-          ],
-          selected_teeth: selectedTeethData,
-          archive: true,
-          En_attente_approbation: false,
-          soumis: false,
-          en__cours_de_modification: false,
-          approuve: false,
-          produire_expide: false,
-          user: user.id,
-          offre:currentOffer?.currentPlan,
-          originalCost:originalCost,
-        },
-      }
-    );
+    const fileInput = document.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
 
-    if (res.status === 200) {
-      localStorage.removeItem("guideginState");
-      navigate("/");
-    } else {
-      alert(res.status);
+    const formData = new FormData();
+
+
+    const guideData = {
+      service: 3,
+      comment: selectedItemsData.comment,
+      patient: patientData.fullname,
+      numero_cas: patientData.caseNumber,
+      cout: costt,
+      DICOM: [
+        {
+          title: "DICOM",
+          active: first,
+        },
+      ],
+      options_generiques: [
+        {
+          title: "options generiques",
+          Impression_Formlabs: [
+            {
+              title: "Impression Formlabs",
+              active: ImpressionFormlabs,
+              Guide_supplementaire: additionalGuidess,
+            },
+          ],
+          Suppression_numerique: [
+            {
+              title: "Suppression numérique de dents",
+              active: supressionumerique,
+              description: textareaValu,
+            },
+          ],
+          Smile_Design: [
+            {
+              title: "Smile Design",
+              active: smiledesign,
+            },
+          ],
+        },
+      ],
+      selected_teeth: selectedTeethData,
+      archive: true,
+      En_attente_approbation: false,
+      soumis: false,
+      en__cours_de_modification: false,
+      approuve: false,
+      produire_expide: false,
+      user: user.id,
+      offre:currentOffer?.currentPlan,
+      originalCost:originalCost,
+    };
+
+    
+    formData.append("data", JSON.stringify(guideData));
+
+    if (file) {
+      formData.append("files.User_Upload", file, file.name);
     }
+    try {
+      const response = await axios.post(
+        "http://localhost:1337/api/guide-pour-gingivectomies",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+
+      console.log("Data saved successfully:", response.data);
+    } catch (error) {
+      console.error("Error saving guide pour gingivectomie data:", error);
+    }
+
+      localStorage.clear();
+      navigate("/mes-fichier");
   };
   const handlePreviousClick = () => {
     navigate("/guide-gingivectomie", { state: { fromSelectedItems: true } });
@@ -548,15 +561,15 @@ const SelectedItemsPageGging = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                       <AlertDialogHeader>
-                          <AlertDialogTitle>
+                      <AlertDialogTitle>
                             {language === "french"
                               ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela archivera le cas."
-                              : "This will archive the case."}
+                          {language === "french"
+                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -589,15 +602,15 @@ const SelectedItemsPageGging = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                       <AlertDialogHeader>
-                          <AlertDialogTitle>
+                      <AlertDialogTitle>
                           {language === "french"
                             ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
                             : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {language === "french"
-                              ? "Cela soumettra le cas."
-                              : "This will submit the case."}
+                          {language === "french"
+                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
