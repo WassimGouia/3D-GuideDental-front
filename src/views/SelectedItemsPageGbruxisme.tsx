@@ -181,14 +181,14 @@ const SelectedItemsPageGbruxisme = () => {
           title: "les options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
+              title: "Formlabs® impression",
               active: second,
               Guide_supplementaire: additionalGuidess,
             },
           ],
           Suppression_numerique_de_dents: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: first,
               description: textareaValu,
             },
@@ -274,14 +274,14 @@ const SelectedItemsPageGbruxisme = () => {
           title: "les options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
+              title: "Formlabs® impression",
               active: second,
               Guide_supplementaire: additionalGuidess,
             },
           ],
           Suppression_numerique_de_dents: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: first,
               description: textareaValu,
             },

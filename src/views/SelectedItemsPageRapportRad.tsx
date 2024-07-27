@@ -523,7 +523,7 @@ const SelectedItemsPageRapportRad = () => {
                     <AlertDialogTrigger asChild>
                       <a className="text-blue-600 underline cursor-pointer">
                         {language === "french"
-                          ? "énoncée ici."
+                          ? "ici."
                           : "stated here."}
                       </a>
                     </AlertDialogTrigger>

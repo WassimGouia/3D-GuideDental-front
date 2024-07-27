@@ -490,7 +490,7 @@ const GouttiereBruxismes = () => {
                                       }}
                                       checked={first}
                                     />
-                                    <FormLabel
+                                    <p
                                       className={cn(
                                         form.formState.errors.digitalExtraction
                                           ? "text-red-500"
@@ -500,7 +500,7 @@ const GouttiereBruxismes = () => {
                                       {language === "french"
                                         ? "Suppression numérique de dents"
                                         : "Digital extraction of teeth"}
-                                    </FormLabel>
+                                    </p>
                                   </div>
                                   {first && (
                                     <FormControl>

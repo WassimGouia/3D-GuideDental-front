@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { BEARER } from "@/components/Constant";
 import { useAuthContext } from "@/components/AuthContext";
 import { useLanguage } from "@/components/languageContext";
-import { FileText, Box, Trash, CheckCheck, ThumbsUp, Edit, Factory, Truck, FilePenLineIcon, PaperclipIcon, File, Pencil, Send, SendHorizonal } from "lucide-react";
+import { FileText, Box, Trash, CheckCheck, ThumbsUp, Edit, Factory, Truck, FilePenLineIcon, PaperclipIcon, File, Pencil, Send, SendHorizonal, User, Package, Percent } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -232,7 +232,7 @@ const MesFichier: React.FC = () => {
       if (attributes.produire_expide) return {status:"Cas produit et expédié",message:"Votre cas a été expédié. Si vous ne recevez pas le cas dans un délai de 7 jours ouvrables à compter de la date d'approbation de la production, n'hésitez pas à nous contacter."};
       return {status:"Indéfini",message:""};
     }
-    if(type === "guide-a-etage"){
+    if(type === "guide-a-etages"){
       if (attributes.soumis) return { status: "Soumis", message: "Votre demande de guide à étages a été soumise. Si le résultat ne figure pas sur votre compte dans les 5 jours ouvrés suivant la soumission, veuillez nous contacter." };
       if (attributes.en__cours_de_modification) return {status:"En cours de modification",message:"Votre demande de modification a été enregistrée. Si le résultat ne figure pas sur votre compte dans les 3 jours ouvrés suivant la soumission, veuillez nous contacter."};
     }
@@ -527,7 +527,7 @@ const MesFichier: React.FC = () => {
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
-            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`
           })
           setGuides((prevGuides) =>
             prevGuides.map((g) =>
@@ -549,48 +549,94 @@ const MesFichier: React.FC = () => {
           );
         }
       }else if (guide.type === "autres-services-de-conceptions"){
-        const response = await axios.put(
-          `${endpoint}/${guide.id}`,
-          {
-            data: {
-              En_attente_approbation: false,
-              approuve: true,
-              soumis: false,
-              en__cours_de_modification: false,
-              archive: false,
-              produire_expide: false,
+        if(guide.attributes.service_impression_et_expedition === true){
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: false,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: true,
+              },
             },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"no-reply@3dguidedental.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and shipped".`
+          })
+  
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: false,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: true,
+                    },
+                  }
+                : g
+            )
+          );
+        }else{
+          const response = await axios.put(
+            `${endpoint}/${guide.id}`,
+            {
+              data: {
+                En_attente_approbation: false,
+                approuve: true,
+                soumis: false,
+                en__cours_de_modification: false,
+                archive: false,
+                produire_expide: false,
+              },
             },
-          }
-        );
-        const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
-          email:"no-reply@3dguidedental.com",
-          subject:"Case Status Update",
-          content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
-        })
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+            email:"no-reply@3dguidedental.com",
+            subject:"Case Status Update",
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
+          })
+  
+          setGuides((prevGuides) =>
+            prevGuides.map((g) =>
+              g.id === guide.id
+                ? {
+                    ...g,
+                    attributes: {
+                      ...g.attributes,
+                      En_attente_approbation: false,
+                      approuve: true,
+                      soumis: false,
+                      en__cours_de_modification: false,
+                      archive: false,
+                      produire_expide: false,
+                    },
+                  }
+                : g
+            )
+          );
+        }
 
-        setGuides((prevGuides) =>
-          prevGuides.map((g) =>
-            g.id === guide.id
-              ? {
-                  ...g,
-                  attributes: {
-                    ...g.attributes,
-                    En_attente_approbation: false,
-                    approuve: true,
-                    soumis: false,
-                    en__cours_de_modification: false,
-                    archive: false,
-                    produire_expide: false,
-                  },
-                }
-              : g
-          )
-        );
       }
       else{
         if(guide.attributes.options_generiques[0].Impression_Formlabs[0].active === false){
@@ -658,7 +704,7 @@ const MesFichier: React.FC = () => {
           const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
-            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produce and Ship".`
+            content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`
           })
 
           setGuides((prevGuides) =>
@@ -763,23 +809,27 @@ const MesFichier: React.FC = () => {
           {language === "french" ? "Détails de l'utilisateur" : "User Details"}
         </h2>
         <div className="grid grid-cols-2 gap-2">
-          <p className="text-lg">
+          <p className="text-lg flex space-x-2">
+            <User className="text-yellow-600"/>
             <span className="font-semibold">
               {language === "french" ? "Utilisateur: " : "User: "}
             </span>
-            {user ? user.username : "Loading..."}
+            <span>{user ? user.username : "Loading..."}</span>
+
           </p>
-          <p>
+          <p className="text-lg flex space-x-2">
+          <Package className="text-yellow-600" />
             <span className="font-semibold">
               {language === "french" ? "Offre actuelle: " : "Current offer: "}
             </span>
-            {currentOffer ? currentOffer.currentPlan : "Loading..."}
+            <span>            {currentOffer ? currentOffer.currentPlan : "Loading..."}</span>
           </p>
-          <p>
+          <p className="text-lg flex space-x-2">
+          <Percent className="text-yellow-600" />
             <span className="font-semibold">
               {language === "french" ? "Réduction: " : "Discount: "}
             </span>
-            {currentOffer ? `${currentOffer.discount}%` : "Loading..."}
+            <span>            {currentOffer ? `${currentOffer.discount}%` : "Loading..."}</span>
           </p>
         </div>
       </div>
@@ -1014,7 +1064,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "submitted"}`}>
+                            : "Submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1276,7 +1326,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "submitted"}`}>
+                            : "Submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1419,7 +1469,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "submitted"}`}>
+                            : "Submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>
@@ -1646,7 +1696,7 @@ const MesFichier: React.FC = () => {
                         {guide.attributes.soumis && (
                           <Tooltip content={`${language === "french"
                             ? "Soumis"
-                            : "submitted"}`}>
+                            : "Submitted"}`}>
                             <div className="relative">
                               <CheckCheck className="text-gray-400 cursor-pointer w-6 h-6 animate-check" />
                             </div>

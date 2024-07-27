@@ -68,6 +68,8 @@ const SelectedItemsPageGclassique = () => {
     selectedItemsData.additionalGuidesImpression;
   const additionalGuidesClavettess =
     selectedItemsData.additionalGuidesClavettes;
+    const showStabilizationPins =
+    selectedItemsData.showStabilizationPins;
     const originalCost =
     location.state.selectedItemsData.originalCost;
 
@@ -170,35 +172,35 @@ const SelectedItemsPageGclassique = () => {
       numero_cas: patientData.caseNumber,
       Full_guidee: [
         {
-          title: "Full guidée",
+          titlle: "Fully guided",
           active: fullGuide,
         },
       ],
       Forage_pilote: [
         {
-          title: "Forage pilote",
+          title: "Pilot drilling",
           active: foragePilote,
         },
       ],
       Marque_de_la_trousse: [
         {
-          title: "Marque de la trousse de chirurgie utilisée",
-          description: brandSurgeonKit,
+          title: "Brand of the surgical kit used",
+          description: brandSurgeon,
         },
       ],
       options_generiques: [
         {
-          title: "Options génériques",
+          title: "options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
-              active: ImpressionFormlabs, 
+              title: "Formlabs® impression",
+              active: ImpressionFormlabs,
               Guide_supplementaire: additionalGuidesImpressionn,
             },
           ],
           Suppression_numerique: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: Suppressionnumérique,
               description: textareaValu,
             },
@@ -213,7 +215,8 @@ const SelectedItemsPageGclassique = () => {
       ],
       Clavettes_de_stabilisation: [
         {
-          title: "Clavettes de stabilisation",
+          title: "Stabilization pins",
+          active:showStabilizationPins,
           nombre_des_clavettes: additionalGuidesClavettess,
         },
       ],
@@ -319,19 +322,19 @@ const SelectedItemsPageGclassique = () => {
       numero_cas: patientData.caseNumber,
       Full_guidee: [
         {
-          titlle: "Full guidée",
+          titlle: "Fully guided",
           active: fullGuide,
         },
       ],
       Forage_pilote: [
         {
-          title: "forage pilote",
+          title: "Pilot drilling",
           active: foragePilote,
         },
       ],
       Marque_de_la_trousse: [
         {
-          title: "Marque de la trousse de chirurgie utilisée",
+          title: "Brand of the surgical kit used",
           description: brandSurgeon,
         },
       ],
@@ -340,14 +343,14 @@ const SelectedItemsPageGclassique = () => {
           title: "options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
+              title: "Formlabs® impression",
               active: ImpressionFormlabs,
               Guide_supplementaire: additionalGuidesImpressionn,
             },
           ],
           Suppression_numerique: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: Suppressionnumérique,
               description: textareaValu,
             },
@@ -362,7 +365,8 @@ const SelectedItemsPageGclassique = () => {
       ],
       Clavettes_de_stabilisation: [
         {
-          title: "Clavettes de stabilisation",
+          title: "Stabilization pins",
+          active:showStabilizationPins,
           nombre_des_clavettes: additionalGuidesClavettess,
         },
       ],

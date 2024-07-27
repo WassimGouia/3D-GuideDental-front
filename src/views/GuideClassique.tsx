@@ -78,6 +78,8 @@ const GuideClassique = () => {
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
+  console.log("mmmmmmmmmmmmmmmmmmmmmm:",showStabilizationPins)
+
   const formSchema = z
     .object({
       selectedTeeth: z
@@ -539,6 +541,7 @@ const GuideClassique = () => {
       smileDesign: first,
       digitalExtraction: values.digitalExtraction,
       formlabsImpression: additionalGuidesImpression,
+      showStabilizationPins:showStabilizationPins
     };
 
     localStorage.setItem("guideClassiqueState", JSON.stringify(yourData));
@@ -550,6 +553,7 @@ const GuideClassique = () => {
           first: first,
           second: second,
           third: third,
+          showStabilizationPins:showStabilizationPins,
           showAdditionalGuidesInput: showAdditionalGuidesInput,
           implantBrandValues: values.implantBrandValues,
           implantBrandInputs: implantBrandInputs,
@@ -973,7 +977,7 @@ const GuideClassique = () => {
                                     }}
                                     checked={showDigitalExtraction}
                                   />
-                                  <FormLabel
+                                  <p
                                     className={cn(
                                       form.formState.errors.digitalExtraction
                                         ? "text-red-500"
@@ -983,7 +987,7 @@ const GuideClassique = () => {
                                     {language === "french"
                                       ? "Suppression numérique de dents"
                                       : "Digital extraction of teeth"}
-                                  </FormLabel>
+                                  </p>
                                 </div>
                                 {showDigitalExtraction && (
                                   <FormControl>

@@ -188,6 +188,7 @@ const SelectedItemsPageAutreService = () => {
           },
         }
       );
+      navigate("/mes-fichier")
 
     } catch (error) {
       console.error("Error submitting quote request:", error);
@@ -484,7 +485,7 @@ const SelectedItemsPageAutreService = () => {
                   <AlertDialogHeader>
                   <AlertDialogTitle>
                     {language === "french"
-                      ? "Êtes-vous sûr de vouloir demander un devis pour cas ?"
+                      ? "Êtes-vous sûr de vouloir demander un devis pour ce cas ?"
                       : "Are you sure you want to request a quote for this case?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>

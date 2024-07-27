@@ -237,24 +237,24 @@ const SelectedItemsPageGETAGE = () => {
       ],
       Options_supplementaires: [
         {
-          title: "Mise en charge immédiate",
+          title: "Immediate loading",
           active: immediateLoad,
         },
         {
-          title: "Impression des 2 étages en résine",
+          title: "Resin impression of both guide parts",
           active: secondSwitch,
         },
         {
           title:
-            "Impression du premier étage en métal + deuxième étage en résine",
+            "Metal impression of first part + Resin impression of second part",
           active: thirdSwitch,
         },
         {
-          title: "Impression des 2 étages en métal",
+          title: "Metal impression of both guide parts",
           active: fourthSwitch,
         },
         {
-          title: "Ajout d'aimants pour solidariser les étages",
+          title: "Addition of magnets to secure the parts",
           active: fifthSwitch,
         },
       ],
@@ -361,24 +361,24 @@ const SelectedItemsPageGETAGE = () => {
       ],
       Options_supplementaires: [
         {
-          title: "Mise en charge immédiate",
+          title: "Immediate loading",
           active: immediateLoad,
         },
         {
-          title: "Impression des 2 étages en résine",
+          title: "Resin impression of both guide parts",
           active: secondSwitch,
         },
         {
           title:
-            "Impression du premier étage en métal + deuxième étage en résine",
+            "Metal impression of first part + Resin impression of second part",
           active: thirdSwitch,
         },
         {
-          title: "Impression des 2 étages en métal",
+          title: "Metal impression of both guide parts",
           active: fourthSwitch,
         },
         {
-          title: "Ajout d'aimants pour solidariser les étages",
+          title: "Addition of magnets to secure the parts",
           active: fifthSwitch,
         },
       ],

@@ -11,11 +11,11 @@ const DescriptionTemplate = ({ title, description, imgSrc, link }) => {
   const { language } = useLanguage();
 
   return (
-    <div className="font-mono">
+    <div className="">
       <div className="mt-4 flex-col p-5">
-        <h1 className="font-extrabold text-2xl">{title}</h1>
+        <h1 className="font-extrabold font-mono text-2xl">{title}</h1>
         <br />
-        <p>{description}</p>
+        <p className="font-mono">{description}</p>
         <br />
         <img src={imgSrc} className="h-auto w-80" />
       </div>
@@ -24,7 +24,7 @@ const DescriptionTemplate = ({ title, description, imgSrc, link }) => {
             <button className="w-32 h-auto gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all mb-9">
               {language === "french" ? "Suivant" : "Next"}
             </button>
-          </Link>
+          </Link> 
         </div>
     </div>
   );

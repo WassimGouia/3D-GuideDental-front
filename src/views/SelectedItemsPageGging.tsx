@@ -186,14 +186,14 @@ const SelectedItemsPageGging = () => {
           title: "options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
+              title: "Formlabs® impression",
               active: ImpressionFormlabs,
               Guide_supplementaire: additionalGuidess,
             },
           ],
           Suppression_numerique: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: supressionumerique,
               description: textareaValu,
             },
@@ -298,14 +298,14 @@ const SelectedItemsPageGging = () => {
           title: "options generiques",
           Impression_Formlabs: [
             {
-              title: "Impression Formlabs",
+              title: "Formlabs® impression",
               active: ImpressionFormlabs,
               Guide_supplementaire: additionalGuidess,
             },
           ],
           Suppression_numerique: [
             {
-              title: "Suppression numérique de dents",
+              title: "Digital extraction of teeth",
               active: supressionumerique,
               description: textareaValu,
             },
