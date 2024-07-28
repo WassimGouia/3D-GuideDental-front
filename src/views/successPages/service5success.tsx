@@ -15,7 +15,7 @@ const Service5Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://localhost:1337/api/confirm-payment-autre-service`, {
+      fetch(`http://92.222.101.80:1337/api/confirm-payment-autre-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -15,7 +15,7 @@ const Service6Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://localhost:1337/api/confirm-payment-rapport-radiologique`, {
+      fetch(`http://92.222.101.80:1337/api/confirm-payment-rapport-radiologique`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

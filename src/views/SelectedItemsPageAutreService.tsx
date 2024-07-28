@@ -97,7 +97,7 @@ const SelectedItemsPageAutreService = () => {
     if (token && user && user.id) {
       try {
         const userResponse = await axios.get(
-          `http://localhost:1337/api/users/${user.id}?populate=offre`,
+          `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (userResponse.data && userResponse.data.offre) {
@@ -179,7 +179,7 @@ const SelectedItemsPageAutreService = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/autres-services-de-conceptions",
+        "http://92.222.101.80:1337/api/autres-services-de-conceptions",
         formData,
         {
           headers: {
@@ -238,7 +238,7 @@ const SelectedItemsPageAutreService = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/autres-services-de-conceptions",
+        "http://92.222.101.80:1337/api/autres-services-de-conceptions",
         formData,
         {
           headers: {

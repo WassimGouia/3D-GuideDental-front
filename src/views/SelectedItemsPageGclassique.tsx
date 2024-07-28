@@ -111,7 +111,7 @@ const SelectedItemsPageGclassique = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -243,7 +243,7 @@ const SelectedItemsPageGclassique = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/guide-classiques",
+        "http://92.222.101.80:1337/api/guide-classiques",
         formData,
         {
           headers: {
@@ -273,7 +273,7 @@ const SelectedItemsPageGclassique = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/commandes",
+        "http://92.222.101.80:1337/api/commandes",
         requestData,
         {
           headers: {
@@ -301,7 +301,7 @@ const SelectedItemsPageGclassique = () => {
   };
 
   useEffect(() => {
-    axios.get("http://localhost:1337/api/services").then(() => {});
+    axios.get("http://92.222.101.80:1337/api/services").then(() => {});
   }, []);
 
   const handleNextClickArchive = async () => {
@@ -391,7 +391,7 @@ const SelectedItemsPageGclassique = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/guide-classiques",
+        "http://92.222.101.80:1337/api/guide-classiques",
         formData,
         {
           headers: {

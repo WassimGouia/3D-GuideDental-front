@@ -44,7 +44,7 @@ const ResetPassword = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/auth/reset-password",
+        "http://92.222.101.80:1337/api/auth/reset-password",
         {
           code: token,
           password,

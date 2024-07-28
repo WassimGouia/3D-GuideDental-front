@@ -118,7 +118,7 @@ const SelectedItemsPageGbruxisme = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -215,7 +215,7 @@ const SelectedItemsPageGbruxisme = () => {
     }
     try {
       const res = await axios.post(
-        "http://localhost:1337/api/gouttiere-de-bruxismes",
+        "http://92.222.101.80:1337/api/gouttiere-de-bruxismes",
         formData,
         {
           headers: {
@@ -235,7 +235,7 @@ const SelectedItemsPageGbruxisme = () => {
 
       const stripe = await stripePromise;
       const response = await axios.post(
-        "http://localhost:1337/api/commandes",
+        "http://92.222.101.80:1337/api/commandes",
         requestData,
         {
           headers: {
@@ -308,7 +308,7 @@ const SelectedItemsPageGbruxisme = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:1337/api/gouttiere-de-bruxismes",
+        "http://92.222.101.80:1337/api/gouttiere-de-bruxismes",
         formData,
         {
           headers: {

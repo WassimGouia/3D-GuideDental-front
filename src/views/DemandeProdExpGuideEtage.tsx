@@ -102,7 +102,7 @@ const DemandeProdExpGuideEtage: React.FC = () => {
     try {
       const stripe = await stripePromise;
       const response = await axios.post(
-        "http://localhost:1337/api/demande-produire-et-expide-guide-etages",
+        "http://92.222.101.80:1337/api/demande-produire-et-expide-guide-etages",
         requestData,
         { headers: getAuthHeaders() }
       );

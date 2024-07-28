@@ -23,7 +23,7 @@ const Service7Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://localhost:1337/api/confirm-payment-produire-et-expidee`, {
+      fetch(`http://92.222.101.80:1337/api/confirm-payment-produire-et-expidee`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const Service7Success = () => {
 
       try {
         const response = await axios.put(
-          `http://localhost:1337/api/${guideType}/${guideId}`,
+          `http://92.222.101.80:1337/api/${guideType}/${guideId}`,
           statusUpdateData,
           { headers: getAuthHeaders() }
         );

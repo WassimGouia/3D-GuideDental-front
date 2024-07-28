@@ -53,7 +53,7 @@ function Nouvellemodd() {
           try {
             // Fetch user data including the offer
             const userResponse = await axios.get(
-              `http://localhost:1337/api/users/${user.id}?populate=offre`,
+              `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

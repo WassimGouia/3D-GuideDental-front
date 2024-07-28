@@ -12,7 +12,7 @@ const AuthProvider = ({ children }) => {
   const fetchLoggedInUser = async (token) => {
     try {
       const response = await fetch(
-        `http://localhost:1337/api/users/me?populate=*`,
+        `http://92.222.101.80:1337/api/users/me?populate=*`,
         {
           headers: { Authorization: `${BEARER} ${token}` },
         }

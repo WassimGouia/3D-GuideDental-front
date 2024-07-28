@@ -29,7 +29,7 @@ function Login() {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/auth/local",
+        "http://92.222.101.80:1337/api/auth/local",
         { identifier, password }
       );
       setToken(response.data.jwt);

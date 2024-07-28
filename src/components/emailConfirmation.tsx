@@ -22,7 +22,7 @@ const EmailConfirmation = () => {
 
     try {
       const response = await axios.get(
-        `http://localhost:1337/api/auth/email-confirmation?confirmation=${code}`
+        `http://92.222.101.80:1337/api/auth/email-confirmation?confirmation=${code}`
       );
 
       if (response.status === 200) {

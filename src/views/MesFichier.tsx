@@ -106,7 +106,7 @@ const MesFichier: React.FC = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:1337/api/users/${user.id}?populate=offre`,
+          `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -164,7 +164,7 @@ const MesFichier: React.FC = () => {
       const responses = await Promise.all(
         guideTypes.map((type) =>
           axios.get(
-            `http://localhost:1337/api/${type}?filters[user][id][$eq]=${user.id}&populate[options_generiques][populate]=*&populate[service]=*&populate[pdfFile]=*&populate[model3d]=*&populate[user]=*&populate[Options_supplementaires]=*`,
+            `http://92.222.101.80:1337/api/${type}?filters[user][id][$eq]=${user.id}&populate[options_generiques][populate]=*&populate[service]=*&populate[pdfFile]=*&populate[model3d]=*&populate[user]=*&populate[Options_supplementaires]=*`,
             { headers }
           )
         )
@@ -193,7 +193,7 @@ const MesFichier: React.FC = () => {
     try {
 
       const responses = await axios.get(
-            `http://localhost:1337/api/services`,
+            `http://92.222.101.80:1337/api/services`,
           )
         
       setServices(responses.data.data);
@@ -287,17 +287,17 @@ const MesFichier: React.FC = () => {
   const getEndpoint = (guideType: string): string => {
     switch (guideType) {
       case "guide-pour-gingivectomies":
-        return "http://localhost:1337/api/guide-pour-gingivectomies";
+        return "http://92.222.101.80:1337/api/guide-pour-gingivectomies";
       case "gouttiere-de-bruxismes":
-        return "http://localhost:1337/api/gouttiere-de-bruxismes";
+        return "http://92.222.101.80:1337/api/gouttiere-de-bruxismes";
       case "guide-a-etages":
-        return "http://localhost:1337/api/guide-a-etages";
+        return "http://92.222.101.80:1337/api/guide-a-etages";
       case "guide-classiques":
-        return "http://localhost:1337/api/guide-classiques";
+        return "http://92.222.101.80:1337/api/guide-classiques";
       case "autres-services-de-conceptions":
-        return "http://localhost:1337/api/autres-services-de-conceptions";
+        return "http://92.222.101.80:1337/api/autres-services-de-conceptions";
       case "rapport-radiologiques":
-        return "http://localhost:1337/api/rapport-radiologiques";
+        return "http://92.222.101.80:1337/api/rapport-radiologiques";
       default:
         throw new Error("Unknown guide type: " + guideType);
     }
@@ -325,7 +325,7 @@ const MesFichier: React.FC = () => {
         }
       );
 
-      const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+      const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
         email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${guide.attributes.numero_cas} has requested a quote.`,
@@ -393,7 +393,7 @@ const MesFichier: React.FC = () => {
       try {
         const stripe = await stripePromise;
         const response = await axios.post(
-          "http://localhost:1337/api/commandes",
+          "http://92.222.101.80:1337/api/commandes",
           requestData
         );
         const { error } = await stripe.redirectToCheckout({
@@ -435,7 +435,7 @@ const MesFichier: React.FC = () => {
       try {
         const stripe = await stripePromise;
         const response = await axios.post(
-          "http://localhost:1337/api/demande-produire-et-expidees",
+          "http://92.222.101.80:1337/api/demande-produire-et-expidees",
           requestData
         );
         const { error } = await stripe.redirectToCheckout({
@@ -482,7 +482,7 @@ const MesFichier: React.FC = () => {
             }
           );
           //guide.attributes.user.data.attributes.email
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -524,7 +524,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`
@@ -568,7 +568,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and shipped".`
@@ -611,7 +611,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -658,7 +658,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -701,7 +701,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("http://localhost:1337/api/sendEmailToNotify",{
+          const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`
@@ -1837,7 +1837,7 @@ const MesFichier: React.FC = () => {
                       <div className="flex flex-col items-center">
                         {guide.attributes.pdfFile?.data?.attributes?.url ? (
                           <a
-                            href={`http://localhost:1337${guide.attributes.pdfFile.data.attributes.url}`}
+                            href={`http://92.222.101.80:1337${guide.attributes.pdfFile.data.attributes.url}`}
                             download
                             target="_blank"
                             className="text-blue-500 hover:text-blue-700"
@@ -1858,7 +1858,7 @@ const MesFichier: React.FC = () => {
                         <div className="flex flex-col items-center">
                           {guide.attributes.model3d?.data?.attributes?.url ? (
                             <a
-                              href={`http://localhost:1337${guide.attributes.model3d.data.attributes.url}`}
+                              href={`http://92.222.101.80:1337${guide.attributes.model3d.data.attributes.url}`}
                               download
                               className="text-blue-500 hover:text-blue-700"
                               title="Download 3D Model"
