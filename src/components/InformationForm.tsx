@@ -254,7 +254,7 @@ const InformationForm = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:1337/api/auth/local/register",
+        "http://92.222.101.80:1337/api/auth/local/register",
         fullData
       );
 
