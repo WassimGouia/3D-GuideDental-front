@@ -186,7 +186,7 @@ const InformationForm = () => {
 
   ): Promise<boolean> => {
     try {
-      const apiKey = "4162a7aed427453e92950ab11b7c318d"; // process.env.GEOAPIFY_API;
+      const apiKey = import.meta.env.VITE_GEOAPIFY_API; // process.env.GEOAPIFY_API;
       const addressUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
         address
       )}&apiKey=${apiKey}`;

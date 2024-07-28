@@ -45,7 +45,7 @@ const DemandeProdExpGuideEtage: React.FC = () => {
     location.state;
     const { user } = useAuthContext();
     const stripePromise = loadStripe(
-      "pk_test_51P7FeV2LDy5HINSgFRIn3T8E8B3HNESuLslHURny1RAImgxfy0VV9nRrTEpmlSImYA55xJWZQEOthTLzabxrVDLl00vc2xFyDt"
+      import.meta.env.VITE_STRIPE_API
     );
     const getDiscount = (plan) => {
       const discounts = {
