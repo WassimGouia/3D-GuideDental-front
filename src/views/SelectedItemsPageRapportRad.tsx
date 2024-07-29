@@ -199,6 +199,25 @@ const SelectedItemsPageRapportRad = () => {
     }
 
     try {
+
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
+
+
       const response = await axios.post(
         `${apiUrl}/rapport-radiologiques`,
         formData,
@@ -239,6 +258,7 @@ const SelectedItemsPageRapportRad = () => {
       }
     } catch (err) {
       console.error("Error submitting report or processing payment:", err);
+      alert("Case already exists")
     }
   };
 
@@ -275,6 +295,25 @@ const SelectedItemsPageRapportRad = () => {
     }
 
     try {
+
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
+
+
       const response = await axios.post(
         `${apiUrl}/rapport-radiologiques`,
         formData,
@@ -296,6 +335,8 @@ const SelectedItemsPageRapportRad = () => {
           ? "Erreur lors de l'archivage du rapport"
           : "Error archiving report"
       );
+
+      alert("Case already exists")
     }
   };
 

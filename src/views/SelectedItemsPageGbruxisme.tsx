@@ -215,6 +215,23 @@ const SelectedItemsPageGbruxisme = () => {
       formData.append("files.User_Upload", file, file.name);
     }
     try {
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
+
       const res = await axios.post(
         `${apiUrl}/gouttiere-de-bruxismes`,
         formData,
@@ -308,6 +325,22 @@ const SelectedItemsPageGbruxisme = () => {
     }
 
     try {
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
       const res = await axios.post(
         `${apiUrl}/gouttiere-de-bruxismes`,
         formData,
@@ -327,6 +360,7 @@ const SelectedItemsPageGbruxisme = () => {
       }
     } catch (err) {
       console.error(err);
+      alert('Case already exists');
     }
   };
 

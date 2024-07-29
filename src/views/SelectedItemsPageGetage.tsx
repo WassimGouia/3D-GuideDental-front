@@ -157,7 +157,7 @@ const SelectedItemsPageGETAGE = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `apiUrl/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -280,6 +280,22 @@ const SelectedItemsPageGETAGE = () => {
       formData.append("files.User_Upload", data.file, data.file.name);
     }
 
+    const checkRes = await axios.post(
+      `${apiUrl}/checkCaseNumber`,
+      { caseNumber: patientData.caseNumber },
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      }
+    );
+
+    if (checkRes.data.exists) {
+      alert('Case number already exists');
+      return;
+    }
+
+
     try {
       const response = await axios.post(
         `${apiUrl}/guide-a-etages`,
@@ -295,6 +311,7 @@ const SelectedItemsPageGETAGE = () => {
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide etage data:", error);
+      alert('Case already exists')
     }
   };
 
@@ -409,6 +426,22 @@ const SelectedItemsPageGETAGE = () => {
     }
 
     try {
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
       const response = await axios.post(
         `${apiUrl}/guide-a-etages`,
         formData,
@@ -425,6 +458,7 @@ const SelectedItemsPageGETAGE = () => {
       navigate("/mes-fichier")
     } catch (error) {
       console.error("Error archiving guide etage data:", error);
+      alert('case already exist')
     }
   };
 

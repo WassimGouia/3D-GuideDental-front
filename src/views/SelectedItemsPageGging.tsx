@@ -226,6 +226,24 @@ const SelectedItemsPageGging = () => {
       formData.append("files.User_Upload", file, file.name);
     }
     try {
+     
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
+
+
       const response = await axios.post(
         `${apiUrl}/guide-pour-gingivectomies`,
         formData,
@@ -241,6 +259,7 @@ const SelectedItemsPageGging = () => {
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide pour gingivectomie data:", error);
+      alert("Case already exists")
     }
   };
 
@@ -338,6 +357,25 @@ const SelectedItemsPageGging = () => {
       formData.append("files.User_Upload", file, file.name);
     }
     try {
+
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
+
+
       const response = await axios.post(
         `${apiUrl}/guide-pour-gingivectomies`,
         formData,
@@ -352,6 +390,7 @@ const SelectedItemsPageGging = () => {
       console.log("Data saved successfully:", response.data);
     } catch (error) {
       console.error("Error saving guide pour gingivectomie data:", error);
+      alert("case already exists")
     }
 
       localStorage.clear();

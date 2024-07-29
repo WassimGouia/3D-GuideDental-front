@@ -245,6 +245,21 @@ const SelectedItemsPageGclassique = () => {
       formData.append("files.User_Upload", file, file.name);
     }
 
+    const checkRes = await axios.post(
+      `${apiUrl}/checkCaseNumber`,
+      { caseNumber: patientData.caseNumber },
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      }
+    );
+
+    if (checkRes.data.exists) {
+      alert('Case number already exists');
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${apiUrl}/guide-classiques`,
@@ -262,6 +277,7 @@ const SelectedItemsPageGclassique = () => {
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide classique data:", error);
+      alert("Case already exists")
     }
   };
 
@@ -389,6 +405,23 @@ const SelectedItemsPageGclassique = () => {
       formData.append("files.User_Upload", file, file.name);
     }
 
+
+    const checkRes = await axios.post(
+      `${apiUrl}/checkCaseNumber`,
+      { caseNumber: patientData.caseNumber },
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      }
+    );
+
+    if (checkRes.data.exists) {
+      alert('Case number already exists');
+      return;
+    }
+
+
     try {
       const response = await axios.post(
         `${apiUrl}/guide-classiques`,
@@ -404,6 +437,7 @@ const SelectedItemsPageGclassique = () => {
       console.log("Data saved successfully:", response.data);
     } catch (error) {
       console.error("Error saving guide classique data:", error);
+      alert("Case already exists")
     }
 
     localStorage.clear();

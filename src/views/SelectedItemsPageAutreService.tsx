@@ -179,6 +179,23 @@ const SelectedItemsPageAutreService = () => {
     formData.append("files.User_Upload", fileData);
 
     try {
+
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
       const response = await axios.post(
         `${apiUrl}/autres-services-de-conceptions`,
         formData,
@@ -198,6 +215,7 @@ const SelectedItemsPageAutreService = () => {
           ? "Erreur lors de la soumission de la demande de devis"
           : "Error submitting quote request"
       );
+      alert("Case already exists")
     }
   };
 
@@ -238,6 +256,23 @@ const SelectedItemsPageAutreService = () => {
     formData.append("files.User_Upload", fileData);
 
     try {
+
+
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        }
+      );
+  
+      if (checkRes.data.exists) {
+        alert('Case number already exists');
+        return;
+      }
+
       const response = await axios.post(
         `${apiUrl}/autres-services-de-conceptions`,
         formData,
@@ -262,6 +297,9 @@ const SelectedItemsPageAutreService = () => {
           ? "Erreur lors de l'archivage du service"
           : "Error archiving service"
       );
+
+      alert("Case already exists")
+
     }
   };
 
