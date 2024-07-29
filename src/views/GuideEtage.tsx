@@ -205,7 +205,7 @@ const GuideEtage = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
+              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

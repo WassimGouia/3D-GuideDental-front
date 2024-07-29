@@ -126,7 +126,7 @@ const SelectedItemsPageRapportRad = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `http://92.222.101.80:1337/api/users/${user.id}?populate=offre`,
+              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -199,7 +199,7 @@ const SelectedItemsPageRapportRad = () => {
 
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/rapport-radiologiques",
+        "https://admin.3dguidedental.com/api/rapport-radiologiques",
         formData,
         {
           headers: {
@@ -222,7 +222,7 @@ const SelectedItemsPageRapportRad = () => {
 
       const stripe = await stripePromise;
       const paymentResponse = await axios.post(
-        "http://92.222.101.80:1337/api/commandes",
+        "https://admin.3dguidedental.com/api/commandes",
         requestData,
         {
           headers: {
@@ -275,7 +275,7 @@ const SelectedItemsPageRapportRad = () => {
 
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/rapport-radiologiques",
+        "https://admin.3dguidedental.com/api/rapport-radiologiques",
         formData,
         {
           headers: {

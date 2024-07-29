@@ -22,7 +22,7 @@ const EmailConfirmation = () => {
 
     try {
       const response = await axios.get(
-        `http://92.222.101.80:1337/api/auth/email-confirmation?confirmation=${code}`
+        `https://admin.3dguidedental.com/api/auth/email-confirmation?confirmation=${code}`
       );
 
       if (response.status === 200) {

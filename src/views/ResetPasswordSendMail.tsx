@@ -19,7 +19,7 @@ const ResetPasswordSendMail = () => {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/auth/forgot-password",
+        "https://admin.3dguidedental.com/api/auth/forgot-password",
         {
           email,
         },

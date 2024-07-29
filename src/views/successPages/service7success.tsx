@@ -23,7 +23,7 @@ const Service7Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://92.222.101.80:1337/api/confirm-payment-produire-et-expidee`, {
+      fetch(`https://admin.3dguidedental.com/api/confirm-payment-produire-et-expidee`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const Service7Success = () => {
 
       try {
         const response = await axios.put(
-          `http://92.222.101.80:1337/api/${guideType}/${guideId}`,
+          `https://admin.3dguidedental.com/api/${guideType}/${guideId}`,
           statusUpdateData,
           { headers: getAuthHeaders() }
         );

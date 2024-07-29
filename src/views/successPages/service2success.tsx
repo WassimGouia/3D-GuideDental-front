@@ -15,7 +15,7 @@ const Service2Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://92.222.101.80:1337/api/confirm-payment-guide-classique`, {
+      fetch(`https://admin.3dguidedental.com/api/confirm-payment-guide-classique`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -65,7 +65,7 @@ const DemandeProdExpAutreGuides = () => {
     try {
       const stripe = await stripePromise;
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/demande-produire-et-expidees",
+        "https://admin.3dguidedental.com/api/demande-produire-et-expidees",
         requestData
       );
       const { error } = await stripe.redirectToCheckout({

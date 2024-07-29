@@ -23,7 +23,7 @@ function Nouvelled() {
 
   const handleOnClick = async () => {
     try {
-      const res = await axios.post("http://92.222.101.80:1337/api/patients", {
+      const res = await axios.post("https://admin.3dguidedental.com/api/patients", {
         data: {
           fullname: patientName,
           caseNumber: generateRandomNumber(),

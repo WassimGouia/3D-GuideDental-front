@@ -254,7 +254,7 @@ const InformationForm = () => {
 
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/auth/local/register",
+        "https://admin.3dguidedental.com/api/auth/local/register",
         fullData
       );
 

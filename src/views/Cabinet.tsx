@@ -135,7 +135,7 @@ const Cabinet = () => {
       if (confirmationToken) {
         try {
           await axios.get(
-            `http://92.222.101.80:1337/api/auth/email-confirmation?confirmation=${confirmationToken}`
+            `https://admin.3dguidedental.com/api/auth/email-confirmation?confirmation=${confirmationToken}`
           );
           alert("Email confirmed successfully!");
           setEmailVerified(true);
@@ -153,7 +153,7 @@ const Cabinet = () => {
   const resendVerificationEmail = async () => {
     try {
       await axios.post(
-        "http://92.222.101.80:1337/api/auth/send-email-confirmation",
+        "https://admin.3dguidedental.com/api/auth/send-email-confirmation",
         {
           email: user.email,
         }
@@ -172,7 +172,7 @@ const Cabinet = () => {
     try {
       const token = getToken();
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/auth/change-password",
+        "https://admin.3dguidedental.com/api/auth/change-password",
         {
           password: data.newPassword,
           currentPassword: data.currentPassword,

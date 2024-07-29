@@ -29,7 +29,7 @@ function Login() {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/auth/local",
+        "https://admin.3dguidedental.com/api/auth/local",
         { identifier, password }
       );
       setToken(response.data.jwt);

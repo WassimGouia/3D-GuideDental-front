@@ -21,7 +21,7 @@ const Service8Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`http://92.222.101.80:1337/api/demande-produire-et-expide-guide-etage`, {
+      fetch(`https://admin.3dguidedental.com/api/demande-produire-et-expide-guide-etage`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ const Service8Success = () => {
   
       try {
         const response = await axios.put(
-          `http://92.222.101.80:1337/api/${guideType}/${guideId}`,
+          `https://admin.3dguidedental.com/api/${guideType}/${guideId}`,
           statusUpdateData,
           { headers: getAuthHeaders() }
         );

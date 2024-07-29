@@ -29,7 +29,7 @@ const Nouvmod = () => {
   const fetchModificationData = async () => {
     try {
       const response = await axios.get(
-        'http://92.222.101.80:1337/api/demande-de-modifications',
+        'https://admin.3dguidedental.com/api/demande-de-modifications',
         {
           params: { 'filters[caseNumber][$eq]': caseNumber },
           headers: getAuthHeaders(),
@@ -57,12 +57,12 @@ const Nouvmod = () => {
 
     try {
       const response = await axios.put(
-        `http://92.222.101.80:1337/api/${guideType}/${guideId}`,
+        `https://admin.3dguidedental.com/api/${guideType}/${guideId}`,
         statusUpdateData,
         { headers: getAuthHeaders() }
       );
       console.log("Update response:", response);
-      const em = await axios.post("http://92.222.101.80:1337/api/sendEmailToNotify",{
+      const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
         email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${caseNumber} has requested a modification.`,
@@ -88,7 +88,7 @@ const Nouvmod = () => {
 
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/demande-de-modifications",
+        "https://admin.3dguidedental.com/api/demande-de-modifications",
         { data: postData },
         { headers: getAuthHeaders() }
       );

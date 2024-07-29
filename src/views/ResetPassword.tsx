@@ -44,7 +44,7 @@ const ResetPassword = () => {
 
     try {
       const response = await axios.post(
-        "http://92.222.101.80:1337/api/auth/reset-password",
+        "https://admin.3dguidedental.com/api/auth/reset-password",
         {
           code: token,
           password,

@@ -12,7 +12,7 @@ const AuthProvider = ({ children }) => {
   const fetchLoggedInUser = async (token) => {
     try {
       const response = await fetch(
-        `http://92.222.101.80:1337/api/users/me?populate=*`,
+        `https://admin.3dguidedental.com/api/users/me?populate=*`,
         {
           headers: { Authorization: `${BEARER} ${token}` },
         }
