@@ -5,6 +5,8 @@ import { BEARER } from "@/components/Constant";
 import { getToken, removeToken } from "@/components/Helpers";
 
 const AuthProvider = ({ children }) => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
+
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authToken, setAuthToken] = useState(getToken());
@@ -12,7 +14,7 @@ const AuthProvider = ({ children }) => {
   const fetchLoggedInUser = async (token) => {
     try {
       const response = await fetch(
-        `https://admin.3dguidedental.com/api/users/me?populate=*`,
+        `${apiUrl}/users/me?populate=*`,
         {
           headers: { Authorization: `${BEARER} ${token}` },
         }

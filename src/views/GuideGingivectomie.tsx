@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const GuideGingivectomie = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const [originalCost, setOriginalCost] = useState(100);
   const [cost, setCost] = useState(100);
@@ -139,7 +140,7 @@ const GuideGingivectomie = () => {
       if (token && user && user.id) {
         try {
           const userResponse = await axios.get(
-            `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+            `${apiUrl}/users/${user.id}?populate=offre`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }

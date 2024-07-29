@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 
 const RapportRadiologique = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState(null);
   const [checkedValues, setCheckedValues] = useState({
@@ -114,7 +115,7 @@ const RapportRadiologique = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -543,65 +544,79 @@ const RapportRadiologique = () => {
                     <div className="w-full">
                       <div className="flex-col w-full font-semibold">
                         <div className="flex space-x-2 ">
-                          <FormField
-                            control={form.control}
-                            name="dob"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel className="text-base font-semibold">
-                                  {language === "french"
-                                    ? "Date de l'examen radiologique:"
-                                    : "Date of radiological examination:"}
-                                </FormLabel>
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <FormControl>
-                                      <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                          "w-[240px] pl-3 text-left font-normal",
-                                          !field.value &&
-                                            "text-muted-foreground"
-                                        )}
-                                      >
-                                        {field.value ? (
-                                          format(field.value, "PPP", {
-                                            locale: fr,
-                                          })
-                                        ) : (
-                                          <span>
-                                            {language === "french"
-                                              ? "JJ/MM/AAAA"
-                                              : "DD/MM/YYYY"}
-                                          </span>
-                                        )}
-                                        <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
-                                      </Button>
-                                    </FormControl>
-                                  </PopoverTrigger>
-                                  <PopoverContent
-                                    className="w-auto p-0"
-                                    align="start"
-                                  >
-                                    <Calendar
-                                      mode="single"
-                                      selected={field.value}
-                                      onSelect={(date) => {
-                                        field.onChange(date);
-                                        setSelectedDate(date);
-                                      }}
-                                      disabled={(date) =>
-                                        date > new Date() ||
-                                        date < new Date("1900-01-01")
-                                      }
-                                      initialFocus
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          <div className="flex space-x-2 items-center">
+                            <FormField
+                              control={form.control}
+                              name="dob"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                  <FormLabel className="text-base font-semibold flex items-center space-x-2">
+                                    {language === "french"
+                                      ? "Date de l'examen radiologique:"
+                                      : "Date of radiological examination:"}
+                                    <HoverCard>
+                                      <HoverCardTrigger asChild>
+                                        <Info className="h-4 w-4 cursor-pointer" />
+                                      </HoverCardTrigger>
+                                      <HoverCardContent className="w-80 bg-gray-200 bg-opacity-95 p-4 rounded-md shadow-lg">
+                                        <p className="text-sm">
+                                          {language === "french"
+                                            ? "Merci d'indiquer la date d'acquisition de l'examen radiologique tridimensionnel. Pour une interprétation radiologique plus précise, il est recommandé que l'examen ait été effectué dans les 6 derniers mois à compter de la date actuelle."
+                                            : "Please indicate the date of acquisition of the three-dimensional radiological examination. For a more accurate radiological interpretation, it is recommended that the examination has been performed within the last 6 months from the current date."}
+                                        </p>
+                                      </HoverCardContent>
+                                    </HoverCard>
+                                  </FormLabel>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <FormControl>
+                                        <Button
+                                          variant={"outline"}
+                                          className={cn(
+                                            "w-[240px] pl-3 text-left font-normal",
+                                            !field.value &&
+                                              "text-muted-foreground"
+                                          )}
+                                        >
+                                          {field.value ? (
+                                            format(field.value, "PPP", {
+                                              locale: fr,
+                                            })
+                                          ) : (
+                                            <span>
+                                              {language === "french"
+                                                ? "JJ/MM/AAAA"
+                                                : "DD/MM/YYYY"}
+                                            </span>
+                                          )}
+                                          <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                      </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      className="w-auto p-0"
+                                      align="start"
+                                    >
+                                      <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={(date) => {
+                                          field.onChange(date);
+                                          setSelectedDate(date);
+                                        }}
+                                        disabled={(date) =>
+                                          date > new Date() ||
+                                          date < new Date("1900-01-01")
+                                        }
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </div>
                       </div>
                       <br />

@@ -32,6 +32,7 @@ import {
 const { SubMenu } = Menu;
 
 function Nouvellemodd() {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [selectedDescription, setSelectedDescription] =
     useState<React.ReactNode | null>(null);
   const [currentOffer, setCurrentOffer] = useState<any>(null); // Adjust the type based on your offer data structure
@@ -53,7 +54,7 @@ function Nouvellemodd() {
           try {
             // Fetch user data including the offer
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

@@ -6,10 +6,6 @@ import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/components/languageContext";
 import Dents from "@/components/Dents";
 import {
-  JSXElementConstructor,
-  Key,
-  ReactElement,
-  ReactNode,
   useEffect,
   useState,
 } from "react";
@@ -53,6 +49,7 @@ import {
 } from "@/components/ui/form";
 
 const SelectedItemsPageGETAGE = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
@@ -160,7 +157,7 @@ const SelectedItemsPageGETAGE = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `apiUrl/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -285,7 +282,7 @@ const SelectedItemsPageGETAGE = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-a-etages",
+        `${apiUrl}/guide-a-etages`,
         formData,
         {
           headers: {
@@ -313,7 +310,7 @@ const SelectedItemsPageGETAGE = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/commandes",
+        `${apiUrl}/commandes`,
         requestData
       );
       const { error } = await stripe.redirectToCheckout({
@@ -413,7 +410,7 @@ const SelectedItemsPageGETAGE = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-a-etages",
+        `${apiUrl}/guide-a-etages`,
         formData,
         {
           headers: {

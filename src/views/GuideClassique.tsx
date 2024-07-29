@@ -45,6 +45,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const GuideClassique = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [originalCost, setOriginalCost] = useState(50);
   const [cost, setCost] = useState(50);
   const [foragePilote, setForagePilote] = useState(false);
@@ -78,7 +79,7 @@ const GuideClassique = () => {
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
-  console.log("mmmmmmmmmmmmmmmmmmmmmm:",showStabilizationPins)
+  console.log("mmmmmmmmmmmmmmmmmmmmmm:", showStabilizationPins);
 
   const formSchema = z
     .object({
@@ -228,7 +229,7 @@ const GuideClassique = () => {
             if (token && user && user.id) {
               try {
                 const userResponse = await axios.get(
-                  `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+                  `${apiUrl}/users/${user.id}?populate=offre`,
                   {
                     headers: { Authorization: `Bearer ${token}` },
                   }
@@ -280,7 +281,7 @@ const GuideClassique = () => {
           if (token && user && user.id) {
             try {
               const userResponse = await axios.get(
-                `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+                `${apiUrl}/users/${user.id}?populate=offre`,
                 {
                   headers: { Authorization: `Bearer ${token}` },
                 }
@@ -346,9 +347,13 @@ const GuideClassique = () => {
         "spain",
       ];
 
-      const cost = country === "france" && third  ? 7.5 :
-        europeanCountries.includes(country) && third ? 15 : 0;
-      
+      const cost =
+        country === "france" && third
+          ? 7.5
+          : europeanCountries.includes(country) && third
+          ? 15
+          : 0;
+
       setDeliveryCost(cost);
     }
   }, [user, third]);
@@ -403,7 +408,10 @@ const GuideClassique = () => {
   const handleSuppressionSwitch = () => {
     setSecond(!second);
     updateCost(!second ? 10 : -10);
-    setShowTextarea(!showTextarea);
+    setShowDigitalExtraction(!showDigitalExtraction);
+    if (!showDigitalExtraction) {
+      form.setValue("digitalExtraction", "");
+    }
   };
 
   const handleTextareaChange = (event: {
@@ -541,7 +549,7 @@ const GuideClassique = () => {
       smileDesign: first,
       digitalExtraction: values.digitalExtraction,
       formlabsImpression: additionalGuidesImpression,
-      showStabilizationPins:showStabilizationPins
+      showStabilizationPins: showStabilizationPins,
     };
 
     localStorage.setItem("guideClassiqueState", JSON.stringify(yourData));
@@ -553,7 +561,7 @@ const GuideClassique = () => {
           first: first,
           second: second,
           third: third,
-          showStabilizationPins:showStabilizationPins,
+          showStabilizationPins: showStabilizationPins,
           showAdditionalGuidesInput: showAdditionalGuidesInput,
           implantBrandValues: values.implantBrandValues,
           implantBrandInputs: implantBrandInputs,
@@ -967,14 +975,7 @@ const GuideClassique = () => {
                               <FormItem className="space-y-0">
                                 <div className="flex items-center space-x-2">
                                   <Switch
-                                    onClick={() => {
-                                      setShowDigitalExtraction(
-                                        !showDigitalExtraction
-                                      );
-                                      if (!showDigitalExtraction) {
-                                        form.setValue("digitalExtraction", "");
-                                      }
-                                    }}
+                                    onClick={handleSuppressionSwitch}
                                     checked={showDigitalExtraction}
                                   />
                                   <p

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Service7Success = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const location = useLocation();
   const [requestMade, setRequestMade] = useState(false);
 
@@ -23,7 +24,7 @@ const Service7Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`https://admin.3dguidedental.com/api/confirm-payment-produire-et-expidee`, {
+      fetch(`${apiUrl}/confirm-payment-produire-et-expidee`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +76,7 @@ const Service7Success = () => {
 
       try {
         const response = await axios.put(
-          `https://admin.3dguidedental.com/api/${guideType}/${guideId}`,
+          `${apiUrl}/${guideType}/${guideId}`,
           statusUpdateData,
           { headers: getAuthHeaders() }
         );

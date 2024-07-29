@@ -12,6 +12,7 @@ import { useLanguage } from "./languageContext";
 import { getToken } from "./Helpers";
 
 const Nouvmod = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
   const { caseNumber, patient, typeDeTravail, guideType, guideId } = location.state;
@@ -29,7 +30,7 @@ const Nouvmod = () => {
   const fetchModificationData = async () => {
     try {
       const response = await axios.get(
-        'https://admin.3dguidedental.com/api/demande-de-modifications',
+        `${apiUrl}/demande-de-modifications`,
         {
           params: { 'filters[caseNumber][$eq]': caseNumber },
           headers: getAuthHeaders(),
@@ -57,12 +58,12 @@ const Nouvmod = () => {
 
     try {
       const response = await axios.put(
-        `https://admin.3dguidedental.com/api/${guideType}/${guideId}`,
+        `${apiUrl}/${guideType}/${guideId}`,
         statusUpdateData,
         { headers: getAuthHeaders() }
       );
       console.log("Update response:", response);
-      const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+      const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
         email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${caseNumber} has requested a modification.`,
@@ -88,7 +89,7 @@ const Nouvmod = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/demande-de-modifications",
+        `${apiUrl}/demande-de-modifications`,
         { data: postData },
         { headers: getAuthHeaders() }
       );

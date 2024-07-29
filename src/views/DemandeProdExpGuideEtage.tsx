@@ -16,7 +16,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription, 
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -32,6 +32,7 @@ interface SelectedOptions {
 }
 
 const DemandeProdExpGuideEtage: React.FC = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [selectedOptions, setSelectedOptions] = useState<SelectedOptions>({
     immediateLoading: false,
     resinImpression: false,
@@ -41,22 +42,20 @@ const DemandeProdExpGuideEtage: React.FC = () => {
   const { language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { caseNumber, patient, typeDeTravail, guideType, guideId,offre } =
+  const { caseNumber, patient, typeDeTravail, guideType, guideId, offre } =
     location.state;
-    const { user } = useAuthContext();
-    const stripePromise = loadStripe(
-      import.meta.env.VITE_STRIPE_API
-    );
-    const getDiscount = (plan) => {
-      const discounts = {
-        Essential: 5,
-        Privilege: 10,
-        Elite: 15,
-        Premium: 20,
-      };
-      return discounts[plan] || 0;
+  const { user } = useAuthContext();
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
+  const getDiscount = (plan) => {
+    const discounts = {
+      Essential: 5,
+      Privilege: 10,
+      Elite: 15,
+      Premium: 20,
     };
-  
+    return discounts[plan] || 0;
+  };
+
   const getAuthHeaders = () => {
     const token = getToken();
     return {
@@ -83,26 +82,28 @@ const DemandeProdExpGuideEtage: React.FC = () => {
       Resin_Impression_of_Both_Stages: selectedOptions.resinImpression,
       Metal_Impression_First_Stage: selectedOptions.metalResinImpression,
       Metal_Impression_of_Both_Stages: selectedOptions.metalImpression,
-      offre:offre,
+      offre: offre,
       Cost: calculateTotalCost(),
     };
-    localStorage.setItem("data",JSON.stringify(postData))
-    localStorage.setItem("guideType",guideType)
-    localStorage.setItem("guideId",guideId)
-    
+    localStorage.setItem("data", JSON.stringify(postData));
+    localStorage.setItem("guideType", guideType);
+    localStorage.setItem("guideId", guideId);
+
     const requestData = {
-      cost: (calculateTotalCost() * (1 - getDiscount(offre) /100)) + (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15),
+      cost:
+        calculateTotalCost() * (1 - getDiscount(offre) / 100) +
+        (user.location[0].country.toLowerCase() === "france" ? 7.5 : 15),
       patient: patient,
       email: user && user.email,
-      caseNumber:caseNumber,
+      caseNumber: caseNumber,
       type_travail: typeDeTravail,
     };
-    console.log(requestData)
+    console.log(requestData);
 
     try {
       const stripe = await stripePromise;
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/demande-produire-et-expide-guide-etages",
+        `${apiUrl}/demande-produire-et-expide-guide-etages`,
         requestData,
         { headers: getAuthHeaders() }
       );
@@ -150,12 +151,22 @@ const DemandeProdExpGuideEtage: React.FC = () => {
                 {typeDeTravail}
               </p>
               <p>
-              {language === "french" ? "Offre du cas:" : "Offre of the case:"}
-              {offre}
-            </p>
+                {language === "french" ? "Offre du cas:" : "Offre of the case:"}
+                {offre}
+              </p>
               <p>
-              {language === "french" ? "coût:" : "Cost:"} ({calculateTotalCost()} - {getDiscount(offre)}%) + {user && user.location[0].country.toLowerCase() === "france" ? 7.5 : 15} = {(calculateTotalCost() * (1 - getDiscount(offre) /100)) + (user && user.location[0].country.toLowerCase() === "france" ? 7.5 : 15)} €
-            </p>
+                {language === "french" ? "coût:" : "Cost:"} (
+                {calculateTotalCost()} - {getDiscount(offre)}%) +{" "}
+                {user && user.location[0].country.toLowerCase() === "france"
+                  ? 7.5
+                  : 15}{" "}
+                ={" "}
+                {calculateTotalCost() * (1 - getDiscount(offre) / 100) +
+                  (user && user.location[0].country.toLowerCase() === "france"
+                    ? 7.5
+                    : 15)}{" "}
+                €
+              </p>
             </div>
           </div>
           <br />
@@ -215,35 +226,35 @@ const DemandeProdExpGuideEtage: React.FC = () => {
               >
                 {language === "french" ? "Précédent" : "Previous"}
               </Button>
-              
+
               <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button className="bg-[#0e0004] text-[#fffa1b] px-4 py-2 rounded-md mt-9">
-                  {language === "french" ? "Soumettre" : "Submit"}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>
-                {language === "french"
-                  ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                  : "Are you sure you want to submit this case?"}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                {language === "french"
-                  ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                  : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>
-                    {language === "french" ? "Annuler" : "Cancel"}
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleNextClick}>
-                    {language === "french" ? "Continuer" : "Continue"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
+                <AlertDialogTrigger asChild>
+                  <Button className="bg-[#0e0004] text-[#fffa1b] px-4 py-2 rounded-md mt-9">
+                    {language === "french" ? "Soumettre" : "Submit"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {language === "french"
+                        ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                        : "Are you sure you want to submit this case?"}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {language === "french"
+                        ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                        : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {language === "french" ? "Annuler" : "Cancel"}
+                    </AlertDialogCancel>
+                    <AlertDialogAction onClick={handleNextClick}>
+                      {language === "french" ? "Continuer" : "Continue"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
               </AlertDialog>
             </div>
           </div>

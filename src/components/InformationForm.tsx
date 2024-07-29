@@ -75,6 +75,7 @@ const FormSchema = z.object({
 });
 
 const InformationForm = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { setUser } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -254,7 +255,7 @@ const InformationForm = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/auth/local/register",
+        `${apiUrl}/auth/local/register`,
         fullData
       );
 

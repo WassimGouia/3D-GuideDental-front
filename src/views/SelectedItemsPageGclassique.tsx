@@ -34,9 +34,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Percent,
+  ReceiptEuro,
+  FileDigit,
+  Truck,
+  UsersRound,
+  Package,
+} from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 
 const SelectedItemsPageGclassique = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { user } = useAuthContext();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -68,11 +77,8 @@ const SelectedItemsPageGclassique = () => {
     selectedItemsData.additionalGuidesImpression;
   const additionalGuidesClavettess =
     selectedItemsData.additionalGuidesClavettes;
-    const showStabilizationPins =
-    selectedItemsData.showStabilizationPins;
-    const originalCost =
-    location.state.selectedItemsData.originalCost;
-
+  const showStabilizationPins = selectedItemsData.showStabilizationPins;
+  const originalCost = location.state.selectedItemsData.originalCost;
 
   const [patientData, setPatientData] = useState({
     fullname: "",
@@ -111,7 +117,7 @@ const SelectedItemsPageGclassique = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -150,9 +156,7 @@ const SelectedItemsPageGclassique = () => {
     return discounts[plan] || 0;
   };
 
-  const stripePromise = loadStripe(
-    import.meta.env.VITE_STRIPE_API
-  );
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
   const handleSubmit = async () => {
     const isValid = await form.trigger();
@@ -216,7 +220,7 @@ const SelectedItemsPageGclassique = () => {
       Clavettes_de_stabilisation: [
         {
           title: "Stabilization pins",
-          active:showStabilizationPins,
+          active: showStabilizationPins,
           nombre_des_clavettes: additionalGuidesClavettess,
         },
       ],
@@ -229,8 +233,8 @@ const SelectedItemsPageGclassique = () => {
       approuve: false,
       produire_expide: false,
       user: user.id,
-      offre:currentOffer?.currentPlan,
-      originalCost:originalCost,
+      offre: currentOffer?.currentPlan,
+      originalCost: originalCost,
     };
 
     console.log("Guide Data:", guideData);
@@ -243,7 +247,7 @@ const SelectedItemsPageGclassique = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-classiques",
+        `${apiUrl}/guide-classiques`,
         formData,
         {
           headers: {
@@ -272,15 +276,11 @@ const SelectedItemsPageGclassique = () => {
     };
 
     try {
-      const response = await axios.post(
-        "https://admin.3dguidedental.com/api/commandes",
-        requestData,
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
+      const response = await axios.post(`${apiUrl}/commandes`, requestData, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
       if (
         response.data &&
         response.data.stripeSession &&
@@ -301,7 +301,7 @@ const SelectedItemsPageGclassique = () => {
   };
 
   useEffect(() => {
-    axios.get("https://admin.3dguidedental.com/api/services").then(() => {});
+    axios.get(`${apiUrl}/services`).then(() => {});
   }, []);
 
   const handleNextClickArchive = async () => {
@@ -366,11 +366,11 @@ const SelectedItemsPageGclassique = () => {
       Clavettes_de_stabilisation: [
         {
           title: "Stabilization pins",
-          active:showStabilizationPins,
+          active: showStabilizationPins,
           nombre_des_clavettes: additionalGuidesClavettess,
         },
       ],
-      cout: cost, 
+      cout: cost,
       marque_implant_pour_la_dent: { " index": implantBrandValue },
       archive: true,
       En_attente_approbation: false,
@@ -379,8 +379,8 @@ const SelectedItemsPageGclassique = () => {
       approuve: false,
       produire_expide: false,
       user: user.id,
-      offre:currentOffer?.currentPlan,
-      originalCost:originalCost,
+      offre: currentOffer?.currentPlan,
+      originalCost: originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -391,7 +391,7 @@ const SelectedItemsPageGclassique = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-classiques",
+        `${apiUrl}/guide-classiques`,
         formData,
         {
           headers: {
@@ -402,13 +402,12 @@ const SelectedItemsPageGclassique = () => {
       );
 
       console.log("Data saved successfully:", response.data);
-
     } catch (error) {
       console.error("Error saving guide classique data:", error);
     }
 
     localStorage.clear();
-    navigate("/mes-fichier")
+    navigate("/mes-fichier");
   };
 
   const handlePreviousClick = () => {
@@ -439,44 +438,72 @@ const SelectedItemsPageGclassique = () => {
                         : "Case Details"}
                     </h2>
                     <div className="grid grid-cols-2 gap-4">
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french" ? "Patient: " : "Patient: "}
-                        </span>
-                        {patientData.fullname}
-                      </p>
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french"
-                            ? "Numéro du cas: "
-                            : "Case number: "}
-                        </span>
-                        {patientData.caseNumber}
-                      </p>
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french"
-                            ? "Offre actuelle: "
-                            : "Current offer: "}
-                        </span>
-                        {currentOffer ? currentOffer.currentPlan : "Loading..."}
-                      </p>
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french" ? "Réduction: " : "Discount: "}
-                        </span>
-                        {currentOffer
-                          ? `${currentOffer.discount}%`
-                          : "Loading..."}
-                      </p>
-                      <p className="text-lg">
-                        <span className="font-semibold">
-                          {language === "french" ? "Coût: " : "Cost: "}
-                        </span>
-                        <span className="font-bold text-green-600">
-                          {cost.toFixed(2)} €
-                        </span>
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <UsersRound className="text-yellow-600" />
+
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french" ? "Patient: " : "Patient: "}
+                          </span>
+                          {patientData.fullname}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <FileDigit className="text-yellow-600" />
+
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Numéro du cas: "
+                              : "Case number: "}
+                          </span>
+                          {patientData.caseNumber}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Package className="text-yellow-600" />
+
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Offre actuelle: "
+                              : "Current offer: "}
+                          </span>
+                          {currentOffer
+                            ? currentOffer.currentPlan
+                            : "Loading..."}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Percent className="text-yellow-600" />
+
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french"
+                              ? "Réduction: "
+                              : "Discount: "}
+                          </span>
+                          {currentOffer
+                            ? `${currentOffer.discount}%`
+                            : "Loading..."}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <ReceiptEuro className="text-yellow-600" />
+
+                        <p className="text-lg">
+                          <span className="font-semibold">
+                            {language === "french" ? "Coût: " : "Cost: "}
+                          </span>
+                          <span className="font-bold text-green-600">
+                            {cost.toFixed(2)} €
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -528,7 +555,7 @@ const SelectedItemsPageGclassique = () => {
                             className="flex items-center space-x-4"
                           >
                             <div className="flex items-center space-x-2 w-20">
-                              <FaTooth  />
+                              <FaTooth />
                               <span>{index}</span>
                             </div>
                             <Input
@@ -692,15 +719,15 @@ const SelectedItemsPageGclassique = () => {
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>
+                          <AlertDialogTitle>
                             {language === "french"
                               ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                            {language === "french"
+                              ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                              : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -727,15 +754,15 @@ const SelectedItemsPageGclassique = () => {
                     >
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {language === "french"
-                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                            : "Are you sure you want to submit this case?"}
+                          <AlertDialogTitle>
+                            {language === "french"
+                              ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                              : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                            {language === "french"
+                              ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                              : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

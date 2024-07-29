@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 
 const GouttiereBruxismes = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const [originalCost, setOriginalCost] = useState(0);
   const [cost, setCost] = useState(0);
@@ -120,7 +121,7 @@ const GouttiereBruxismes = () => {
       if (token && user && user.id) {
         try {
           const userResponse = await axios.get(
-            `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+            `${apiUrl}/users/${user.id}?populate=offre`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }

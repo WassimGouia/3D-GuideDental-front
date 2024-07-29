@@ -94,6 +94,7 @@ const MesFichier: React.FC = () => {
     discount: number;
   } | null>(null);
   const { language } = useLanguage();
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
 
   const guidesPerPage = 10;
 
@@ -106,7 +107,7 @@ const MesFichier: React.FC = () => {
 
       try {
         const response = await axios.get(
-          `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+          `${apiUrl}/users/${user.id}?populate=offre`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -164,7 +165,7 @@ const MesFichier: React.FC = () => {
       const responses = await Promise.all(
         guideTypes.map((type) =>
           axios.get(
-            `https://admin.3dguidedental.com/api/${type}?filters[user][id][$eq]=${user.id}&populate[options_generiques][populate]=*&populate[service]=*&populate[pdfFile]=*&populate[model3d]=*&populate[user]=*&populate[Options_supplementaires]=*`,
+            `${apiUrl}/${type}?filters[user][id][$eq]=${user.id}&populate[options_generiques][populate]=*&populate[service]=*&populate[pdfFile]=*&populate[model3d]=*&populate[user]=*&populate[Options_supplementaires]=*`,
             { headers }
           )
         )
@@ -193,7 +194,7 @@ const MesFichier: React.FC = () => {
     try {
 
       const responses = await axios.get(
-            `https://admin.3dguidedental.com/api/services`,
+            `${apiUrl}/services`,
           )
         
       setServices(responses.data.data);
@@ -287,17 +288,17 @@ const MesFichier: React.FC = () => {
   const getEndpoint = (guideType: string): string => {
     switch (guideType) {
       case "guide-pour-gingivectomies":
-        return "https://admin.3dguidedental.com/api/guide-pour-gingivectomies";
+        return `${apiUrl}/guide-pour-gingivectomies`;
       case "gouttiere-de-bruxismes":
-        return "https://admin.3dguidedental.com/api/gouttiere-de-bruxismes";
+        return `${apiUrl}/gouttiere-de-bruxismes`;
       case "guide-a-etages":
-        return "https://admin.3dguidedental.com/api/guide-a-etages";
+        return `${apiUrl}/guide-a-etages`;
       case "guide-classiques":
-        return "https://admin.3dguidedental.com/api/guide-classiques";
+        return `${apiUrl}/guide-classiques`;
       case "autres-services-de-conceptions":
-        return "https://admin.3dguidedental.com/api/autres-services-de-conceptions";
+        return `${apiUrl}/autres-services-de-conceptions`;
       case "rapport-radiologiques":
-        return "https://admin.3dguidedental.com/api/rapport-radiologiques";
+        return `${apiUrl}/rapport-radiologiques`;
       default:
         throw new Error("Unknown guide type: " + guideType);
     }
@@ -325,7 +326,7 @@ const MesFichier: React.FC = () => {
         }
       );
 
-      const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+      const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
         email:"no-reply@3dguidedental.com",
         subject: "Case Status Update",
         content: `We would like to inform you that the client of case number ${guide.attributes.numero_cas} has requested a quote.`,
@@ -393,7 +394,7 @@ const MesFichier: React.FC = () => {
       try {
         const stripe = await stripePromise;
         const response = await axios.post(
-          "https://admin.3dguidedental.com/api/commandes",
+          `${apiUrl}/commandes`,
           requestData
         );
         const { error } = await stripe.redirectToCheckout({
@@ -435,7 +436,7 @@ const MesFichier: React.FC = () => {
       try {
         const stripe = await stripePromise;
         const response = await axios.post(
-          "https://admin.3dguidedental.com/api/demande-produire-et-expidees",
+          `${apiUrl}/demande-produire-et-expidees`,
           requestData
         );
         const { error } = await stripe.redirectToCheckout({
@@ -482,7 +483,7 @@ const MesFichier: React.FC = () => {
             }
           );
           //guide.attributes.user.data.attributes.email
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -524,7 +525,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`
@@ -568,7 +569,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and shipped".`
@@ -611,7 +612,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -658,7 +659,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Approved".`
@@ -701,7 +702,7 @@ const MesFichier: React.FC = () => {
               },
             }
           );
-          const em = await axios.post("https://admin.3dguidedental.com/api/sendEmailToNotify",{
+          const em = await axios.post(`${apiUrl}/sendEmailToNotify`,{
             email:"no-reply@3dguidedental.com",
             subject:"Case Status Update",
             content:`We would like to inform you that the status of case number ${guide.attributes.numero_cas} has been changed to "Produced and Shipped".`

@@ -19,6 +19,7 @@ import { setToken } from "@/components/Helpers";
 import { useAuthContext } from "@/components/AuthContext";
 
 function Login() {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +30,7 @@ function Login() {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/auth/local",
+        `${apiUrl}/auth/local`,
         { identifier, password }
       );
       setToken(response.data.jwt);

@@ -127,6 +127,7 @@ const GuideEtage = () => {
   const [currentOffer, setCurrentOffer] = useState<Offer | null>(null);
   const { user } = useAuthContext();
   const { language } = useLanguage();
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
 
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
@@ -205,7 +206,7 @@ const GuideEtage = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

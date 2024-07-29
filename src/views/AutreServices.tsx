@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 const AutreServices = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [patientData, setPatientData] = useState({
@@ -77,7 +78,7 @@ const AutreServices = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,

@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const SelectedItemsPageAutreService = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
@@ -97,7 +98,7 @@ const SelectedItemsPageAutreService = () => {
     if (token && user && user.id) {
       try {
         const userResponse = await axios.get(
-          `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+          `${apiUrl}/users/${user.id}?populate=offre`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (userResponse.data && userResponse.data.offre) {
@@ -179,7 +180,7 @@ const SelectedItemsPageAutreService = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/autres-services-de-conceptions",
+        `${apiUrl}/autres-services-de-conceptions`,
         formData,
         {
           headers: {
@@ -238,7 +239,7 @@ const SelectedItemsPageAutreService = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/autres-services-de-conceptions",
+        `${apiUrl}/autres-services-de-conceptions`,
         formData,
         {
           headers: {

@@ -32,6 +32,7 @@ import { Separator } from "@/components/ui/separator";
 import { getToken, setToken } from "@/components/Helpers";
 
 const Cabinet = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { language } = useLanguage();
   const { user, setUser, isLoading } = useAuthContext();
   const [formData, setFormData] = useState(null);
@@ -135,7 +136,7 @@ const Cabinet = () => {
       if (confirmationToken) {
         try {
           await axios.get(
-            `https://admin.3dguidedental.com/api/auth/email-confirmation?confirmation=${confirmationToken}`
+            `${apiUrl}/auth/email-confirmation?confirmation=${confirmationToken}`
           );
           alert("Email confirmed successfully!");
           setEmailVerified(true);
@@ -153,7 +154,7 @@ const Cabinet = () => {
   const resendVerificationEmail = async () => {
     try {
       await axios.post(
-        "https://admin.3dguidedental.com/api/auth/send-email-confirmation",
+        `${apiUrl}/auth/send-email-confirmation`,
         {
           email: user.email,
         }
@@ -172,7 +173,7 @@ const Cabinet = () => {
     try {
       const token = getToken();
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/auth/change-password",
+         `${apiUrl}/auth/change-password`,
         {
           password: data.newPassword,
           currentPassword: data.currentPassword,

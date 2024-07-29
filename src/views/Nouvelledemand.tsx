@@ -16,6 +16,7 @@ function generateRandomNumber() {
 }
 
 function Nouvelled() {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { completeStep } = useStepTracking();
   const { language } = useLanguage();
   const [patientName, setPatientName] = useState("");
@@ -23,7 +24,7 @@ function Nouvelled() {
 
   const handleOnClick = async () => {
     try {
-      const res = await axios.post("https://admin.3dguidedental.com/api/patients", {
+      const res = await axios.post(`${apiUrl}/patients`, {
         data: {
           fullname: patientName,
           caseNumber: generateRandomNumber(),

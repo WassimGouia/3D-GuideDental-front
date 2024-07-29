@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const DemandeProdExpAutreGuides = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
@@ -65,7 +66,7 @@ const DemandeProdExpAutreGuides = () => {
     try {
       const stripe = await stripePromise;
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/demande-produire-et-expidees",
+        `${apiUrl}/demande-produire-et-expidees`,
         requestData
       );
       const { error } = await stripe.redirectToCheckout({

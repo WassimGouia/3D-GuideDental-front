@@ -8,6 +8,7 @@ import axios from "axios";
 import { useLanguage } from "@/components/languageContext";
 
 const ResetPasswordSendMail = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +20,7 @@ const ResetPasswordSendMail = () => {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/auth/forgot-password",
+        `${apiUrl}/auth/forgot-password`,
         {
           email,
         },

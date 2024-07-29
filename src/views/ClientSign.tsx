@@ -40,7 +40,7 @@ const ClientSign: React.FC = () => {
             className="flex justify-center"
             onClick={handleTabClick}
           >
-            {language === "french" ? "Informations" : "Informations"}
+            {language === "french" ? "Information" : "Information"}
           </TabsTrigger>
         </TabsList>
       </Tabs>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Service5Success = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const location = useLocation();
   const [requestMade, setRequestMade] = useState(false);
 
@@ -15,7 +16,7 @@ const Service5Success = () => {
     if (sessionId && !requestMade) {
       setRequestMade(true);
 
-      fetch(`https://admin.3dguidedental.com/api/confirm-payment-autre-service`, {
+      fetch(`${apiUrl}/confirm-payment-autre-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

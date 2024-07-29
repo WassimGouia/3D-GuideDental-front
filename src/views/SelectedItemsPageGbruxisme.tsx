@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/form";
 
 const SelectedItemsPageGbruxisme = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const location = useLocation();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ const SelectedItemsPageGbruxisme = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -215,7 +216,7 @@ const SelectedItemsPageGbruxisme = () => {
     }
     try {
       const res = await axios.post(
-        "https://admin.3dguidedental.com/api/gouttiere-de-bruxismes",
+        `${apiUrl}/gouttiere-de-bruxismes`,
         formData,
         {
           headers: {
@@ -235,7 +236,7 @@ const SelectedItemsPageGbruxisme = () => {
 
       const stripe = await stripePromise;
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/commandes",
+        `${apiUrl}/commandes`,
         requestData,
         {
           headers: {
@@ -308,7 +309,7 @@ const SelectedItemsPageGbruxisme = () => {
 
     try {
       const res = await axios.post(
-        "https://admin.3dguidedental.com/api/gouttiere-de-bruxismes",
+        `${apiUrl}/gouttiere-de-bruxismes`,
         formData,
         {
           headers: {

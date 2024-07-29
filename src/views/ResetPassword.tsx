@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "@/components/languageContext";
 
 const ResetPassword = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -44,7 +45,7 @@ const ResetPassword = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/auth/reset-password",
+        `${apiUrl}/auth/reset-password`,
         {
           code: token,
           password,

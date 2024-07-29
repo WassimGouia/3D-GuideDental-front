@@ -46,6 +46,7 @@ import {
 import * as z from "zod";
 
 const SelectedItemsPageRapportRad = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
@@ -126,7 +127,7 @@ const SelectedItemsPageRapportRad = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -199,7 +200,7 @@ const SelectedItemsPageRapportRad = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/rapport-radiologiques",
+        `${apiUrl}/rapport-radiologiques`,
         formData,
         {
           headers: {
@@ -222,7 +223,7 @@ const SelectedItemsPageRapportRad = () => {
 
       const stripe = await stripePromise;
       const paymentResponse = await axios.post(
-        "https://admin.3dguidedental.com/api/commandes",
+        `${apiUrl}/commandes`,
         requestData,
         {
           headers: {
@@ -275,7 +276,7 @@ const SelectedItemsPageRapportRad = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/rapport-radiologiques",
+        `${apiUrl}/rapport-radiologiques`,
         formData,
         {
           headers: {

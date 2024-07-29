@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/form";
 
 const SelectedItemsPageGging = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { user } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,7 +112,7 @@ const SelectedItemsPageGging = () => {
         if (token && user && user.id) {
           try {
             const userResponse = await axios.get(
-              `https://admin.3dguidedental.com/api/users/${user.id}?populate=offre`,
+              `${apiUrl}/users/${user.id}?populate=offre`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -226,7 +227,7 @@ const SelectedItemsPageGging = () => {
     }
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-pour-gingivectomies",
+        `${apiUrl}/guide-pour-gingivectomies`,
         formData,
         {
           headers: {
@@ -255,7 +256,7 @@ const SelectedItemsPageGging = () => {
 
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/commandes",
+        `${apiUrl}/commandes`,
         requestData,
         {
           headers: {
@@ -338,7 +339,7 @@ const SelectedItemsPageGging = () => {
     }
     try {
       const response = await axios.post(
-        "https://admin.3dguidedental.com/api/guide-pour-gingivectomies",
+        `${apiUrl}/guide-pour-gingivectomies`,
         formData,
         {
           headers: {

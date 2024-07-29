@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from './languageContext';
 
 const EmailConfirmation = () => {
+  const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { code } = useParams();
@@ -22,7 +23,7 @@ const EmailConfirmation = () => {
 
     try {
       const response = await axios.get(
-        `https://admin.3dguidedental.com/api/auth/email-confirmation?confirmation=${code}`
+        `${apiUrl}/auth/email-confirmation?confirmation=${code}`
       );
 
       if (response.status === 200) {
