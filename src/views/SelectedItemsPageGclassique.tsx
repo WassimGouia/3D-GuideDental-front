@@ -10,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,6 +34,7 @@ import * as z from "zod";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -41,10 +47,14 @@ import {
   Truck,
   UsersRound,
   Package,
+  FolderUp,
+  Info,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 
 const SelectedItemsPageGclassique = () => {
+  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
+  const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const { user } = useAuthContext();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
@@ -88,9 +98,28 @@ const SelectedItemsPageGclassique = () => {
 
   const formSchema = z.object({
     file: z
-      .instanceof(FileList)
-      .refine((files) => files.length > 0, "File is required")
-      .transform((files) => files[0]),
+      .any()
+      .refine((file) => file instanceof File, {
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      })
+      .refine((file) => file.size <= MAX_FILE_SIZE, {
+        message:
+          language === "french"
+            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+            : "File size should not exceed 400MB",
+      })
+      .refine(
+        (file) =>
+          ALLOWED_FILE_TYPES.includes(
+            `.${file.name.split(".").pop().toLowerCase()}`
+          ),
+        language === "french"
+          ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(", ")}`
+          : `Please select a ${ALLOWED_FILE_TYPES.join(", ")} file`
+      ),
   });
 
   const form = useForm({
@@ -256,7 +285,7 @@ const SelectedItemsPageGclassique = () => {
     );
 
     if (checkRes.data.exists) {
-      alert('Case number already exists');
+      alert("Case number already exists");
       return;
     }
 
@@ -277,7 +306,7 @@ const SelectedItemsPageGclassique = () => {
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide classique data:", error);
-      alert("Case already exists")
+      alert("Case already exists");
     }
   };
 
@@ -405,7 +434,6 @@ const SelectedItemsPageGclassique = () => {
       formData.append("files.User_Upload", file, file.name);
     }
 
-
     const checkRes = await axios.post(
       `${apiUrl}/checkCaseNumber`,
       { caseNumber: patientData.caseNumber },
@@ -417,10 +445,9 @@ const SelectedItemsPageGclassique = () => {
     );
 
     if (checkRes.data.exists) {
-      alert('Case number already exists');
+      alert("Case number already exists");
       return;
     }
-
 
     try {
       const response = await axios.post(
@@ -437,11 +464,11 @@ const SelectedItemsPageGclassique = () => {
       console.log("Data saved successfully:", response.data);
     } catch (error) {
       console.error("Error saving guide classique data:", error);
-      alert("Case already exists")
+      alert("Case already exists");
     }
 
     localStorage.clear();
-    navigate("/mes-fichier");
+    navigate("/mes-fichiers");
   };
 
   const handlePreviousClick = () => {
@@ -696,15 +723,45 @@ const SelectedItemsPageGclassique = () => {
                               : "Add files (required):"}
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="file"
-                              onChange={(e) => {
-                                onChange(e.target.files);
-                              }}
-                              {...rest}
-                              className="w-full"
-                            />
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="file"
+                                accept={ALLOWED_FILE_TYPES.join(",")}
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    onChange(file);
+                                  } else {
+                                    onChange(null);
+                                  }
+                                }}
+                                {...rest}
+                                className="flex-grow"
+                              />
+                              <FolderUp className="text-yellow-600 w-5 h-5" />
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Info className="h-4 w-4 cursor-pointer" />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 bg-gray-200 bg-opacity-95 p-4 rounded-md shadow-lg">
+                                  <p className="text-sm">
+                                    {language === "french"
+                                      ? "Merci de télécharger les fichiers ici. Veuillez regrouper vos fichiers dans un seul dossier compressé afin de ne pas dépasser la taille maximale de 400 Mo. L'application accepte uniquement les fichiers compressés."
+                                      : "Please upload the files here. Remember to group your files into a single compressed folder to ensure the total size does not exceed 400 MB. The application only accepts compressed files."}
+                                  </p>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            {language === "french"
+                              ? `Formats acceptés : ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Taille maximale : 400 Mo.`
+                              : `Accepted formats: ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Maximum size: 400MB.`}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

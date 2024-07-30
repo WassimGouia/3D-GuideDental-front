@@ -114,7 +114,7 @@ const App: React.FC = () => {
                 }
               />
               <Route
-                path="/mes-fichier"
+                path="/mes-fichiers"
                 element={
                     <Mesfiche />
                 }

@@ -30,10 +30,16 @@ import {
   FolderUp,
   UsersRound,
   Package,
+  Info,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
   Form,
   FormField,
@@ -46,6 +52,8 @@ import {
 import * as z from "zod";
 
 const SelectedItemsPageRapportRad = () => {
+  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
+  const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +75,7 @@ const SelectedItemsPageRapportRad = () => {
   const isBoxCheckedEliminerPathologie =
     location.state?.isBoxCheckedEliminerPathologie;
   const isBoxCheckedAutre = location.state?.isBoxCheckedAutre;
-  const [patientData, setPatientData] = useState({ 
+  const [patientData, setPatientData] = useState({
     fullname: "",
     caseNumber: "",
   });
@@ -83,7 +91,29 @@ const SelectedItemsPageRapportRad = () => {
   };
 
   const formSchema = z.object({
-    file: z.instanceof(File, { message: "File is required" }),
+    file: z
+      .any()
+      .refine((file) => file instanceof File, {
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      })
+      .refine((file) => file.size <= MAX_FILE_SIZE, {
+        message:
+          language === "french"
+            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+            : "File size should not exceed 400MB",
+      })
+      .refine(
+        (file) =>
+          ALLOWED_FILE_TYPES.includes(
+            `.${file.name.split(".").pop().toLowerCase()}`
+          ),
+        language === "french"
+          ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(", ")}`
+          : `Please select a ${ALLOWED_FILE_TYPES.join(", ")} file`
+      ),
   });
 
   const form = useForm({
@@ -107,9 +137,7 @@ const SelectedItemsPageRapportRad = () => {
     }
   };
 
-  const stripePromise = loadStripe(
-    import.meta.env.VITE_STRIPE_API
-  );
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
   useEffect(() => {
     const storedFullname = localStorage.getItem("fullName");
     const storedCaseNumber = localStorage.getItem("caseNumber");
@@ -187,9 +215,9 @@ const SelectedItemsPageRapportRad = () => {
       soumis: false,
       archive: true,
       user: user.id,
-      originalCost:originalCost,
-      cout:cost,
-      other_description:autreInput
+      originalCost: originalCost,
+      cout: cost,
+      other_description: autreInput,
     };
 
     formData.append("data", JSON.stringify(reportData));
@@ -199,8 +227,6 @@ const SelectedItemsPageRapportRad = () => {
     }
 
     try {
-
-
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
@@ -210,13 +236,11 @@ const SelectedItemsPageRapportRad = () => {
           },
         }
       );
-  
+
       if (checkRes.data.exists) {
-        alert('Case number already exists');
+        alert("Case number already exists");
         return;
       }
-
-
 
       const response = await axios.post(
         `${apiUrl}/rapport-radiologiques`,
@@ -258,7 +282,7 @@ const SelectedItemsPageRapportRad = () => {
       }
     } catch (err) {
       console.error("Error submitting report or processing payment:", err);
-      alert("Case already exists")
+      alert("Case already exists");
     }
   };
 
@@ -283,9 +307,9 @@ const SelectedItemsPageRapportRad = () => {
       soumis: false,
       archive: true,
       user: user.id,
-      originalCost:originalCost,
-      cout:cost,
-      other_description:autreInput
+      originalCost: originalCost,
+      cout: cost,
+      other_description: autreInput,
     };
 
     formData.append("data", JSON.stringify(reportData));
@@ -295,8 +319,6 @@ const SelectedItemsPageRapportRad = () => {
     }
 
     try {
-
-
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
@@ -306,13 +328,11 @@ const SelectedItemsPageRapportRad = () => {
           },
         }
       );
-  
+
       if (checkRes.data.exists) {
-        alert('Case number already exists');
+        alert("Case number already exists");
         return;
       }
-
-
 
       const response = await axios.post(
         `${apiUrl}/rapport-radiologiques`,
@@ -327,7 +347,7 @@ const SelectedItemsPageRapportRad = () => {
 
       console.log("Report archived successfully:", response.data);
       localStorage.clear();
-      navigate("/mes-fichier");
+      navigate("/mes-fichiers");
     } catch (err) {
       console.error("Error archiving report:", err);
       alert(
@@ -336,7 +356,7 @@ const SelectedItemsPageRapportRad = () => {
           : "Error archiving report"
       );
 
-      alert("Case already exists")
+      alert("Case already exists");
     }
   };
 
@@ -541,13 +561,44 @@ const SelectedItemsPageRapportRad = () => {
                               : "Add files:"}
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="file"
-                              onChange={(e) =>
-                                field.onChange(e.target.files[0])
-                              }
-                            />
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="file"
+                                accept={ALLOWED_FILE_TYPES.join(",")}
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    field.onChange(file);
+                                  } else {
+                                    field.onChange(null);
+                                  }
+                                }}
+                                className="flex-grow"
+                              />
+                              <FolderUp className="text-yellow-600 w-5 h-5" />
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Info className="h-4 w-4 cursor-pointer" />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 bg-gray-200 bg-opacity-95 p-4 rounded-md shadow-lg">
+                                  <p className="text-sm">
+                                    {language === "french"
+                                      ? "Merci de télécharger les fichiers ici. Veuillez regrouper vos fichiers dans un seul dossier compressé afin de ne pas dépasser la taille maximale de 400 Mo. L'application accepte uniquement les fichiers compressés."
+                                      : "Please upload the files here. Remember to group your files into a single compressed folder to ensure the total size does not exceed 400 MB. The application only accepts compressed files."}
+                                  </p>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            {language === "french"
+                              ? `Formats acceptés : ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Taille maximale : 400 Mo.`
+                              : `Accepted formats: ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Maximum size: 400MB.`}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -564,9 +615,7 @@ const SelectedItemsPageRapportRad = () => {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <a className="text-blue-600 underline cursor-pointer">
-                        {language === "french"
-                          ? "ici."
-                          : "stated here."}
+                        {language === "french" ? "ici." : "stated here."}
                       </a>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -622,16 +671,16 @@ const SelectedItemsPageRapportRad = () => {
                 >
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {language === "french"
-                        ? "Êtes-vous sûr de vouloir archiver ce cas ?"
-                        : "Are you sure you want to archive this case?"}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                    {language === "french"
-                      ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                      : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
-                    </AlertDialogDescription>
+                      <AlertDialogTitle>
+                        {language === "french"
+                          ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                          : "Are you sure you want to archive this case?"}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {language === "french"
+                          ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                          : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>
@@ -655,16 +704,16 @@ const SelectedItemsPageRapportRad = () => {
                 >
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                    <AlertDialogTitle>
-                          {language === "french"
-                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                            : "Are you sure you want to submit this case?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
-                            : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
-                          </AlertDialogDescription>
+                      <AlertDialogTitle>
+                        {language === "french"
+                          ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                          : "Are you sure you want to submit this case?"}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {language === "french"
+                          ? "Soumettez votre cas pour profiter d'une interprétation radiologique précise. Nos spécialistes en imagerie orale et maxillo-faciale vous fourniront un rapport détaillé couvrant votre domaine d'intérêt spécifique ainsi que toute pathologie identifiée."
+                          : "Submit your case to benefit from precise radiological interpretation. Our specialists in oral and maxillofacial imaging will provide you with a detailed report covering your specific area of interest as well as any identified pathology."}
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>

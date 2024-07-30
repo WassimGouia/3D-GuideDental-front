@@ -5,15 +5,17 @@ import Container from "@/components/Container";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/components/languageContext";
 import Dents from "@/components/Dents";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaTooth } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loadStripe } from "@stripe/stripe-js";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,7 @@ import {
   FolderUp,
   UsersRound,
   Package,
+  Info,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import { useForm } from "react-hook-form";
@@ -46,9 +49,12 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 
 const SelectedItemsPageGETAGE = () => {
+  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
+  const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,13 +99,33 @@ const SelectedItemsPageGETAGE = () => {
 
   const [formState, setFormState] = useState(selectedItemsData);
 
-  console.log(import.meta.env.VITE_STRIPE_API)
-  const stripePromise = loadStripe(
-    import.meta.env.VITE_STRIPE_API
-  );
+  console.log(import.meta.env.VITE_STRIPE_API);
+  const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
   const formSchema = z.object({
-    file: z.instanceof(File, { message: "File is required" }),
+    file: z
+      .any()
+      .refine((file) => file instanceof File, {
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      })
+      .refine((file) => file.size <= MAX_FILE_SIZE, {
+        message:
+          language === "french"
+            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+            : "File size should not exceed 400MB",
+      })
+      .refine(
+        (file) =>
+          ALLOWED_FILE_TYPES.includes(
+            `.${file.name.split(".").pop().toLowerCase()}`
+          ),
+        language === "french"
+          ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(", ")}`
+          : `Please select a ${ALLOWED_FILE_TYPES.join(", ")} file`
+      ),
   });
 
   const form = useForm({
@@ -151,7 +177,6 @@ const SelectedItemsPageGETAGE = () => {
       setFormState(stateToUse);
       setCalculatedCost(stateToUse.cost);
 
-      
       const fetchOfferData = async () => {
         const token = getToken();
         if (token && user && user.id) {
@@ -256,7 +281,7 @@ const SelectedItemsPageGETAGE = () => {
           active: fifthSwitch,
         },
       ],
-      cout: cost,  
+      cout: cost,
       options_generiques: [
         {
           title: "Smile Design",
@@ -270,8 +295,8 @@ const SelectedItemsPageGETAGE = () => {
       approuve: false,
       produire_expide: false,
       user: user.id,
-      offre:currentOffer?.currentPlan,
-      originalCost:originalCost,
+      offre: currentOffer?.currentPlan,
+      originalCost: originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -291,27 +316,22 @@ const SelectedItemsPageGETAGE = () => {
     );
 
     if (checkRes.data.exists) {
-      alert('Case number already exists');
+      alert("Case number already exists");
       return;
     }
 
-
     try {
-      const response = await axios.post(
-        `${apiUrl}/guide-a-etages`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.post(`${apiUrl}/guide-a-etages`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       console.log("Data saved successfully:", response.data);
       await handlePayment(response.data.data.id);
     } catch (error) {
       console.error("Error saving guide etage data:", error);
-      alert('Case already exists')
+      alert("Case already exists");
     }
   };
 
@@ -326,10 +346,7 @@ const SelectedItemsPageGETAGE = () => {
     };
 
     try {
-      const response = await axios.post(
-        `${apiUrl}/commandes`,
-        requestData
-      );
+      const response = await axios.post(`${apiUrl}/commandes`, requestData);
       const { error } = await stripe.redirectToCheckout({
         sessionId: response.data.stripeSession.id,
       });
@@ -397,7 +414,7 @@ const SelectedItemsPageGETAGE = () => {
           active: fifthSwitch,
         },
       ],
-      cout: cost,  
+      cout: cost,
       options_generiques: [
         {
           title: "Smile Design",
@@ -411,8 +428,8 @@ const SelectedItemsPageGETAGE = () => {
       approuve: false,
       produire_expide: false,
       user: user.id,
-      offre:currentOffer?.currentPlan,
-      originalCost:originalCost,
+      offre: currentOffer?.currentPlan,
+      originalCost: originalCost,
     };
 
     formData.append("data", JSON.stringify(guideData));
@@ -426,7 +443,6 @@ const SelectedItemsPageGETAGE = () => {
     }
 
     try {
-
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
@@ -436,29 +452,25 @@ const SelectedItemsPageGETAGE = () => {
           },
         }
       );
-  
+
       if (checkRes.data.exists) {
-        alert('Case number already exists');
+        alert("Case number already exists");
         return;
       }
 
-      const response = await axios.post(
-        `${apiUrl}/guide-a-etages`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.post(`${apiUrl}/guide-a-etages`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       localStorage.clear();
       console.log("Data archived successfully:", response.data);
 
-      navigate("/mes-fichier")
+      navigate("/mes-fichiers");
     } catch (error) {
       console.error("Error archiving guide etage data:", error);
-      alert('case already exist')
+      alert("case already exist");
     }
   };
 
@@ -682,14 +694,44 @@ const SelectedItemsPageGETAGE = () => {
                               : "Add files:"}
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="file"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                field.onChange(file);
-                              }}
-                            />
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                type="file"
+                                accept={ALLOWED_FILE_TYPES.join(",")}
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    field.onChange(file);
+                                  } else {
+                                    field.onChange(null);
+                                  }
+                                }}
+                                className="flex-grow"
+                              />
+                              <FolderUp className="text-yellow-600 w-5 h-5" />
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Info className="h-4 w-4 cursor-pointer" />
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-80 bg-gray-200 bg-opacity-95 p-4 rounded-md shadow-lg">
+                                  <p className="text-sm">
+                                    {language === "french"
+                                      ? "Merci de télécharger les fichiers ici. Veuillez regrouper vos fichiers dans un seul dossier compressé afin de ne pas dépasser la taille maximale de 400 Mo. L'application accepte uniquement les fichiers compressés."
+                                      : "Please upload the files here. Remember to group your files into a single compressed folder to ensure the total size does not exceed 400 MB. The application only accepts compressed files."}
+                                  </p>
+                                </HoverCardContent>
+                              </HoverCard>
+                            </div>
                           </FormControl>
+                          <FormDescription>
+                            {language === "french"
+                              ? `Formats acceptés : ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Taille maximale : 400 Mo.`
+                              : `Accepted formats: ${ALLOWED_FILE_TYPES.join(
+                                  ", "
+                                )}. Maximum size: 400MB.`}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -720,15 +762,15 @@ const SelectedItemsPageGETAGE = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>
+                          <AlertDialogTitle>
                             {language === "french"
                               ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                               : "Are you sure you want to archive this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                            : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                            {language === "french"
+                              ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                              : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -761,15 +803,15 @@ const SelectedItemsPageGETAGE = () => {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {language === "french"
-                            ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                            : "Are you sure you want to submit this case?"}
+                          <AlertDialogTitle>
+                            {language === "french"
+                              ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                              : "Are you sure you want to submit this case?"}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                          {language === "french"
-                            ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                            : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                            {language === "french"
+                              ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                              : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

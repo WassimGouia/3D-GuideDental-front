@@ -250,7 +250,7 @@ const Cabinet = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            {language === "french" ? "Nom :" : "Name :"}
+                            {language === "french" ? "Nom et prénom:" : "First and last name:"}
                           </FormLabel>
                           <FormControl>
                             <Input

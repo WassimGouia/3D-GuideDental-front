@@ -95,7 +95,7 @@ const Nouvmod = () => {
       );
       if (response.status === 200) {
         await updateGuideStatus();
-        navigate("/mes-fichier");
+        navigate("/mes-fichiers");
       } else {
         alert(`Submission failed with status: ${response.status}`);
       }

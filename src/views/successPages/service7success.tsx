@@ -38,7 +38,7 @@ const Service7Success = () => {
                   await updateGuideStatus();
                   localStorage.clear()
                   setTimeout(function() {
-                    window.location.href = "/mes-fichier";
+                    window.location.href = "/mes-fichiers";
                 }, 3000);
               } catch (error) {
                 console.error("Failed to submit data:", error);

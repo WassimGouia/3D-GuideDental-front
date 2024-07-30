@@ -16,6 +16,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   Form,
   FormField,
   FormItem,
@@ -31,6 +36,7 @@ import {
   FolderUp,
   UsersRound,
   Package,
+  Info,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import {
@@ -46,6 +52,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const SelectedItemsPageAutreService = () => {
+  const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
+  const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,7 +69,29 @@ const SelectedItemsPageAutreService = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   const formSchema = z.object({
-    file: z.any().refine((file) => file instanceof File, "File is required"),
+    file: z
+      .any()
+      .refine((file) => file instanceof File, {
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      })
+      .refine((file) => file.size <= MAX_FILE_SIZE, {
+        message:
+          language === "french"
+            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+            : "File size should not exceed 400MB",
+      })
+      .refine(
+        (file) =>
+          ALLOWED_FILE_TYPES.includes(
+            `.${file.name.split(".").pop().toLowerCase()}`
+          ),
+        language === "french"
+          ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(", ")}`
+          : `Please select a ${ALLOWED_FILE_TYPES.join(", ")} file`
+      ),
   });
 
   const form = useForm({
@@ -172,15 +202,13 @@ const SelectedItemsPageAutreService = () => {
         Demande_devis: true,
         user: user.id,
         service: 5,
-        offre:currentOffer?.currentPlan
+        offre: currentOffer?.currentPlan,
       })
     );
 
     formData.append("files.User_Upload", fileData);
 
     try {
-
-
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
@@ -190,9 +218,9 @@ const SelectedItemsPageAutreService = () => {
           },
         }
       );
-  
+
       if (checkRes.data.exists) {
-        alert('Case number already exists');
+        alert("Case number already exists");
         return;
       }
 
@@ -206,8 +234,7 @@ const SelectedItemsPageAutreService = () => {
           },
         }
       );
-      navigate("/mes-fichier")
-
+      navigate("/mes-fichiers");
     } catch (error) {
       console.error("Error submitting quote request:", error);
       alert(
@@ -215,7 +242,7 @@ const SelectedItemsPageAutreService = () => {
           ? "Erreur lors de la soumission de la demande de devis"
           : "Error submitting quote request"
       );
-      alert("Case already exists")
+      alert("Case already exists");
     }
   };
 
@@ -249,15 +276,13 @@ const SelectedItemsPageAutreService = () => {
         Demande_devis: false,
         user: user.id,
         service: 5, // Assuming this is the ID for Autres services de conception
-        offre:currentOffer?.currentPlan
+        offre: currentOffer?.currentPlan,
       })
     );
 
     formData.append("files.User_Upload", fileData);
 
     try {
-
-
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
@@ -267,9 +292,9 @@ const SelectedItemsPageAutreService = () => {
           },
         }
       );
-  
+
       if (checkRes.data.exists) {
-        alert('Case number already exists');
+        alert("Case number already exists");
         return;
       }
 
@@ -286,7 +311,7 @@ const SelectedItemsPageAutreService = () => {
 
       if (response.status === 200) {
         localStorage.clear();
-        navigate("/mes-fichier");
+        navigate("/mes-fichiers");
       } else {
         alert(response.status);
       }
@@ -298,8 +323,7 @@ const SelectedItemsPageAutreService = () => {
           : "Error archiving service"
       );
 
-      alert("Case already exists")
-
+      alert("Case already exists");
     }
   };
 
@@ -420,34 +444,32 @@ const SelectedItemsPageAutreService = () => {
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
-                                  const fileName = file.name;
-                                  const fileExtension = fileName
-                                    .split(".")
-                                    .pop()
-                                    .toLowerCase();
-                                  if (
-                                    !["zip", "rar", "7z", "tar"].includes(
-                                      fileExtension
-                                    )
-                                  ) {
-                                    alert(
-                                      "Please select a ZIP, RAR, 7Z, or TAR file"
-                                    );
-                                    e.target.value = "";
-                                  } else {
-                                    field.onChange(file);
-                                  }
+                                  field.onChange(file);
+                                } else {
+                                  field.onChange(null);
                                 }
                               }}
                               className="flex-grow"
                             />
                             <FolderUp className="text-yellow-600 w-5 h-5" />
+                            <HoverCard>
+                              <HoverCardTrigger asChild>
+                                <Info className="h-4 w-4 cursor-pointer" />
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-80 bg-gray-200 bg-opacity-95 p-4 rounded-md shadow-lg">
+                                <p className="text-sm">
+                                  {language === "french"
+                                    ? "Merci de télécharger les fichiers ici. Veuillez regrouper vos fichiers dans un seul dossier compressé afin de ne pas dépasser la taille maximale de 400 Mo. L'application accepte uniquement les fichiers compressés."
+                                    : "Please upload the files here. Remember to group your files into a single compressed folder to ensure the total size does not exceed 400 MB. The application only accepts compressed files."}
+                                </p>
+                              </HoverCardContent>
+                            </HoverCard>
                           </div>
                         </FormControl>
                         <FormDescription className="text-sm text-gray-500">
                           {language === "french"
-                            ? "Ajoutez les fichiers requis (CBCT, empreintes numériques, etc.) afin que 3D Guide Dental puisse fournir le service proposé."
-                            : "Add the required files (CBCT, digital impressions, etc.) so that 3D Guide Dental can provide the service offered."}
+                            ? "Ajoutez les fichiers requis (CBCT, empreintes numériques, etc.) afin que 3D Guide Dental puisse fournir le service proposé. Taille maximale : 400 Mo. Formats acceptés : ZIP, RAR, 7Z, TAR."
+                            : "Add the required files (CBCT, digital impressions, etc.) so that 3D Guide Dental can provide the service offered. Maximum size: 400MB. Accepted formats: ZIP, RAR, 7Z, TAR."}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -489,15 +511,15 @@ const SelectedItemsPageAutreService = () => {
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                  <AlertDialogTitle>
+                    <AlertDialogTitle>
                       {language === "french"
                         ? "Êtes-vous sûr de vouloir archiver ce cas ?"
                         : "Are you sure you want to archive this case?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                    {language === "french"
-                      ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                      : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                      {language === "french"
+                        ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                        : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -522,15 +544,15 @@ const SelectedItemsPageAutreService = () => {
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {language === "french"
-                      ? "Êtes-vous sûr de vouloir demander un devis pour ce cas ?"
-                      : "Are you sure you want to request a quote for this case?"}
+                    <AlertDialogTitle>
+                      {language === "french"
+                        ? "Êtes-vous sûr de vouloir demander un devis pour ce cas ?"
+                        : "Are you sure you want to request a quote for this case?"}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                    {language === "french"
-                      ? "Demander un devis pour votre cas."
-                      : "Request a quote for your case."}
+                      {language === "french"
+                        ? "Demander un devis pour votre cas."
+                        : "Request a quote for your case."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

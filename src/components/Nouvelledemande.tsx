@@ -52,7 +52,7 @@ const Nouvelle: React.FC = () => {
           className="flex justify-center"
           onClick={handleTabClick}
         >
-          {language === "french" ? "Fichier" : "File"}
+          {language === "french" ? "Fichiers" : "Files"}
         </TabsTrigger>
       </TabsList>
     </Tabs>
