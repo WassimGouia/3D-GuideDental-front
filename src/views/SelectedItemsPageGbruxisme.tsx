@@ -56,6 +56,7 @@ const SelectedItemsPageGbruxisme = () => {
   const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
   const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
+  const [uploadMessage, setUploadMessage] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const location = useLocation();
@@ -207,6 +208,9 @@ const SelectedItemsPageGbruxisme = () => {
 
     const token = getToken();
     console.log("Token:", token);
+    console.log("File size:", file.size);
+
+    const startTime = Date.now();
 
     try {
       const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
@@ -215,14 +219,24 @@ const SelectedItemsPageGbruxisme = () => {
           Authorization: `Bearer ${token}`,
         },
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
           setUploadProgress(percentCompleted);
+          console.log(`Upload progress: ${percentCompleted}%`);
+          console.log(
+            `Loaded: ${progressEvent.loaded}, Total: ${progressEvent.total}`
+          );
         },
       });
 
+      const endTime = Date.now();
+      console.log(`Upload took ${endTime - startTime} ms`);
       console.log("Upload response:", uploadResponse);
+
+      // Artificial delay to simulate server processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       return uploadResponse.data[0].id;
     } catch (error) {
       console.error(
@@ -373,26 +387,36 @@ const SelectedItemsPageGbruxisme = () => {
     }
   };
 
-  // Main function to handle the upload and submission process
   const handleUploadAndSubmit = async (file, isArchive = false) => {
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadMessage(
+      language === "french"
+        ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+        : "The upload may take a few minutes. Please be patient..."
+    );
 
     try {
-      // File upload stage
       console.log("Starting file upload...");
       const fileId = await uploadFile(file);
-      console.log("File uploaded successfully, ID:", fileId);
+      console.log("File upload completed, ID:", fileId);
 
-      // Reset progress for data submission
-      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Traitement des données..."
+          : "Processing data..."
+      );
 
-      // Data submission stage
-      console.log("Starting data submission...");
       await submitData(fileId, isArchive);
-      console.log("Data submitted successfully");
+      console.log("Data submission completed");
 
-      // Handle success
+      setUploadProgress(100);
+      setUploadMessage(
+        language === "french"
+          ? "Téléchargement et soumission réussis!"
+          : "Upload and submission successful!"
+      );
+
       alert(
         language === "french"
           ? "Fichier téléchargé et données soumises avec succès"
@@ -400,10 +424,10 @@ const SelectedItemsPageGbruxisme = () => {
       );
     } catch (err) {
       console.error("Error in upload and submit process:", err);
-      alert(
+      setUploadMessage(
         language === "french"
-          ? "Une erreur s'est produite lors du traitement de votre demande"
-          : "An error occurred while processing your request"
+          ? "Une erreur s'est produite. Veuillez réessayer."
+          : "An error occurred. Please try again."
       );
     } finally {
       setIsUploading(false);
@@ -692,23 +716,9 @@ const SelectedItemsPageGbruxisme = () => {
                           </FormDescription>
                           <FormMessage />
                           {isUploading && (
-                            <div className="mt-2">
-                              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                <div
-                                  className="bg-red-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
-                                  style={{ width: `${uploadProgress}%` }}
-                                ></div>
-                              </div>
-                              <p className="text-sm mt-1">
-                                {uploadProgress > 0
-                                  ? `${uploadProgress}% ${
-                                      language === "french"
-                                        ? "Téléchargé"
-                                        : "Uploaded"
-                                    }`
-                                  : language === "french"
-                                  ? "Soumission des données..."
-                                  : "Submitting data..."}
+                            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                              <p className="text-sm text-red-500 text-center font-medium">
+                                {uploadMessage}
                               </p>
                             </div>
                           )}
