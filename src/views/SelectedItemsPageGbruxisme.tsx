@@ -83,13 +83,7 @@ const SelectedItemsPageGbruxisme = () => {
 
   const formSchema = z.object({
     file: z
-      .any()
-      .refine((file) => file instanceof File, {
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      })
+      .instanceof(File)
       .refine((file) => file.size <= MAX_FILE_SIZE, {
         message:
           language === "french"
@@ -117,7 +111,16 @@ const SelectedItemsPageGbruxisme = () => {
   const handleArchiveClick = async (e) => {
     e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
       setShowArchiveDialog(true);
     }
   };
@@ -125,7 +128,16 @@ const SelectedItemsPageGbruxisme = () => {
   const handleSubmitClick = async (e) => {
     e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
       setShowSubmitDialog(true);
     }
   };
@@ -557,12 +569,53 @@ const SelectedItemsPageGbruxisme = () => {
                                 onChange={(e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    field.onChange(file);
+                                    if (file.size > MAX_FILE_SIZE) {
+                                      form.setError("file", {
+                                        type: "manual",
+                                        message:
+                                          language === "french"
+                                            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+                                            : "File size should not exceed 400MB",
+                                      });
+                                    } else if (
+                                      !ALLOWED_FILE_TYPES.includes(
+                                        `.${file.name
+                                          .split(".")
+                                          .pop()
+                                          .toLowerCase()}`
+                                      )
+                                    ) {
+                                      form.setError("file", {
+                                        type: "manual",
+                                        message:
+                                          language === "french"
+                                            ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(
+                                                ", "
+                                              )}`
+                                            : `Please select a ${ALLOWED_FILE_TYPES.join(
+                                                ", "
+                                              )} file`,
+                                      });
+                                    } else {
+                                      form.clearErrors("file");
+                                      field.onChange(file);
+                                    }
                                   } else {
+                                    form.setError("file", {
+                                      type: "manual",
+                                      message:
+                                        language === "french"
+                                          ? "Veuillez sélectionner un fichier"
+                                          : "Please select a file",
+                                    });
                                     field.onChange(null);
                                   }
                                 }}
-                                className="flex-grow"
+                                className={`flex-grow ${
+                                  form.formState.errors.file
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
                               />
                               <FolderUp className="text-yellow-600 w-5 h-5" />
                               <HoverCard>

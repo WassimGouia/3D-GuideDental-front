@@ -92,13 +92,7 @@ const SelectedItemsPageRapportRad = () => {
 
   const formSchema = z.object({
     file: z
-      .any()
-      .refine((file) => file instanceof File, {
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      })
+      .instanceof(File)
       .refine((file) => file.size <= MAX_FILE_SIZE, {
         message:
           language === "french"
@@ -123,16 +117,36 @@ const SelectedItemsPageRapportRad = () => {
     },
   });
 
-  const handleArchiveClick = async () => {
+  const handleArchiveClick = async (e) => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
-      setShowArchiveDialog(true);
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
+      setShowSubmitDialog(true);
     }
   };
 
-  const handleSubmitClick = async () => {
+  const handleSubmitClick = async (e) => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
       setShowSubmitDialog(true);
     }
   };
@@ -570,10 +584,21 @@ const SelectedItemsPageRapportRad = () => {
                                   if (file) {
                                     field.onChange(file);
                                   } else {
-                                    field.onChange(null);
+                                    field.onChange(undefined);
+                                    form.setError("file", {
+                                      type: "manual",
+                                      message:
+                                        language === "french"
+                                          ? "Veuillez sélectionner un fichier"
+                                          : "Please select a file",
+                                    });
                                   }
                                 }}
-                                className="flex-grow"
+                                className={`flex-grow ${
+                                  form.formState.errors.file
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
                               />
                               <FolderUp className="text-yellow-600 w-5 h-5" />
                               <HoverCard>

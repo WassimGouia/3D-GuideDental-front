@@ -98,13 +98,7 @@ const SelectedItemsPageGclassique = () => {
 
   const formSchema = z.object({
     file: z
-      .any()
-      .refine((file) => file instanceof File, {
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      })
+      .instanceof(File)
       .refine((file) => file.size <= MAX_FILE_SIZE, {
         message:
           language === "french"
@@ -187,10 +181,20 @@ const SelectedItemsPageGclassique = () => {
 
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (!isValid) {
-      return;
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
+      setShowArchiveDialog(true);
     }
 
     const fileInput = document.querySelector('input[type="file"]');
@@ -350,9 +354,19 @@ const SelectedItemsPageGclassique = () => {
   }, []);
 
   const handleNextClickArchive = async () => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (!isValid) {
-      return;
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
+      setShowArchiveDialog(true);
     }
 
     const fileInput = document.querySelector('input[type="file"]');
@@ -715,12 +729,12 @@ const SelectedItemsPageGclassique = () => {
                     <FormField
                       control={form.control}
                       name="file"
-                      render={({ field: { onChange, value, ...rest } }) => (
+                      render={({ field }) => (
                         <FormItem>
                           <FormLabel>
                             {language === "french"
-                              ? "Ajouter des fichiers (requis):"
-                              : "Add files (required):"}
+                              ? "Ajouter des fichiers:"
+                              : "Add files:"}
                           </FormLabel>
                           <FormControl>
                             <div className="flex items-center space-x-2">
@@ -730,13 +744,23 @@ const SelectedItemsPageGclassique = () => {
                                 onChange={(e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    onChange(file);
+                                    field.onChange(file);
                                   } else {
-                                    onChange(null);
+                                    field.onChange(undefined);
+                                    form.setError("file", {
+                                      type: "manual",
+                                      message:
+                                        language === "french"
+                                          ? "Veuillez sélectionner un fichier"
+                                          : "Please select a file",
+                                    });
                                   }
                                 }}
-                                {...rest}
-                                className="flex-grow"
+                                className={`flex-grow ${
+                                  form.formState.errors.file
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
                               />
                               <FolderUp className="text-yellow-600 w-5 h-5" />
                               <HoverCard>

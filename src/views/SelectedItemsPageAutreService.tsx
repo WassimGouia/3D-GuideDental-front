@@ -70,13 +70,7 @@ const SelectedItemsPageAutreService = () => {
 
   const formSchema = z.object({
     file: z
-      .any()
-      .refine((file) => file instanceof File, {
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      })
+      .instanceof(File)
       .refine((file) => file.size <= MAX_FILE_SIZE, {
         message:
           language === "french"
@@ -158,17 +152,37 @@ const SelectedItemsPageAutreService = () => {
     navigate("/autre-services", { state: { formData: selectedItemsData } });
   };
 
-  const handleArchiveClick = async () => {
+  const handleArchiveClick = async (e) => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
       setShowArchiveDialog(true);
     }
   };
 
-  const handleSubmitClick = async () => {
+  const handleSubmitClick = async (e) => {
+    e.preventDefault();
     const isValid = await form.trigger();
-    if (isValid) {
-      setShowSubmitDialog(true);
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
+      setShowArchiveDialog(true);
     }
   };
 
@@ -431,25 +445,36 @@ const SelectedItemsPageAutreService = () => {
                     name="file"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">
+                        <FormLabel>
                           {language === "french"
-                            ? "Ajouter des fichiers"
-                            : "Add files"}
+                            ? "Ajouter des fichiers:"
+                            : "Add files:"}
                         </FormLabel>
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Input
                               type="file"
-                              accept=".zip,.rar,.7z,.tar"
+                              accept={ALLOWED_FILE_TYPES.join(",")}
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
                                   field.onChange(file);
                                 } else {
-                                  field.onChange(null);
+                                  field.onChange(undefined);
+                                  form.setError("file", {
+                                    type: "manual",
+                                    message:
+                                      language === "french"
+                                        ? "Veuillez sélectionner un fichier"
+                                        : "Please select a file",
+                                  });
                                 }
                               }}
-                              className="flex-grow"
+                              className={`flex-grow ${
+                                form.formState.errors.file
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
                             />
                             <FolderUp className="text-yellow-600 w-5 h-5" />
                             <HoverCard>
@@ -466,10 +491,14 @@ const SelectedItemsPageAutreService = () => {
                             </HoverCard>
                           </div>
                         </FormControl>
-                        <FormDescription className="text-sm text-gray-500">
+                        <FormDescription>
                           {language === "french"
-                            ? "Ajoutez les fichiers requis (CBCT, empreintes numériques, etc.) afin que 3D Guide Dental puisse fournir le service proposé. Taille maximale : 400 Mo. Formats acceptés : ZIP, RAR, 7Z, TAR."
-                            : "Add the required files (CBCT, digital impressions, etc.) so that 3D Guide Dental can provide the service offered. Maximum size: 400MB. Accepted formats: ZIP, RAR, 7Z, TAR."}
+                            ? `Formats acceptés : ${ALLOWED_FILE_TYPES.join(
+                                ", "
+                              )}. Taille maximale : 400 Mo.`
+                            : `Accepted formats: ${ALLOWED_FILE_TYPES.join(
+                                ", "
+                              )}. Maximum size: 400MB.`}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
