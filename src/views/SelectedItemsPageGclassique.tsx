@@ -14,6 +14,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Loader } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +60,9 @@ const SelectedItemsPageGclassique = () => {
   const { user } = useAuthContext();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
   const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,136 +185,165 @@ const SelectedItemsPageGclassique = () => {
 
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const isValid = await form.trigger();
-    if (!form.getValues().file) {
-      form.setError("file", {
-        type: "manual",
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      });
-    }
-    // if (isValid && form.getValues().file) {
-    //   setShowArchiveDialog(true);
-    // }
-
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
-
+  const uploadFile = async (file) => {
     const formData = new FormData();
+    formData.append("files", file);
 
-    const guideData = {
-      service: 2,
-      comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      Full_guidee: [
-        {
-          titlle: "Fully guided",
-          active: fullGuide,
-        },
-      ],
-      Forage_pilote: [
-        {
-          title: "Pilot drilling",
-          active: foragePilote,
-        },
-      ],
-      Marque_de_la_trousse: [
-        {
-          title: "Brand of the surgical kit used",
-          description: brandSurgeon,
-        },
-      ],
-      options_generiques: [
-        {
-          title: "options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: ImpressionFormlabs,
-              Guide_supplementaire: additionalGuidesImpressionn,
-            },
-          ],
-          Suppression_numerique: [
-            {
-              title: "Digital extraction of teeth",
-              active: Suppressionnumérique,
-              description: textareaValu,
-            },
-          ],
-          Smile_Design: [
-            {
-              title: "Smile Design",
-              active: smileDesign,
-            },
-          ],
-        },
-      ],
-      Clavettes_de_stabilisation: [
-        {
-          title: "Stabilization pins",
-          active: showStabilizationPins,
-          nombre_des_clavettes: additionalGuidesClavettess,
-        },
-      ],
-      cout: cost,
-      marque_implant_pour_la_dent: { " index": implantBrandValue },
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
+    const token = getToken();
+    console.log("Token:", token);
+    console.log("File size:", file.size);
 
-    console.log("Guide Data:", guideData);
-
-    formData.append("data", JSON.stringify(guideData));
-
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
-
-    const checkRes = await axios.post(
-      `${apiUrl}/checkCaseNumber`,
-      { caseNumber: patientData.caseNumber },
-      {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      }
-    );
-
-    if (checkRes.data.exists) {
-      alert("Case number already exists");
-      return;
-    }
+    const startTime = Date.now();
 
     try {
-      const response = await axios.post(
-        `${apiUrl}/guide-classiques`,
-        formData,
+      const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(percentCompleted);
+          console.log(`Upload progress: ${percentCompleted}%`);
+          console.log(
+            `Loaded: ${progressEvent.loaded}, Total: ${progressEvent.total}`
+          );
+        },
+      });
+
+      const endTime = Date.now();
+      console.log(`Upload took ${endTime - startTime} ms`);
+      console.log("Upload response:", uploadResponse);
+
+      // Artificial delay to simulate server processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      return uploadResponse.data[0].id;
+    } catch (error) {
+      console.error(
+        "File upload error:",
+        error.response ? error.response.data : error
+      );
+      throw error;
+    }
+  };
+
+  const submitData = async (fileId, isArchive = false) => {
+    try {
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
+          headers: { Authorization: `Bearer ${getToken()}` },
         }
       );
 
-      console.log("Data saved successfully:", response.data);
+      if (checkRes.data.exists) {
+        alert(
+          language === "french"
+            ? "Le numéro de cas existe déjà"
+            : "Case number already exists"
+        );
+        return;
+      }
 
-      await handlePayment(response.data.data.id);
-    } catch (error) {
-      console.error("Error saving guide classique data:", error);
-      alert("Case already exists");
+      const guideData = {
+        service: 2,
+        comment,
+        patient: patientData.fullname,
+        numero_cas: patientData.caseNumber,
+        Full_guidee: [
+          {
+            titlle: "Fully guided",
+            active: fullGuide,
+          },
+        ],
+        Forage_pilote: [
+          {
+            title: "Pilot drilling",
+            active: foragePilote,
+          },
+        ],
+        Marque_de_la_trousse: [
+          {
+            title: "Brand of the surgical kit used",
+            description: brandSurgeon,
+          },
+        ],
+        options_generiques: [
+          {
+            title: "options generiques",
+            Impression_Formlabs: [
+              {
+                title: "Formlabs® impression",
+                active: ImpressionFormlabs,
+                Guide_supplementaire: additionalGuidesImpressionn,
+              },
+            ],
+            Suppression_numerique: [
+              {
+                title: "Digital extraction of teeth",
+                active: Suppressionnumérique,
+                description: textareaValu,
+              },
+            ],
+            Smile_Design: [
+              {
+                title: "Smile Design",
+                active: smileDesign,
+              },
+            ],
+          },
+        ],
+        Clavettes_de_stabilisation: [
+          {
+            title: "Stabilization pins",
+            active: showStabilizationPins,
+            nombre_des_clavettes: additionalGuidesClavettess,
+          },
+        ],
+        cout: cost,
+        marque_implant_pour_la_dent: { " index": implantBrandValue },
+        archive: isArchive,
+        En_attente_approbation: false,
+        soumis: !isArchive,
+        en__cours_de_modification: false,
+        approuve: false,
+        produire_expide: false,
+        user: user.id,
+        offre: currentOffer?.currentPlan,
+        originalCost: originalCost,
+        User_Upload: fileId,
+      };
+
+      const res = await axios.post(
+        `${apiUrl}/guide-classiques`,
+        { data: guideData },
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        }
+      );
+
+      console.log("Data submission response:", res.data);
+
+      if (res.status === 200) {
+        if (isArchive) {
+          localStorage.clear();
+          navigate("/mes-fichiers");
+        } else {
+          await handlePayment(res.data.data.id);
+        }
+      } else {
+        throw new Error(`Unexpected response status: ${res.status}`);
+      }
+    } catch (err) {
+      console.error(
+        "Data submission error:",
+        err.response ? err.response.data : err
+      );
+      throw err;
     }
   };
 
@@ -349,11 +382,131 @@ const SelectedItemsPageGclassique = () => {
     }
   };
 
-  useEffect(() => {
-    axios.get(`${apiUrl}/services`).then(() => {});
-  }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
+      );
+
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        await submitData(fileId, false);
+        console.log("Data submission completed");
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et soumission réussis!"
+            : "Upload and submission successful!"
+        );
+
+        alert(
+          language === "french"
+            ? "Fichier téléchargé et données soumises avec succès"
+            : "File uploaded and data submitted successfully"
+        );
+      } catch (err) {
+        console.error("Error in upload and submit process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+  };
 
   const handleNextClickArchive = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
+      );
+
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        await submitData(fileId, true);
+        console.log("Data submission completed");
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et archivage réussis!"
+            : "Upload and archiving successful!"
+        );
+
+        alert(
+          language === "french"
+            ? "Fichier téléchargé et données archivées avec succès"
+            : "File uploaded and data archived successfully"
+        );
+      } catch (err) {
+        console.error("Error in upload and archive process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+  };
+
+  const handleArchiveClick = async (e) => {
     e.preventDefault();
     const isValid = await form.trigger();
     if (!form.getValues().file) {
@@ -365,125 +518,31 @@ const SelectedItemsPageGclassique = () => {
             : "Please select a file",
       });
     }
-    // if (isValid && form.getValues().file) {
-    //   setShowArchiveDialog(false);
-    // }
-
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
-
-    const formData = new FormData();
-
-    const guideData = {
-      service: 2,
-      comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      Full_guidee: [
-        {
-          titlle: "Fully guided",
-          active: fullGuide,
-        },
-      ],
-      Forage_pilote: [
-        {
-          title: "Pilot drilling",
-          active: foragePilote,
-        },
-      ],
-      Marque_de_la_trousse: [
-        {
-          title: "Brand of the surgical kit used",
-          description: brandSurgeon,
-        },
-      ],
-      options_generiques: [
-        {
-          title: "options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: ImpressionFormlabs,
-              Guide_supplementaire: additionalGuidesImpressionn,
-            },
-          ],
-          Suppression_numerique: [
-            {
-              title: "Digital extraction of teeth",
-              active: Suppressionnumérique,
-              description: textareaValu,
-            },
-          ],
-          Smile_Design: [
-            {
-              title: "Smile Design",
-              active: smileDesign,
-            },
-          ],
-        },
-      ],
-      Clavettes_de_stabilisation: [
-        {
-          title: "Stabilization pins",
-          active: showStabilizationPins,
-          nombre_des_clavettes: additionalGuidesClavettess,
-        },
-      ],
-      cout: cost,
-      marque_implant_pour_la_dent: { " index": implantBrandValue },
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
-
-    formData.append("data", JSON.stringify(guideData));
-
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
+    if (isValid && form.getValues().file) {
+      setShowArchiveDialog(true);
     }
-
-    const checkRes = await axios.post(
-      `${apiUrl}/checkCaseNumber`,
-      { caseNumber: patientData.caseNumber },
-      {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      }
-    );
-
-    if (checkRes.data.exists) {
-      alert("Case number already exists");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${apiUrl}/guide-classiques`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      console.log("Data saved successfully:", response.data);
-    } catch (error) {
-      console.error("Error saving guide classique data:", error);
-      alert("Case already exists");
-    }
-
-    localStorage.clear();
-    navigate("/mes-fichiers");
   };
+
+  const handleSubmitClick = async (e) => {
+    e.preventDefault();
+    const isValid = await form.trigger();
+    if (!form.getValues().file) {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+    if (isValid && form.getValues().file) {
+      setShowSubmitDialog(true);
+    }
+  };
+
+  useEffect(() => {
+    axios.get(`${apiUrl}/services`).then(() => {});
+  }, []);
 
   const handlePreviousClick = () => {
     navigate("/guide-classique");
@@ -787,6 +846,13 @@ const SelectedItemsPageGclassique = () => {
                                 )}. Maximum size: 400MB.`}
                           </FormDescription>
                           <FormMessage />
+                          {isUploading && (
+                            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                              <p className="text-sm text-red-500 text-center font-medium">
+                                {uploadMessage}
+                              </p>
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -803,28 +869,35 @@ const SelectedItemsPageGclassique = () => {
                       <div className=" flex space-x-4">
                         <Button
                           type="button"
-                          onClick={async () => {
-                            const isValid = await form.trigger();
-                            if (isValid) {
-                              setShowArchiveDialog(true);
-                            }
-                          }}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                          onClick={handleArchiveClick}
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
-                          {language === "french" ? "Archiver" : "Archive"}
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Archiver"
+                          ) : (
+                            "Archive"
+                          )}
                         </Button>
-
                         <Button
                           type="button"
-                          onClick={async () => {
-                            const isValid = await form.trigger();
-                            if (isValid) {
-                              setShowSubmitDialog(true);
-                            }
-                          }}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                          onClick={handleSubmitClick}
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
-                          {language === "french" ? "Soumettre" : "Submit"}
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Soumettre"
+                          ) : (
+                            "Submit"
+                          )}
                         </Button>
                       </div>
                     </div>

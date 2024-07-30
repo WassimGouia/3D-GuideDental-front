@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { Loader } from "lucide-react";
 import axios from "axios";
 import {
   AlertDialog,
@@ -58,6 +59,9 @@ const SelectedItemsPageGging = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { language } = useLanguage();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   const originalCost = location.state?.selectedItemsData.originalCost || 0;
   const selectedItemsData = location.state?.selectedItemsData;
@@ -105,37 +109,137 @@ const SelectedItemsPageGging = () => {
     },
   });
 
-  const handleArchiveClick = async (e) => {
-    e.preventDefault();
-    const isValid = await form.trigger();
-    if (!form.getValues().file) {
-      form.setError("file", {
-        type: "manual",
-        message:
+  const submitData = async (fileId, isArchive = false) => {
+    try {
+      const checkRes = await axios.post(
+        `${apiUrl}/checkCaseNumber`,
+        { caseNumber: patientData.caseNumber },
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        }
+      );
+
+      if (checkRes.data.exists) {
+        alert(
           language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      });
-    }
-    if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
+            ? "Le numéro de cas existe déjà"
+            : "Case number already exists"
+        );
+        return;
+      }
+
+      const guideData = {
+        service: 3,
+        comment: selectedItemsData.comment,
+        patient: patientData.fullname,
+        numero_cas: patientData.caseNumber,
+        cout: costt,
+        DICOM: [
+          {
+            title: "DICOM",
+            active: first,
+          },
+        ],
+        options_generiques: [
+          {
+            title: "options generiques",
+            Impression_Formlabs: [
+              {
+                title: "Formlabs® impression",
+                active: ImpressionFormlabs,
+                Guide_supplementaire: additionalGuidess,
+              },
+            ],
+            Suppression_numerique: [
+              {
+                title: "Digital extraction of teeth",
+                active: supressionumerique,
+                description: textareaValu,
+              },
+            ],
+            Smile_Design: [
+              {
+                title: "Smile Design",
+                active: smiledesign,
+              },
+            ],
+          },
+        ],
+        selected_teeth: selectedTeethData,
+        archive: isArchive,
+        En_attente_approbation: false,
+        soumis: !isArchive,
+        en__cours_de_modification: false,
+        approuve: false,
+        produire_expide: false,
+        user: user.id,
+        offre: currentOffer?.currentPlan,
+        originalCost: originalCost,
+        User_Upload: fileId,
+      };
+
+      const res = await axios.post(
+        `${apiUrl}/guide-pour-gingivectomies`,
+        { data: guideData },
+        {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        }
+      );
+
+      console.log("Data submission response:", res.data);
+
+      if (res.status === 200) {
+        if (isArchive) {
+          localStorage.clear();
+          navigate("/mes-fichiers");
+        } else {
+          await handlePayment(res.data.data.id);
+        }
+      } else {
+        throw new Error(`Unexpected response status: ${res.status}`);
+      }
+    } catch (err) {
+      console.error(
+        "Data submission error:",
+        err.response ? err.response.data : err
+      );
+      throw err;
     }
   };
 
-  const handleSubmitClick = async (e) => {
-    e.preventDefault();
+  const handleArchiveClick = async () => {
     const isValid = await form.trigger();
-    if (!form.getValues().file) {
-      form.setError("file", {
-        type: "manual",
-        message:
-          language === "french"
-            ? "Veuillez sélectionner un fichier"
-            : "Please select a file",
-      });
+    const file = form.getValues().file;
+    if (isValid && file) {
+      setShowArchiveDialog(true);
+    } else {
+      if (!file) {
+        form.setError("file", {
+          type: "manual",
+          message:
+            language === "french"
+              ? "Veuillez sélectionner un fichier"
+              : "Please select a file",
+        });
+      }
     }
-    if (isValid && form.getValues().file) {
+  };
+
+  const handleSubmitClick = async () => {
+    const isValid = await form.trigger();
+    const file = form.getValues().file;
+    if (isValid && file) {
       setShowSubmitDialog(true);
+    } else {
+      if (!file) {
+        form.setError("file", {
+          type: "manual",
+          message:
+            language === "french"
+              ? "Veuillez sélectionner un fichier"
+              : "Please select a file",
+        });
+      }
     }
   };
 
@@ -204,98 +308,170 @@ const SelectedItemsPageGging = () => {
   };
   const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_API);
 
-  const handleSubmit = async () => {
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
-
+  const uploadFile = async (file) => {
     const formData = new FormData();
+    formData.append("files", file);
 
-    const guideData = {
-      service: 3,
-      comment: selectedItemsData.comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      cout: costt,
-      DICOM: [
-        {
-          title: "DICOM",
-          active: first,
-        },
-      ],
-      options_generiques: [
-        {
-          title: "options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: ImpressionFormlabs,
-              Guide_supplementaire: additionalGuidess,
-            },
-          ],
-          Suppression_numerique: [
-            {
-              title: "Digital extraction of teeth",
-              active: supressionumerique,
-              description: textareaValu,
-            },
-          ],
-          Smile_Design: [
-            {
-              title: "Smile Design",
-              active: smiledesign,
-            },
-          ],
-        },
-      ],
-      selected_teeth: selectedTeethData,
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
+    const token = getToken();
+    console.log("Token:", token);
+    console.log("File size:", file.size);
 
-    formData.append("data", JSON.stringify(guideData));
+    const startTime = Date.now();
 
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
     try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
+      const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(percentCompleted);
+          console.log(`Upload progress: ${percentCompleted}%`);
+          console.log(
+            `Loaded: ${progressEvent.loaded}, Total: ${progressEvent.total}`
+          );
+        },
+      });
 
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
+      const endTime = Date.now();
+      console.log(`Upload took ${endTime - startTime} ms`);
+      console.log("Upload response:", uploadResponse);
 
-      const response = await axios.post(
-        `${apiUrl}/guide-pour-gingivectomies`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
+      // Artificial delay to simulate server processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      console.log("Data saved successfully:", response.data);
-      await handlePayment(response.data.data.id);
+      return uploadResponse.data[0].id;
     } catch (error) {
-      console.error("Error saving guide pour gingivectomie data:", error);
-      alert("Case already exists");
+      console.error(
+        "File upload error:",
+        error.response ? error.response.data : error
+      );
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
+      );
+
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        await submitData(fileId, false);
+        console.log("Data submission completed");
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et soumission réussis!"
+            : "Upload and submission successful!"
+        );
+
+        alert(
+          language === "french"
+            ? "Fichier téléchargé et données soumises avec succès"
+            : "File uploaded and data submitted successfully"
+        );
+      } catch (err) {
+        console.error("Error in upload and submit process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+  };
+
+  const handleNextClickArchive = async (e) => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
+      );
+
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        await submitData(fileId, true);
+        console.log("Data submission completed");
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et archivage réussis!"
+            : "Upload and archiving successful!"
+        );
+
+        alert(
+          language === "french"
+            ? "Fichier téléchargé et données archivées avec succès"
+            : "File uploaded and data archived successfully"
+        );
+      } catch (err) {
+        console.error("Error in upload and archive process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
     }
   };
 
@@ -326,102 +502,6 @@ const SelectedItemsPageGging = () => {
     }
   };
 
-  const handleNextClickArchive = async () => {
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
-
-    const formData = new FormData();
-
-    const guideData = {
-      service: 3,
-      comment: selectedItemsData.comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      cout: costt,
-      DICOM: [
-        {
-          title: "DICOM",
-          active: first,
-        },
-      ],
-      options_generiques: [
-        {
-          title: "options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: ImpressionFormlabs,
-              Guide_supplementaire: additionalGuidess,
-            },
-          ],
-          Suppression_numerique: [
-            {
-              title: "Digital extraction of teeth",
-              active: supressionumerique,
-              description: textareaValu,
-            },
-          ],
-          Smile_Design: [
-            {
-              title: "Smile Design",
-              active: smiledesign,
-            },
-          ],
-        },
-      ],
-      selected_teeth: selectedTeethData,
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
-
-    formData.append("data", JSON.stringify(guideData));
-
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
-    try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
-
-      const response = await axios.post(
-        `${apiUrl}/guide-pour-gingivectomies`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      console.log("Data saved successfully:", response.data);
-    } catch (error) {
-      console.error("Error saving guide pour gingivectomie data:", error);
-      alert("case already exists");
-    }
-
-    localStorage.clear();
-    navigate("/mes-fichiers");
-  };
   const handlePreviousClick = () => {
     navigate("/guide-gingivectomie", { state: { fromSelectedItems: true } });
   };
@@ -578,7 +658,7 @@ const SelectedItemsPageGging = () => {
                 </div>
 
                 <Form {...form}>
-                  <form>
+                  <form onSubmit={(e) => e.preventDefault()}>
                     <FormField
                       control={form.control}
                       name="file"
@@ -597,7 +677,38 @@ const SelectedItemsPageGging = () => {
                                 onChange={(e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    field.onChange(file);
+                                    if (file.size > MAX_FILE_SIZE) {
+                                      form.setError("file", {
+                                        type: "manual",
+                                        message:
+                                          language === "french"
+                                            ? "La taille du fichier ne doit pas dépasser 400 Mo"
+                                            : "File size should not exceed 400MB",
+                                      });
+                                    } else if (
+                                      !ALLOWED_FILE_TYPES.includes(
+                                        `.${file.name
+                                          .split(".")
+                                          .pop()
+                                          .toLowerCase()}`
+                                      )
+                                    ) {
+                                      form.setError("file", {
+                                        type: "manual",
+                                        message:
+                                          language === "french"
+                                            ? `Veuillez sélectionner un fichier ${ALLOWED_FILE_TYPES.join(
+                                                ", "
+                                              )}`
+                                            : `Please select a ${ALLOWED_FILE_TYPES.join(
+                                                ", "
+                                              )} file`,
+                                      });
+                                    } else {
+                                      form.clearErrors("file");
+                                      field.onChange(file);
+                                    }
+                                    ("");
                                   } else {
                                     field.onChange(undefined);
                                     form.setError("file", {
@@ -640,104 +751,135 @@ const SelectedItemsPageGging = () => {
                                 )}. Maximum size: 400MB.`}
                           </FormDescription>
                           <FormMessage />
+                          {isUploading && (
+                            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                              <p className="text-sm text-red-500  text-center font-medium mb-2">
+                                {uploadMessage}
+                              </p>
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />
+
+                    <div className="flex justify-between items-center mt-8">
+                      <Button
+                        onClick={handlePreviousClick}
+                        className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all"
+                      >
+                        {language === "french" ? "Précédent" : "Previous"}
+                      </Button>
+
+                      <div className="flex space-x-3">
+                        <Button
+                          type="button"
+                          onClick={handleArchiveClick}
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Archiver"
+                          ) : (
+                            "Archive"
+                          )}
+                        </Button>
+
+                        <Button
+                          type="button"
+                          onClick={handleSubmitClick}
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Soumettre"
+                          ) : (
+                            "Submit"
+                          )}
+                        </Button>
+
+                        <AlertDialog
+                          open={showArchiveDialog}
+                          onOpenChange={setShowArchiveDialog}
+                        >
+                          <AlertDialogTrigger asChild></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {language === "french"
+                                  ? "Êtes-vous sûr de vouloir archiver ce cas ?"
+                                  : "Are you sure you want to archive this case?"}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {language === "french"
+                                  ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
+                                  : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                {language === "french" ? "Annuler" : "Cancel"}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  form.handleSubmit(handleNextClickArchive)();
+                                  setShowArchiveDialog(false);
+                                }}
+                              >
+                                {language === "french"
+                                  ? "Continuer"
+                                  : "Continue"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        <AlertDialog
+                          open={showSubmitDialog}
+                          onOpenChange={setShowSubmitDialog}
+                        >
+                          <AlertDialogTrigger asChild></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {language === "french"
+                                  ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
+                                  : "Are you sure you want to submit this case?"}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {language === "french"
+                                  ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
+                                  : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                {language === "french" ? "Annuler" : "Cancel"}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  form.handleSubmit(handleSubmit)();
+                                  setShowSubmitDialog(false);
+                                }}
+                              >
+                                {language === "french"
+                                  ? "Continuer"
+                                  : "Continue"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
                   </form>
                 </Form>
-
-                <div className="flex justify-between items-center mt-8">
-                  <Button
-                    onClick={handlePreviousClick}
-                    className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#fffa1b] text-[#0e0004] hover:bg-[#fffb1bb5] hover:text-[#0e0004] transition-all"
-                  >
-                    {language === "french" ? "Précédent" : "Previous"}
-                  </Button>
-
-                  <div className="flex space-x-3">
-                    <AlertDialog
-                      open={showArchiveDialog}
-                      onOpenChange={setShowArchiveDialog}
-                    >
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          onClick={handleArchiveClick}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
-                        >
-                          {language === "french" ? "Archiver" : "Archive"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {language === "french"
-                              ? "Êtes-vous sûr de vouloir archiver ce cas ?"
-                              : "Are you sure you want to archive this case?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {language === "french"
-                              ? "Le cas sera archivé pendant une période de 3 mois à partir de sa date de création. En l'absence d'une action de votre part au-delà de cette période, il sera automatiquement et définitivement supprimé."
-                              : "The case will be archived for a period of 3 months from its creation date. In the absence of action on your part beyond this period, it will be automatically and permanently deleted."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            {language === "french" ? "Annuler" : "Cancel"}
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => {
-                              form.handleSubmit(handleNextClickArchive)();
-                              setShowArchiveDialog(false);
-                            }}
-                          >
-                            {language === "french" ? "Continuer" : "Continue"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-
-                    <AlertDialog
-                      open={showSubmitDialog}
-                      onOpenChange={setShowSubmitDialog}
-                    >
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          onClick={handleSubmitClick}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
-                        >
-                          {language === "french" ? "Soumettre" : "Submit"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {language === "french"
-                              ? "Êtes-vous sûr de vouloir soumettre ce cas ?"
-                              : "Are you sure you want to submit this case?"}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {language === "french"
-                              ? "Soumettez votre cas pour bénéficier d'une révision illimitée. Nos praticiens experts examineront le cas et vous enverront la planification pour validation."
-                              : "Submit your case to benefit from unlimited revision. Our expert practitioners will review the case and send you the plan for validation."}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>
-                            {language === "french" ? "Annuler" : "Cancel"}
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => {
-                              form.handleSubmit(handleSubmit)();
-                              setShowSubmitDialog(false);
-                            }}
-                          >
-                            {language === "french" ? "Continuer" : "Continue"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>

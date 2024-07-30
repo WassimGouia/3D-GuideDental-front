@@ -31,6 +31,7 @@ import {
   UsersRound,
   Package,
   Info,
+  Loader,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import { useForm } from "react-hook-form";
@@ -59,6 +60,9 @@ const SelectedItemsPageRapportRad = () => {
   const location = useLocation();
   const { language } = useLanguage();
   const [currentOffer, setCurrentOffer] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
   const { user } = useAuthContext();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -116,6 +120,51 @@ const SelectedItemsPageRapportRad = () => {
       file: null,
     },
   });
+
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append("files", file);
+
+    const token = getToken();
+    console.log("Token:", token);
+    console.log("File size:", file.size);
+
+    const startTime = Date.now();
+
+    try {
+      const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(percentCompleted);
+          console.log(`Upload progress: ${percentCompleted}%`);
+          console.log(
+            `Loaded: ${progressEvent.loaded}, Total: ${progressEvent.total}`
+          );
+        },
+      });
+
+      const endTime = Date.now();
+      console.log(`Upload took ${endTime - startTime} ms`);
+      console.log("Upload response:", uploadResponse);
+
+      // Artificial delay to simulate server processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      return uploadResponse.data[0].id;
+    } catch (error) {
+      console.error(
+        "File upload error:",
+        error.response ? error.response.data : error
+      );
+      throw error;
+    }
+  };
 
   const handleArchiveClick = async (e) => {
     e.preventDefault();
@@ -209,168 +258,203 @@ const SelectedItemsPageRapportRad = () => {
   };
 
   const handleNextClick = async () => {
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
+    const isValid = await form.trigger();
+    if (!isValid) return;
 
-    const formData = new FormData();
-
-    const reportData = {
-      service: 6, // Assuming this is the ID for Rapport Radiologique service
-      first_comment: comment,
-      date: selectedItemsData?.date,
-      second_comment: secondComment,
-      Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
-      Evaluer_implant_existant: checkboxGroup.evaluerImplantExistant === "oui",
-      Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
-      Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
-      autres: checkboxGroup.autre === "oui",
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      soumis: false,
-      archive: true,
-      user: user.id,
-      originalCost: originalCost,
-      cout: cost,
-      other_description: autreInput,
-    };
-
-    formData.append("data", JSON.stringify(reportData));
-
+    const file = form.getValues().file;
     if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
-
-    try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
       );
 
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        const reportData = {
+          service: 6,
+          first_comment: comment,
+          date: selectedItemsData?.date,
+          second_comment: secondComment,
+          Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
+          Evaluer_implant_existant:
+            checkboxGroup.evaluerImplantExistant === "oui",
+          Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
+          Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
+          autres: checkboxGroup.autre === "oui",
+          patient: patientData.fullname,
+          numero_cas: patientData.caseNumber,
+          soumis: true,
+          archive: false,
+          user: user.id,
+          originalCost: originalCost,
+          cout: cost,
+          other_description: autreInput,
+          User_Upload: fileId,
+        };
+
+        const response = await axios.post(
+          `${apiUrl}/rapport-radiologiques`,
+          { data: reportData },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+
+        console.log("Report submitted successfully:", response.data);
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et soumission réussis!"
+            : "Upload and submission successful!"
+        );
+
+        // Proceed with payment
+        const requestData = {
+          cost: cost,
+          service: 6,
+          patient: patientData.fullname,
+          email: user.email,
+          guideId: response.data.data.id,
+        };
+
+        const stripe = await stripePromise;
+        const paymentResponse = await axios.post(
+          `${apiUrl}/commandes`,
+          requestData,
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+        const { error } = await stripe.redirectToCheckout({
+          sessionId: paymentResponse.data.stripeSession.id,
+        });
+        if (error) {
+          console.error("Stripe checkout error:", error);
+        }
+      } catch (err) {
+        console.error("Error in upload and submit process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
       }
-
-      const response = await axios.post(
-        `${apiUrl}/rapport-radiologiques`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      console.log("Report submitted successfully:", response.data);
-
-      // Proceed with payment
-      const requestData = {
-        cost: cost,
-        service: 6,
-        patient: patientData.fullname,
-        email: user.email,
-        guideId: response.data.data.id,
-      };
-
-      const stripe = await stripePromise;
-      const paymentResponse = await axios.post(
-        `${apiUrl}/commandes`,
-        requestData,
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: paymentResponse.data.stripeSession.id,
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
       });
-      if (error) {
-        console.error("Stripe checkout error:", error);
-      }
-    } catch (err) {
-      console.error("Error submitting report or processing payment:", err);
-      alert("Case already exists");
     }
   };
 
   const handleNextClickArchive = async () => {
-    const fileInput = document.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
+    const isValid = await form.trigger();
+    if (!isValid) return;
 
-    const formData = new FormData();
-
-    const reportData = {
-      service: 6,
-      first_comment: comment,
-      date: selectedItemsData?.date,
-      second_comment: secondComment,
-      Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
-      Evaluer_implant_existant: checkboxGroup.evaluerImplantExistant === "oui",
-      Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
-      Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
-      autres: checkboxGroup.autre === "oui",
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      soumis: false,
-      archive: true,
-      user: user.id,
-      originalCost: originalCost,
-      cout: cost,
-      other_description: autreInput,
-    };
-
-    formData.append("data", JSON.stringify(reportData));
-
+    const file = form.getValues().file;
     if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
-
-    try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
-
-      const response = await axios.post(
-        `${apiUrl}/rapport-radiologiques`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      console.log("Report archived successfully:", response.data);
-      localStorage.clear();
-      navigate("/mes-fichiers");
-    } catch (err) {
-      console.error("Error archiving report:", err);
-      alert(
+      setIsUploading(true);
+      setUploadProgress(0);
+      setUploadMessage(
         language === "french"
-          ? "Erreur lors de l'archivage du rapport"
-          : "Error archiving report"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
       );
 
-      alert("Case already exists");
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        const reportData = {
+          service: 6,
+          first_comment: comment,
+          date: selectedItemsData?.date,
+          second_comment: secondComment,
+          Implantation_prevue: checkboxGroup.implantationPrevue === "oui",
+          Evaluer_implant_existant:
+            checkboxGroup.evaluerImplantExistant === "oui",
+          Evaluation_de_ATM: checkboxGroup.evaluationATM === "oui",
+          Eliminer_une_pathologie: checkboxGroup.eliminerPathologie === "oui",
+          autres: checkboxGroup.autre === "oui",
+          patient: patientData.fullname,
+          numero_cas: patientData.caseNumber,
+          soumis: false,
+          archive: true,
+          user: user.id,
+          originalCost: originalCost,
+          cout: cost,
+          other_description: autreInput,
+          User_Upload: fileId,
+        };
+
+        const response = await axios.post(
+          `${apiUrl}/rapport-radiologiques`,
+          { data: reportData },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+
+        console.log("Report archived successfully:", response.data);
+
+        setUploadProgress(100);
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et archivage réussis!"
+            : "Upload and archiving successful!"
+        );
+
+        localStorage.clear();
+        navigate("/mes-fichiers");
+      } catch (err) {
+        console.error("Error in upload and archive process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
     }
   };
 
@@ -625,6 +709,13 @@ const SelectedItemsPageRapportRad = () => {
                                 )}. Maximum size: 400MB.`}
                           </FormDescription>
                           <FormMessage />
+                          {isUploading && (
+                            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                              <p className="text-sm text-red-500 text-center font-medium">
+                                {uploadMessage}
+                              </p>
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -676,16 +767,34 @@ const SelectedItemsPageRapportRad = () => {
                   <div className="flex space-x-4">
                     <Button
                       onClick={handleArchiveClick}
-                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                      disabled={isUploading}
+                      className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                        isUploading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
-                      {language === "french" ? "Archiver" : "Archive"}
+                      {isUploading ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : language === "french" ? (
+                        "Soumettre"
+                      ) : (
+                        "Submit"
+                      )}
                     </Button>
 
                     <Button
                       onClick={handleSubmitClick}
-                      className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                      disabled={isUploading}
+                      className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                        isUploading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     >
-                      {language === "french" ? "Soumettre" : "Submit"}
+                      {isUploading ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : language === "french" ? (
+                        "Soumettre"
+                      ) : (
+                        "Submit"
+                      )}
                     </Button>
                   </div>
                 </div>
