@@ -36,6 +36,7 @@ import {
   UsersRound,
   Package,
   Info,
+  Loader,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import { useForm } from "react-hook-form";
@@ -55,6 +56,8 @@ const SelectedItemsPageGbruxisme = () => {
   const MAX_FILE_SIZE = 400 * 1024 * 1024; // 400MB in bytes
   const ALLOWED_FILE_TYPES = [".zip", ".rar", ".7z", ".tar"];
   const apiUrl = import.meta.env.VITE_BACKEND_API_ENDPOINT;
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const location = useLocation();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -198,202 +201,248 @@ const SelectedItemsPageGbruxisme = () => {
     return discounts[plan] || 0;
   };
 
-  const handleNextClick = async () => {
-    const isValid = await form.trigger();
-    if (!isValid) {
-      return;
-    }
-
-    if (textareaValu === "" && previousStates.first) {
-      return;
-    }
-
+  const uploadFile = async (file) => {
     const formData = new FormData();
+    formData.append("files", file);
 
-    const guideData = {
-      service: 4,
-      comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      cout: cost,
-      selected_teeth: selectedTeeth,
-      options_generiques: [
-        {
-          title: "les options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: second,
-              Guide_supplementaire: additionalGuidess,
-            },
-          ],
-          Suppression_numerique_de_dents: [
-            {
-              title: "Digital extraction of teeth",
-              active: first,
-              description: textareaValu,
-            },
-          ],
-        },
-      ],
+    const token = getToken();
+    console.log("Token:", token);
 
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
-
-    formData.append("data", JSON.stringify(guideData));
-
-    const file = form.getValues("file");
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
     try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
-
-      const res = await axios.post(
-        `${apiUrl}/gouttiere-de-bruxismes`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
-
-      const requestData = {
-        cost: cost,
-        service: 4,
-        patient: patientData.fullname,
-        email: user.email,
-        guideId: res.data.data.id,
-      };
-
-      const stripe = await stripePromise;
-      const response = await axios.post(`${apiUrl}/commandes`, requestData, {
+      const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
         headers: {
-          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
         },
       });
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: response.data.stripeSession.id,
-      });
-      if (error) {
-        console.error("Stripe checkout error:", error);
-      }
-    } catch (err) {
-      console.log(err);
+
+      console.log("Upload response:", uploadResponse);
+      return uploadResponse.data[0].id;
+    } catch (error) {
+      console.error(
+        "File upload error:",
+        error.response ? error.response.data : error
+      );
+      throw error;
     }
   };
 
-  const handleNextClickArchive = async (data) => {
-    const isValid = await form.trigger();
-    if (!isValid) {
-      return;
-    }
+  // Function to upload the file
+  // const uploadFile = async (file) => {
+  //   const formData = new FormData();
+  //   formData.append("files", file);
 
-    const formData = new FormData();
+  //   try {
+  //     const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
+  //       headers: {
+  //         "Content-Type": "multipart/form-data",
+  //         Authorization: `Bearer ${getToken()}`,
+  //       },
+  //       onUploadProgress: (progressEvent) => {
+  //         const percentCompleted = Math.round(
+  //           (progressEvent.loaded * 100) / progressEvent.total
+  //         );
+  //         setUploadProgress(percentCompleted);
+  //       },
+  //     });
 
-    const guideData = {
-      service: 4,
-      comment,
-      patient: patientData.fullname,
-      numero_cas: patientData.caseNumber,
-      cout: cost,
-      selected_teeth: selectedTeeth,
-      options_generiques: [
-        {
-          title: "les options generiques",
-          Impression_Formlabs: [
-            {
-              title: "Formlabs® impression",
-              active: second,
-              Guide_supplementaire: additionalGuidess,
-            },
-          ],
-          Suppression_numerique_de_dents: [
-            {
-              title: "Digital extraction of teeth",
-              active: first,
-              description: textareaValu,
-            },
-          ],
-        },
-      ],
-      archive: true,
-      En_attente_approbation: false,
-      soumis: false,
-      en__cours_de_modification: false,
-      approuve: false,
-      produire_expide: false,
-      user: user.id,
-      offre: currentOffer?.currentPlan,
-      originalCost: originalCost,
-    };
+  //     console.log("File upload response:", uploadResponse.data);
+  //     return uploadResponse.data[0].id; // Assuming the API returns the uploaded file ID
+  //   } catch (error) {
+  //     console.error(
+  //       "File upload error:",
+  //       error.response ? error.response.data : error
+  //     );
+  //     throw error;
+  //   }
+  // };
 
-    formData.append("data", JSON.stringify(guideData));
-
-    const file = form.getValues("file");
-    if (file) {
-      formData.append("files.User_Upload", file, file.name);
-    }
-
+  // Function to submit the data
+  const submitData = async (fileId, isArchive = false) => {
     try {
       const checkRes = await axios.post(
         `${apiUrl}/checkCaseNumber`,
         { caseNumber: patientData.caseNumber },
         {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
+          headers: { Authorization: `Bearer ${getToken()}` },
         }
       );
 
       if (checkRes.data.exists) {
-        alert("Case number already exists");
+        alert(
+          language === "french"
+            ? "Le numéro de cas existe déjà"
+            : "Case number already exists"
+        );
         return;
       }
 
+      const guideData = {
+        service: 4,
+        comment,
+        patient: patientData.fullname,
+        numero_cas: patientData.caseNumber,
+        cout: cost,
+        selected_teeth: selectedTeeth,
+        options_generiques: [
+          {
+            title: "les options generiques",
+            Impression_Formlabs: [
+              {
+                title: "Formlabs® impression",
+                active: second,
+                Guide_supplementaire: additionalGuidess,
+              },
+            ],
+            Suppression_numerique_de_dents: [
+              {
+                title: "Digital extraction of teeth",
+                active: first,
+                description: textareaValu,
+              },
+            ],
+          },
+        ],
+        archive: isArchive,
+        En_attente_approbation: false,
+        soumis: !isArchive,
+        en__cours_de_modification: false,
+        approuve: false,
+        produire_expide: false,
+        user: user.id,
+        offre: currentOffer?.currentPlan,
+        originalCost: originalCost,
+        User_Upload: fileId, // Use the uploaded file ID here
+      };
+
       const res = await axios.post(
         `${apiUrl}/gouttiere-de-bruxismes`,
-        formData,
+        { data: guideData },
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${getToken()}`,
-          },
+          headers: { Authorization: `Bearer ${getToken()}` },
         }
       );
 
+      console.log("Data submission response:", res.data);
+
       if (res.status === 200) {
-        localStorage.clear();
-        navigate("/mes-fichiers");
+        if (isArchive) {
+          localStorage.clear();
+          navigate("/mes-fichiers");
+        } else {
+          const requestData = {
+            cost: cost,
+            service: 4,
+            patient: patientData.fullname,
+            email: user.email,
+            guideId: res.data.data.id,
+          };
+
+          const stripe = await stripePromise;
+          const response = await axios.post(
+            `${apiUrl}/commandes`,
+            requestData,
+            {
+              headers: { Authorization: `Bearer ${getToken()}` },
+            }
+          );
+
+          const { error } = await stripe.redirectToCheckout({
+            sessionId: response.data.stripeSession.id,
+          });
+
+          if (error) {
+            console.error("Stripe checkout error:", error);
+          }
+        }
       } else {
-        alert(res.status);
+        throw new Error(`Unexpected response status: ${res.status}`);
       }
     } catch (err) {
-      console.error(err);
-      alert("Case already exists");
+      console.error(
+        "Data submission error:",
+        err.response ? err.response.data : err
+      );
+      throw err;
+    }
+  };
+
+  // Main function to handle the upload and submission process
+  const handleUploadAndSubmit = async (file, isArchive = false) => {
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // File upload stage
+      console.log("Starting file upload...");
+      const fileId = await uploadFile(file);
+      console.log("File uploaded successfully, ID:", fileId);
+
+      // Reset progress for data submission
+      setUploadProgress(0);
+
+      // Data submission stage
+      console.log("Starting data submission...");
+      await submitData(fileId, isArchive);
+      console.log("Data submitted successfully");
+
+      // Handle success
+      alert(
+        language === "french"
+          ? "Fichier téléchargé et données soumises avec succès"
+          : "File uploaded and data submitted successfully"
+      );
+    } catch (err) {
+      console.error("Error in upload and submit process:", err);
+      alert(
+        language === "french"
+          ? "Une erreur s'est produite lors du traitement de votre demande"
+          : "An error occurred while processing your request"
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleNextClick = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      await handleUploadAndSubmit(file, false);
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
+    }
+  };
+
+  const handleNextClickArchive = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+    const file = form.getValues("file");
+    if (file) {
+      await handleUploadAndSubmit(file, true);
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
     }
   };
 
@@ -642,6 +691,27 @@ const SelectedItemsPageGbruxisme = () => {
                                 )}. Maximum size: 400MB.`}
                           </FormDescription>
                           <FormMessage />
+                          {isUploading && (
+                            <div className="mt-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div
+                                  className="bg-red-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                                  style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-sm mt-1">
+                                {uploadProgress > 0
+                                  ? `${uploadProgress}% ${
+                                      language === "french"
+                                        ? "Téléchargé"
+                                        : "Uploaded"
+                                    }`
+                                  : language === "french"
+                                  ? "Soumission des données..."
+                                  : "Submitting data..."}
+                              </p>
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -658,17 +728,34 @@ const SelectedItemsPageGbruxisme = () => {
                         <Button
                           type="button"
                           onClick={handleArchiveClick}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
-                          {language === "french" ? "Archiver" : "Archive"}
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Archiver"
+                          ) : (
+                            "Archive"
+                          )}
                         </Button>
-
                         <Button
                           type="button"
                           onClick={handleSubmitClick}
-                          className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                          disabled={isUploading}
+                          className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                            isUploading ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                         >
-                          {language === "french" ? "Soumettre" : "Submit"}
+                          {isUploading ? (
+                            <Loader className="h-4 w-4 animate-spin" />
+                          ) : language === "french" ? (
+                            "Soumettre"
+                          ) : (
+                            "Submit"
+                          )}
                         </Button>
                       </div>
                     </div>
