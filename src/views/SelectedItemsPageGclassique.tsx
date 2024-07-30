@@ -193,9 +193,9 @@ const SelectedItemsPageGclassique = () => {
             : "Please select a file",
       });
     }
-    if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
-    }
+    // if (isValid && form.getValues().file) {
+    //   setShowArchiveDialog(true);
+    // }
 
     const fileInput = document.querySelector('input[type="file"]');
     const file = fileInput.files[0];
@@ -353,7 +353,7 @@ const SelectedItemsPageGclassique = () => {
     axios.get(`${apiUrl}/services`).then(() => {});
   }, []);
 
-  const handleNextClickArchive = async () => {
+  const handleNextClickArchive = async (e) => {
     e.preventDefault();
     const isValid = await form.trigger();
     if (!form.getValues().file) {
@@ -365,9 +365,9 @@ const SelectedItemsPageGclassique = () => {
             : "Please select a file",
       });
     }
-    if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
-    }
+    // if (isValid && form.getValues().file) {
+    //   setShowArchiveDialog(false);
+    // }
 
     const fileInput = document.querySelector('input[type="file"]');
     const file = fileInput.files[0];
@@ -852,8 +852,8 @@ const SelectedItemsPageGclassique = () => {
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => {
-                              handleNextClickArchive();
+                            onClick={(e) => {
+                              handleNextClickArchive(e);
                               setShowArchiveDialog(false);
                             }}
                           >
@@ -887,8 +887,8 @@ const SelectedItemsPageGclassique = () => {
                             {language === "french" ? "Annuler" : "Cancel"}
                           </AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => {
-                              handleSubmit();
+                            onClick={(e) => {
+                              handleSubmit(e);
                               setShowSubmitDialog(false);
                             }}
                           >

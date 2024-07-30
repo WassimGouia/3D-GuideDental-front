@@ -130,7 +130,7 @@ const SelectedItemsPageRapportRad = () => {
       });
     }
     if (isValid && form.getValues().file) {
-      setShowSubmitDialog(true);
+      setShowArchiveDialog(true);
     }
   };
 

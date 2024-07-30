@@ -157,7 +157,7 @@ const SelectedItemsPageGETAGE = () => {
       });
     }
     if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
+      setShowSubmitDialog(true);
     }
   };
 

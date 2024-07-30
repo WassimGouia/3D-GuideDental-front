@@ -44,6 +44,10 @@ const Cabinet = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [message, setMessage] = useState("");
+  const isFrench = language === 'french';
+
+
   const FormSchema = z.object({
     email: z
       .string({ required_error: "email est requis" })
@@ -166,9 +170,28 @@ const Cabinet = () => {
     }
   };
 
+  const validatePassword = (password) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    return regex.test(password);
+  };
+
   const handleChangePassword = async (data: any) => {
     setPasswordChangeError("");
     setPasswordChangeSuccess("");
+
+    if (data.newPassword !== data.confirmNewPassword) {
+      setMessage(isFrench ? "Les mots de passe ne correspondent pas." : "Passwords do not match.");
+      return;
+    }
+
+    if (!validatePassword(data.newPassword)) {
+      setMessage(
+        isFrench 
+          ? "Le mot de passe doit comporter au moins 8 caractères, inclure au moins une lettre minuscule, une lettre majuscule et un chiffre."
+          : "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, and one number."
+      );
+      return;
+    }
 
     try {
       const token = getToken();
@@ -658,7 +681,9 @@ const Cabinet = () => {
               </Form>
             </CardContent>
           </Card>
-          <CardFooter></CardFooter>
+          <CardFooter>{message && (
+            <p className="text-center text-sm text-muted-foreground">{message}</p>
+          )}</CardFooter>
         </Container>
       </div>
     </SideBarContainer>

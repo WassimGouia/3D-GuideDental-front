@@ -135,7 +135,7 @@ const SelectedItemsPageGging = () => {
       });
     }
     if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
+      setShowSubmitDialog(true);
     }
   };
 

@@ -182,7 +182,7 @@ const SelectedItemsPageAutreService = () => {
       });
     }
     if (isValid && form.getValues().file) {
-      setShowArchiveDialog(true);
+      setShowSubmitDialog(true);
     }
   };
 
@@ -248,6 +248,7 @@ const SelectedItemsPageAutreService = () => {
           },
         }
       );
+      localStorage.clear()
       navigate("/mes-fichiers");
     } catch (error) {
       console.error("Error submitting quote request:", error);
