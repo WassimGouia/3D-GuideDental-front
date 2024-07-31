@@ -320,7 +320,7 @@ const Cabinet = () => {
                           <FormLabel>
                             {language === "french"
                               ? "Nom du cabinet :"
-                              : "Cabinet name :"}
+                              : "office name:"}
                           </FormLabel>
                           <FormControl>
                             <Input
