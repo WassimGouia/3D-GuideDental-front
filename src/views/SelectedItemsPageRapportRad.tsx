@@ -595,7 +595,7 @@ const SelectedItemsPageRapportRad = () => {
                         value: checkboxGroup.eliminerPathologie,
                       },
                       {
-                        label: language === "french" ? "Autre" : "Other",
+                        label: language === "french" ? "Autres" : "Others",
                         value: checkboxGroup.autre,
                       },
                     ].map((item, index) => (

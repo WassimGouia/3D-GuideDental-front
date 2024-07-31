@@ -1838,7 +1838,7 @@ const MesFichier: React.FC = () => {
                       <div className="flex flex-col items-center">
                         {guide.attributes.pdfFile?.data?.attributes?.url ? (
                           <a
-                            href={`https://admin.3dguidedental.com${guide.attributes.pdfFile.data.attributes.url}`}
+                            href={`${guide.attributes.pdfFile.data.attributes.url}`}
                             download
                             target="_blank"
                             className="text-blue-500 hover:text-blue-700"
@@ -1859,7 +1859,7 @@ const MesFichier: React.FC = () => {
                         <div className="flex flex-col items-center">
                           {guide.attributes.model3d?.data?.attributes?.url ? (
                             <a
-                              href={`https://admin.3dguidedental.com${guide.attributes.model3d.data.attributes.url}`}
+                              href={`${guide.attributes.model3d.data.attributes.url}`}
                               download
                               className="text-blue-500 hover:text-blue-700"
                               title="Download 3D Model"
