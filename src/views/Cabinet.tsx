@@ -171,9 +171,10 @@ const Cabinet = () => {
   };
 
   const validatePassword = (password) => {
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]{8,}$/;
     return regex.test(password);
   };
+  
 
   const handleChangePassword = async (data: any) => {
     setPasswordChangeError("");
@@ -583,7 +584,6 @@ const Cabinet = () => {
                             {...field}
                             onChange={(e) => {
                               field.onChange(e);
-                              handlePasswordInputChange(e);
                             }}
                           />
                         </FormControl>

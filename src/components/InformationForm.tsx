@@ -367,6 +367,7 @@ const InformationForm = () => {
                               <FormLabel>
                                 {language === "french"
                                   ? "Nom du cabinet :"
+                                  
                                   : "Office name :"}
                               </FormLabel>
                               <FormControl>

@@ -20,9 +20,10 @@ const ResetPassword = () => {
   const isFrench = language === 'french';
 
   const validatePassword = (password) => {
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]{8,}$/;
     return regex.test(password);
   };
+
 
   const handleSubmit = async (event) => {
     event.preventDefault();

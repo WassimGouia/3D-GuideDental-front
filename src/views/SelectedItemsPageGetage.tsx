@@ -893,9 +893,19 @@ const SelectedItemsPageGETAGE = () => {
                           <FormMessage />
                           {isUploading && (
                             <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                              <p className="text-sm text-red-500 text-center font-medium">
+                              <p className="text-sm text-red-500 text-center font-medium mb-2">
                                 {uploadMessage}
                               </p>
+                              <div className="flex space-x-2">
+                              
+                              <span className="-mt-2">{uploadProgress}%</span>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div
+                                  className="bg-red-600 h-2.5 rounded-full"
+                                  style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                              </div>
+                              </div>
                             </div>
                           )}
                         </FormItem>

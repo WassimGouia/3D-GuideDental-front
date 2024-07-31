@@ -698,6 +698,7 @@ const RapportRadiologique = () => {
                                     >
                                       {language === "french"
                                         ? "Autres"
+                                        
                                         : "Others"}
                                     </FormLabel>
                                     <HoverCard>
