@@ -37,6 +37,7 @@ import {
   UsersRound,
   Package,
   Info,
+  Loader,
 } from "lucide-react";
 import Nouvelle from "@/components/Nouvelledemande";
 import {
@@ -67,6 +68,9 @@ const SelectedItemsPageAutreService = () => {
   const [selectedItemsData, setSelectedItemsData] = useState(null);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   const formSchema = z.object({
     file: z
@@ -186,159 +190,250 @@ const SelectedItemsPageAutreService = () => {
     }
   };
 
-  const handleNextClick = async () => {
-    const fileData = form.getValues("file");
-    if (!fileData) {
-      form.setError("file", { type: "manual", message: "File is required" });
-      return;
-    }
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append("files", file);
 
     const token = getToken();
-    if (!token) {
-      console.error("No auth token found");
-      return;
-    }
+    console.log("Token:", token);
+    console.log("File size:", file.size);
 
-    const formData = new FormData();
-    formData.append(
-      "data",
-      JSON.stringify({
-        comment: selectedItemsData.comment,
-        service_impression_et_expedition: selectedItemsData.implantationPrevue,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
-        archive: false,
-        En_attente_approbation: false,
-        en__cours_de_modification: false,
-        soumis: false,
-        approuve: false,
-        produire_expide: false,
-        Demande_devis: true,
-        user: user.id,
-        service: 5,
-        offre: currentOffer?.currentPlan,
-      })
-    );
-
-    formData.append("files.User_Upload", fileData);
+    const startTime = Date.now();
 
     try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
-      );
+      const uploadResponse = await axios.post(`${apiUrl}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(percentCompleted);
+          console.log(`Upload progress: ${percentCompleted}%`);
+          console.log(
+            `Loaded: ${progressEvent.loaded}, Total: ${progressEvent.total}`
+          );
+        },
+      });
 
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
+      const endTime = Date.now();
+      console.log(`Upload took ${endTime - startTime} ms`);
+      console.log("Upload response:", uploadResponse);
 
-      const response = await axios.post(
-        `${apiUrl}/autres-services-de-conceptions`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      localStorage.clear()
-      navigate("/mes-fichiers");
+      // Artificial delay to simulate server processing time
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      return uploadResponse.data[0].id;
     } catch (error) {
-      console.error("Error submitting quote request:", error);
-      alert(
-        language === "french"
-          ? "Erreur lors de la soumission de la demande de devis"
-          : "Error submitting quote request"
+      console.error(
+        "File upload error:",
+        error.response ? error.response.data : error
       );
-      alert("Case already exists");
+      throw error;
+    }
+  };
+
+  const handleNextClick = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+
+
+    const file = form.getValues().file;
+    if (file) {
+      setIsUploading(true);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
+      );
+
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
+
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        const guideData = {
+            comment: selectedItemsData.comment,
+            service_impression_et_expedition: selectedItemsData.implantationPrevue,
+            patient: patientData.fullname,
+            numero_cas: patientData.caseNumber,
+            archive: false,
+            En_attente_approbation: false,
+            en__cours_de_modification: false,
+            soumis: false,
+            approuve: false,
+            produire_expide: false,
+            Demande_devis: true,
+            user: user.id,
+            service: 5,
+            offre: currentOffer?.currentPlan,
+            User_Upload: fileId,
+        };
+
+        const checkRes = await axios.post(
+          `${apiUrl}/checkCaseNumber`,
+          { caseNumber: patientData.caseNumber },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+
+        if (checkRes.data.exists) {
+          alert("Case number already exists");
+          return;
+        }
+  
+    
+        const response = await axios.post(
+          `${apiUrl}/autres-services-de-conceptions`,
+          { data: guideData },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+
+        console.log("Report archived successfully:", response.data);
+
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et archivage réussis!"
+            : "Upload and archiving successful!"
+        );
+
+        localStorage.clear();
+        navigate("/mes-fichiers");
+      } catch (err) {
+        alert("Case number already exists");
+        console.error("Error in upload and archive process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
     }
   };
 
   const handleNextClickArchive = async () => {
-    const fileData = form.getValues("file");
-    if (!fileData) {
-      form.setError("file", { type: "manual", message: "File is required" });
-      return;
-    }
+    const isValid = await form.trigger();
+    if (!isValid) return;
 
-    const token = getToken();
-    if (!token) {
-      console.error("No auth token found");
-      return;
-    }
 
-    const formData = new FormData();
-    formData.append(
-      "data",
-      JSON.stringify({
-        comment: selectedItemsData.comment,
-        service_impression_et_expedition: selectedItemsData.implantationPrevue,
-        patient: patientData.fullname,
-        numero_cas: patientData.caseNumber,
-        archive: true,
-        En_attente_approbation: false,
-        en__cours_de_modification: false,
-        soumis: false,
-        approuve: false,
-        produire_expide: false,
-        Demande_devis: false,
-        user: user.id,
-        service: 5, // Assuming this is the ID for Autres services de conception
-        offre: currentOffer?.currentPlan,
-      })
-    );
-
-    formData.append("files.User_Upload", fileData);
-
-    try {
-      const checkRes = await axios.post(
-        `${apiUrl}/checkCaseNumber`,
-        { caseNumber: patientData.caseNumber },
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        }
+    const file = form.getValues().file;
+    if (file) {
+      setIsUploading(true);
+      setUploadMessage(
+        language === "french"
+          ? "Le téléchargement peut prendre quelques minutes. Merci de patienter..."
+          : "The upload may take a few minutes. Please be patient..."
       );
 
-      if (checkRes.data.exists) {
-        alert("Case number already exists");
-        return;
-      }
+      try {
+        console.log("Starting file upload...");
+        const fileId = await uploadFile(file);
+        console.log("File upload completed, ID:", fileId);
 
-      const response = await axios.post(
-        `${apiUrl}/autres-services-de-conceptions`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+        setUploadMessage(
+          language === "french"
+            ? "Traitement des données..."
+            : "Processing data..."
+        );
+
+        const guideData = {
+            comment: selectedItemsData.comment,
+            service_impression_et_expedition: selectedItemsData.implantationPrevue,
+            patient: patientData.fullname,
+            numero_cas: patientData.caseNumber,
+            archive: true,
+            En_attente_approbation: false,
+            en__cours_de_modification: false,
+            soumis: false,
+            approuve: false,
+            produire_expide: false,
+            Demande_devis: false,
+            user: user.id,
+            service: 5,
+            offre: currentOffer?.currentPlan,
+            User_Upload: fileId,
+        };
+
+        const checkRes = await axios.post(
+          `${apiUrl}/checkCaseNumber`,
+          { caseNumber: patientData.caseNumber },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
+
+        if (checkRes.data.exists) {
+          alert("Case number already exists");
+          return;
         }
-      );
+  
+    
+        const response = await axios.post(
+          `${apiUrl}/autres-services-de-conceptions`,
+          { data: guideData },
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          }
+        );
 
-      if (response.status === 200) {
+        console.log("Report archived successfully:", response.data);
+
+        setUploadMessage(
+          language === "french"
+            ? "Téléchargement et archivage réussis!"
+            : "Upload and archiving successful!"
+        );
+
         localStorage.clear();
         navigate("/mes-fichiers");
-      } else {
-        alert(response.status);
+      } catch (err) {
+        alert("Case number already exists");
+        console.error("Error in upload and archive process:", err);
+        setUploadMessage(
+          language === "french"
+            ? "Une erreur s'est produite. Veuillez réessayer."
+            : "An error occurred. Please try again."
+        );
+      } finally {
+        setIsUploading(false);
       }
-    } catch (error) {
-      console.error("Error archiving service:", error);
-      alert(
-        language === "french"
-          ? "Erreur lors de l'archivage du service"
-          : "Error archiving service"
-      );
-
-      alert("Case already exists");
+    } else {
+      form.setError("file", {
+        type: "manual",
+        message:
+          language === "french"
+            ? "Veuillez sélectionner un fichier"
+            : "Please select a file",
+      });
     }
   };
 
@@ -502,6 +597,13 @@ const SelectedItemsPageAutreService = () => {
                               )}. Maximum size: 400MB.`}
                         </FormDescription>
                         <FormMessage />
+                        {isUploading && (
+                            <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                              <p className="text-sm text-red-500 text-center font-medium">
+                                {uploadMessage}
+                              </p>
+                            </div>
+                          )}
                       </FormItem>
                     )}
                   />
@@ -516,20 +618,36 @@ const SelectedItemsPageAutreService = () => {
                     <div className="flex space-x-3">
                       <Button
                         type="button"
-                        className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2"
+                        disabled={isUploading}
+                        className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                          isUploading ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                         onClick={handleArchiveClick}
                       >
-                        {language === "french" ? "Archiver" : "Archive"}
+                      {isUploading ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : language === "french" ? (
+                        "Archiver"
+                      ) : (
+                        "Archive"
+                      )}
                       </Button>
 
                       <Button
                         type="button"
-                        className="w-32 h-auto flex items-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all"
+                        disabled={isUploading}
+                        className={`w-32 h-auto flex items-center justify-center gap-3 rounded-lg px-3 py-2 bg-[#0e0004] text-[#fffa1b] hover:bg-[#211f20] hover:text-[#fffa1b] transition-all ${
+                          isUploading ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                         onClick={handleSubmitClick}
                       >
-                        {language === "french"
-                          ? "Demande de devis"
-                          : "Request a quote"}
+                      {isUploading ? (
+                        <Loader className="h-4 w-4 animate-spin" />
+                      ) : language === "french" ? (
+                        "Demande de devis"
+                      ) : (
+                        "Request a quote"
+                      )}
                       </Button>
                     </div>
                   </div>

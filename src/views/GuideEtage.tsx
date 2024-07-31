@@ -162,8 +162,8 @@ const GuideEtage = () => {
           fifthSwitch: false,
           smileDesign: false,
           comment: "",
-          foragePilote: false,
-          fullGuide: false,
+          foragePilote: undefined,
+          fullGuide: undefined,
           selectedTeeth: [],
           implantBrandInputs: [],
           selectSurgicalKitBrand: "",
@@ -194,7 +194,7 @@ const GuideEtage = () => {
       // Update form values
       form.reset({
         selectedTeeth: stateToUse.selectedTeeth || [],
-        drillingType: stateToUse.foragePilote ? "foragePilote" : "fullGuide",
+        drillingType: stateToUse.foragePilote === undefined ? undefined : stateToUse.foragePilote  ? "foragePilote" : "fullGuide",
         lateralPinBrand: stateToUse.lateralPinBrand || "",
         selectSurgicalKitBrand: stateToUse.selectSurgicalKitBrand || "",
         implantBrandValues: stateToUse.implantBrandValues || {},
@@ -604,7 +604,7 @@ const GuideEtage = () => {
                       <br />
                     </div>
                     <div className="flex space-x-8">
-                      <div className="flex items-center space-x-2">
+                      {/* <div className="flex items-center space-x-2">
                         <Switch
                           checked={formState.foragePilote}
                           onCheckedChange={handleForagePiloteSwitch}
@@ -625,7 +625,54 @@ const GuideEtage = () => {
                             ? "Full guidée"
                             : "Fully guided"}
                         </Label>
-                      </div>
+                      </div> */}
+
+<FormField
+                        control={form.control}
+                        name="drillingType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-lg font-semibold">
+                              {language === "french"
+                                ? "Type de forage"
+                                : "Drilling Type"}
+                            </FormLabel>
+                            <FormControl>
+                              <div className="flex space-x-2">
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    checked={field.value === "foragePilote"}
+                                    onCheckedChange={() => {
+                                      handleForagePiloteSwitch();
+                                      field.onChange("foragePilote");
+                                    }}
+                                  />
+                                  <Label htmlFor="forage-pilote">
+                                    {language === "french"
+                                      ? "Forage pilote"
+                                      : "Pilot drilling"}
+                                  </Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    checked={field.value === "fullGuide"}
+                                    onCheckedChange={() => {
+                                      handleFullGuideSwitch();
+                                      field.onChange("fullGuide");
+                                    }}
+                                  />
+                                  <Label htmlFor="full-guide">
+                                    {language === "french"
+                                      ? "Full guidée"
+                                      : "Fully guided"}
+                                  </Label>
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
                   <br />

@@ -62,7 +62,7 @@ const SelectedItemsPageRapportRad = () => {
   const [currentOffer, setCurrentOffer] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState(""); 
   const { user } = useAuthContext();
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
@@ -775,9 +775,9 @@ const SelectedItemsPageRapportRad = () => {
                       {isUploading ? (
                         <Loader className="h-4 w-4 animate-spin" />
                       ) : language === "french" ? (
-                        "Soumettre"
+                        "Archiver"
                       ) : (
-                        "Submit"
+                        "Archive"
                       )}
                     </Button>
 

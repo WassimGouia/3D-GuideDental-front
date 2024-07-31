@@ -79,6 +79,8 @@ const GuideClassique = () => {
   const { language } = useLanguage();
   const { user } = useAuthContext();
 
+  console.log("mmmmmmmmmmmmmmmmmmmmmm:", showStabilizationPins);
+
   const formSchema = z
     .object({
       selectedTeeth: z
@@ -274,7 +276,7 @@ const GuideClassique = () => {
           caseNumber: storedCaseNumber,
         });
 
-        const fetchOfferData  = async () => {
+        const fetchOfferData = async () => {
           const token = getToken();
           if (token && user && user.id) {
             try {
