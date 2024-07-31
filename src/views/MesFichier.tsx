@@ -1373,7 +1373,7 @@ const MesFichier: React.FC = () => {
                         }
                         {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
-                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Cas produit et expédiè${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
                             `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
@@ -1383,7 +1383,7 @@ const MesFichier: React.FC = () => {
                       <div className="flex space-x-4">
                         {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
-                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Cas produit et expédiè${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
                             `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
@@ -1609,7 +1609,7 @@ const MesFichier: React.FC = () => {
                       <div className="flex space-x-4">
                       {guide.attributes.produire_expide && (
                           <Tooltip content={language === "french" ? 
-                            `Cas produire et expédier${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
+                            `Cas produit et expédiè${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}` :
                             `Case produced and shipped${guide.attributes.delivery_number ? `: ${guide.attributes.delivery_number}` : ""}`}>
                             <Truck className="animate-move inline-block text-blue-300 cursor-pointer" />
                           </Tooltip>
